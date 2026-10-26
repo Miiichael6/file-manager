@@ -2689,6 +2689,7 @@ export default function App() {
       languageSystem: { run: () => void languageSetting.set("system"), checked: language === "system" },
       languageEnglish: { run: () => void languageSetting.set("en"), checked: language === "en" },
       languageCzech: { run: () => void languageSetting.set("cs"), checked: language === "cs" },
+      languageSpanish: { run: () => void languageSetting.set("es"), checked: language === "es" },
       extensionsWindows: {
         run: () => void storage.setExtensionMode("windows"),
         checked: extensionMode === "windows",

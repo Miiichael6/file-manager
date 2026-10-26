@@ -86,6 +86,7 @@ export const en = {
   "language.system": "System",
   "language.english": "English",
   "language.czech": "Čeština",
+  "language.spanish": "Español",
   "motion.on": "On",
   "motion.off": "Off",
 
@@ -106,6 +107,7 @@ export const en = {
   "command.languageSystem": "Language: System",
   "command.languageEnglish": "Language: English",
   "command.languageCzech": "Language: Czech",
+  "command.languageSpanish": "Language: Spanish",
   "command.themeLight": "Appearance: Light",
   "command.themeDark": "Appearance: Dark",
   "command.themeSystem": "Appearance: System",

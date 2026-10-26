@@ -55,7 +55,7 @@ export const TRANSPARENCY_STRENGTHS: readonly TransparencyStrength[] = ["subtle"
 
 
 /** Jazyk UI: podle systému, nebo napevno (viz i18n/index.ts). */
-export type LanguagePreference = "system" | "en" | "cs";
+export type LanguagePreference = "system" | "en" | "cs" | "es";
 
 /** Terminál pro „Otevřít v Terminálu": auto = Windows Terminal, jinak PowerShell. */
 /** `pwsh` = PowerShell 7, `powershell` = Windows PowerShell 5.1. */
@@ -365,7 +365,7 @@ export function init(): Promise<void> {
       sidebarWidth: typeof sidebarWidth === "number" ? clampSidebar(sidebarWidth) : SIDEBAR_DEFAULT,
       motion: motion === "on" || motion === "off" ? motion : "system",
       extensionMode: extensionMode === "always" || extensionMode === "never" ? extensionMode : "windows",
-      language: language === "en" || language === "cs" ? language : "system",
+      language: language === "en" || language === "cs" || language === "es" ? language : "system",
       // Bez klíče v souboru (verze do 1.3 ukládaly jen do localStorage)
       // platí zrcadlo — uživatel o zvolený tmavý režim nepřijde.
       theme: theme === "light" || theme === "dark" || theme === "system" ? theme : readThemeMirror(),

@@ -303,6 +303,7 @@ export function Toolbar({
         item("languageSystem", t("language.system")),
         item("languageEnglish", t("language.english")),
         item("languageCzech", t("language.czech")),
+        item("languageSpanish", t("language.spanish")),
       ],
     },
     { type: "separator" },

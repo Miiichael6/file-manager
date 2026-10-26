@@ -34,6 +34,7 @@ export type CommandId =
   | "languageSystem"
   | "languageEnglish"
   | "languageCzech"
+  | "languageSpanish"
   | "motionSystem"
   | "motionOn"
   | "motionOff"
@@ -148,6 +149,7 @@ const DEFINITIONS: Record<CommandId, CommandDefinition> = {
   languageSystem: { title: "command.languageSystem" },
   languageEnglish: { title: "command.languageEnglish" },
   languageCzech: { title: "command.languageCzech" },
+  languageSpanish: { title: "command.languageSpanish" },
   motionSystem: { title: "command.motionSystem" },
   motionOn: { title: "command.motionOn" },
   motionOff: { title: "command.motionOff" },

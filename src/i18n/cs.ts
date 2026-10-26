@@ -85,6 +85,7 @@ export const cs = {
   "language.system": "Podle systému",
   "language.english": "English",
   "language.czech": "Čeština",
+  "language.spanish": "Español",
   "motion.on": "Zapnuto",
   "motion.off": "Vypnuto",
 
@@ -105,6 +106,7 @@ export const cs = {
   "command.languageSystem": "Jazyk: podle systému",
   "command.languageEnglish": "Jazyk: angličtina",
   "command.languageCzech": "Jazyk: čeština",
+  "command.languageSpanish": "Jazyk: španělština",
   "command.themeLight": "Vzhled: světlý",
   "command.themeDark": "Vzhled: tmavý",
   "command.themeSystem": "Vzhled: podle systému",
