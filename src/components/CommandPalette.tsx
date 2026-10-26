@@ -7,6 +7,7 @@ import { breadcrumbs } from "../format";
 import { useT } from "../i18n";
 import { TAG_COLORS, TAG_HEX, tagLabel } from "../lib/tags";
 import type { TagColor } from "../types";
+import { gitCommandIcon } from "../lib/gitIcons"; // MI-FORK: ikony příkazů gitu.
 
 /**
  * Paleta příkazů (Ctrl+K), jako Spotlight / Raycast: složky, akce a štítky
@@ -147,7 +148,8 @@ export function CommandPalette({
       category: "actions",
       title: command.title,
       shortcut: command.shortcut,
-      icon: <Zap size={15} strokeWidth={1.75} className="text-secondary" />,
+      // MI-FORK: příkazy gitu mají vlastní ikonu.
+      icon: gitCommandIcon(command.id) ?? <Zap size={15} strokeWidth={1.75} className="text-secondary" />,
       score,
       run: () => onRunCommand(command),
     });

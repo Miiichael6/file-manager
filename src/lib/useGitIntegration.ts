@@ -8,6 +8,7 @@ import type { FileEntry } from "../types";
 import { isStaged, isUnstaged } from "./git";
 import { gitPull, gitPush, gitStage, gitUnstage, useGitRepo } from "./gitActions";
 import { gitFileFor } from "./gitStore";
+import { gitMenuIcon } from "./gitIcons";
 
 export type GitCommandId = "gitPanel" | "gitStage" | "gitUnstage" | "gitPull" | "gitPush";
 
@@ -82,12 +83,26 @@ export function useGitIntegration({ dir, token, targets, setNotice, showInfo }: 
       if (stage.length === 0 && unstage.length === 0) return [];
       return [
         { type: "separator" },
-        { type: "item", label: t("git.stage"), disabled: stage.length === 0, onSelect: () => run((r) => gitStage(r, stage)) },
+        {
+          type: "item",
+          label: t("git.stage"),
+          icon: gitMenuIcon("stage"),
+          disabled: stage.length === 0,
+          onSelect: () => run((r) => gitStage(r, stage)),
+        },
         {
           type: "item",
           label: t("git.unstage"),
+          icon: gitMenuIcon("unstage"),
           disabled: unstage.length === 0,
           onSelect: () => run((r) => gitUnstage(r, unstage)),
+        },
+        {
+          type: "item",
+          label: t("git.open"),
+          icon: gitMenuIcon("panel"),
+          shortcut: "Ctrl+Shift+G",
+          onSelect: () => setDialogOpen(true),
         },
       ];
     },

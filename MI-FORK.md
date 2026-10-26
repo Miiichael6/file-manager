@@ -47,19 +47,20 @@ Todos los cambios llevan el comentario `MI-FORK` (`git grep MI-FORK`), salvo los
 | `src/components/Toolbar.tsx` | Entrada «Liquid Glass» en Más → Apariencia; prop `openWith` (botón «Abrir carpeta con» antes de Compartir) |
 | `src/components/Sidebar.tsx` | «Abrir con…» en el menú de archivos de Acceso rápido y Recientes; Recientes: animación al quitar y clic con la rueda = pestaña nueva (prop `onOpenTab`) |
 | `src/components/StatusBar.tsx` | Botón copiar ruta y clic en el hueco = editar ruta (prop `onCopyPath`) |
-| `index.html`, `TitleBar.tsx`, `AboutDialog.tsx`, `TabBar.tsx`, `App.tsx` | Nombre visible "File Manager" en vez de "Dirwise" |
+| `index.html`, `TitleBar.tsx`, `AboutDialog.tsx`, `TabBar.tsx`, `App.tsx` | Nombre visible "File Manager" en vez de "Dirwise"; en `TitleBar.tsx`, " @ Development" detrás del nombre con `import.meta.env.DEV` (solo en `tauri dev`) |
 | `src-tauri/icons/*`, `src/assets/icon.png`, `app-icon.png` | Icono propio generado con `npx tauri icon src-tauri/icons/file-manager.svg` (al traer cambios: quedarse con los míos) |
 | `src/i18n/en.ts`, `src/i18n/cs.ts` | `toolbar.about` con "File Manager"; claves `liquidGlass.menu`, `liquidGlass.toggle`, `liquidGlass.hint` (también en `es.ts`, que es del fork) |
 | `src-tauri/src/main.rs` (Git) | `mod git; mod git_parse;` y 7 commands `git::git_*` en `generate_handler!` |
 | `src/App.tsx` (Git) | Git: `useGitIntegration`, `GitDialog`, `...git.handlers` en los comandos, `...git.menuItems(targets)` en el menú contextual, props `git`/`onGitClick` del `StatusBar` |
 | `src/commands.ts` (Git) | Comandos `gitPanel` (Ctrl+Shift+G), `gitStage`, `gitUnstage`, `gitPull`, `gitPush` |
 | `src/components/{ListView,IconView,ColumnView}.tsx` | `<GitBadge>` junto al nombre (IconView: `relative` en la celda) |
-| `src/components/QuickLook.tsx` | Botón **Diff** y `<GitDiffView>` en lugar de la vista previa |
+| `src/components/QuickLook.tsx` | Botón **Diff** (con icono) y `<GitDiffView>` en lugar de la vista previa |
+| `src/components/CommandPalette.tsx` | Icono propio para los comandos `git*` (`gitCommandIcon(command.id) ?? <Zap>`) |
 | `src/components/StatusBar.tsx` (Git) | Props `git`, `onGitClick` y `<GitBranchChip>` |
 | `src/index.css` | Variables `--git-*` (claro y oscuro) |
 | `src/i18n/cs.ts`, `en.ts` (Git) | Claves `git.*`, `error.git*` al final (también en `es.ts`) |
 
-Archivos nuevos (no generan conflictos): `MI-FORK.md`, `src/mi-fork/liquidGlass.ts` (estado, guardado en settings.json con la clave `miLiquidGlass`), `src/mi-fork/liquid-glass.css` (material bajo `:root[data-liquid]`), `src/mi-fork/folderApps.ts` + `src-tauri/src/mi_fork.rs` («Abrir con ▸» para carpetas; apps elegidas en settings.json, claves `miFolderApps` y `miFolderAppLast`), `src/mi-fork/FolderOpenButton.tsx` + `folder-open.css` (botón de la barra), `src/mi-fork/jumpList.ts` (carpetas recientes en la lista de saltos del icono; clave `miRecentFolders`), `src/mi-fork/lens.ts` (refracción en los bordes: mapa de desplazamiento por elemento + `feDisplacementMap` en `backdrop-filter`); Git integrado: `src-tauri/src/git.rs`, `git_parse.rs`, `src/lib/{git,gitStore,gitActions,useGitIntegration}.ts`, `src/components/Git{Badge,BranchChip,Dialog,DiffView}.tsx`.
+Archivos nuevos (no generan conflictos): `MI-FORK.md`, `src/mi-fork/liquidGlass.ts` (estado, guardado en settings.json con la clave `miLiquidGlass`), `src/mi-fork/liquid-glass.css` (material bajo `:root[data-liquid]`), `src/mi-fork/folderApps.ts` + `src-tauri/src/mi_fork.rs` («Abrir con ▸» para carpetas; apps elegidas en settings.json, claves `miFolderApps` y `miFolderAppLast`), `src/mi-fork/FolderOpenButton.tsx` + `folder-open.css` (botón de la barra), `src/mi-fork/jumpList.ts` (carpetas recientes en la lista de saltos del icono; clave `miRecentFolders`), `src/mi-fork/lens.ts` (refracción en los bordes: mapa de desplazamiento por elemento + `feDisplacementMap` en `backdrop-filter`); Git integrado: `src-tauri/src/git.rs`, `git_parse.rs`, `src/lib/{git,gitStore,gitActions,useGitIntegration}.ts`, `src/lib/gitIcons.tsx`, `src/components/Git{Badge,BranchChip,Dialog,DiffView}.tsx`.
 
 Al resolver un conflicto en estos archivos, acepta lo de ellos y vuelve a aplicar encima solo mi cambio de la tabla.
 

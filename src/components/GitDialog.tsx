@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { ArrowDown, ArrowUp, GitBranch, Minus, Plus } from "lucide-react";
 
 import { Dialog } from "./Dialog";
 import { GitDiffView } from "./GitDiffView";
@@ -7,6 +6,9 @@ import { GitLetter } from "./GitBadge";
 import { errorText, useT } from "../i18n";
 import { absolutePath, isStaged, isUnstaged, stateOf, type GitFile, type GitStatus } from "../lib/git";
 import { gitCommit, gitPull, gitPush, gitStage, gitUnstage } from "../lib/gitActions";
+import { GIT_ICONS } from "../lib/gitIcons";
+
+const { panel: BranchIcon, stage: StageIcon, unstage: UnstageIcon, pull: PullIcon, push: PushIcon, commit: CommitIcon } = GIT_ICONS;
 
 type Selected = { path: string; staged: boolean; untracked: boolean } | null;
 
@@ -22,7 +24,7 @@ function FileList(props: {
 }) {
   const t = useT();
   const { files, root, staged, selected } = props;
-  const Icon = staged ? Minus : Plus;
+  const Icon = staged ? UnstageIcon : StageIcon;
   const action = t(staged ? "git.unstage" : "git.stage");
   const all = files.map((file) => absolutePath(root, file));
 
@@ -31,8 +33,8 @@ function FileList(props: {
       <header className="flex items-center gap-2 px-1 pb-1 text-[11px] font-semibold text-secondary uppercase">
         <span className="flex-1">{`${props.title} (${files.length})`}</span>
         {files.length > 0 && (
-          <button type="button" className="fw-button h-5! px-2! text-[11px]!" onClick={() => props.onToggle(all)}>
-            {t(staged ? "git.unstageAll" : "git.stageAll")}
+          <button type="button" className="fw-button inline-flex h-5! items-center gap-1 px-2! text-[11px]!" onClick={() => props.onToggle(all)}>
+            <Icon size={11} strokeWidth={2.5} /> {t(staged ? "git.unstageAll" : "git.stageAll")}
           </button>
         )}
       </header>
@@ -103,16 +105,16 @@ export function GitDialog({ status, onClose }: { status: GitStatus; onClose: () 
     <Dialog label={t("git.title")} width={720} onClose={onClose} actions={[{ label: t("common.close"), onClick: onClose }]}>
       <div className="flex flex-col gap-3 text-[13px]">
         <div className="flex items-center gap-2">
-          <GitBranch size={15} className="shrink-0 text-secondary" />
+          <BranchIcon size={15} className="shrink-0 text-secondary" />
           <span className="min-w-0 flex-1 truncate font-semibold text-primary">
             {status.branch ?? t("git.detached")}
             {status.upstream && <span className="font-normal text-secondary">{` → ${status.upstream}`}</span>}
           </span>
           <button type="button" className="fw-button inline-flex items-center gap-1" disabled={busy} onClick={() => void act(() => gitPull(root))}>
-            <ArrowDown size={13} /> {t("git.pull")} {status.behind > 0 && status.behind}
+            <PullIcon size={13} /> {t("git.pull")} {status.behind > 0 && status.behind}
           </button>
           <button type="button" className="fw-button inline-flex items-center gap-1" disabled={busy} onClick={() => void act(() => gitPush(root))}>
-            <ArrowUp size={13} /> {t("git.push")} {status.ahead > 0 && status.ahead}
+            <PushIcon size={13} /> {t("git.push")} {status.ahead > 0 && status.ahead}
           </button>
         </div>
 
@@ -149,8 +151,8 @@ export function GitDialog({ status, onClose }: { status: GitStatus; onClose: () 
         />
         <div className="flex items-center gap-3">
           <p className="min-w-0 flex-1 text-[12px] break-words text-[color:var(--danger)]" role="alert">{error}</p>
-          <button type="button" className="fw-button is-primary" disabled={!canCommit} onClick={commit}>
-            {t("git.commit")}
+          <button type="button" className="fw-button is-primary inline-flex items-center gap-1" disabled={!canCommit} onClick={commit}>
+            <CommitIcon size={14} /> {t("git.commit")}
           </button>
         </div>
       </div>

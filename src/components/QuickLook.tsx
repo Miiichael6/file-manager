@@ -15,6 +15,7 @@ import { useDisplayNames } from "../lib/extensions";
 // MI-FORK: Git integrado.
 import { gitFileFor, useGitVersion } from "../lib/gitStore";
 import { GitDiffView } from "./GitDiffView";
+import { GIT_ICONS } from "../lib/gitIcons";
 
 const MAX_PREVIEW_BYTES = 1_048_576;
 
@@ -469,8 +470,9 @@ export function QuickLook({
               type="button"
               aria-pressed={showDiff}
               onClick={() => setShowDiff((value) => !value)}
-              className={`shrink-0 rounded-full px-3 py-1 text-[12px] font-medium text-primary ${showDiff ? "bg-[color:var(--row-selected-inactive)]" : "hover:bg-hover"}`}
+              className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-medium text-primary ${showDiff ? "bg-[color:var(--row-selected-inactive)]" : "hover:bg-hover"}`}
             >
+              <GIT_ICONS.diff size={13} strokeWidth={2} aria-hidden />
               {t("git.diff")}
             </button>
           )}
