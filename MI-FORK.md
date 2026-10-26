@@ -55,6 +55,7 @@ Todos los cambios llevan el comentario `MI-FORK` (`git grep MI-FORK`), salvo los
 | `src/commands.ts` (Git) | Comandos `gitPanel` (Ctrl+Shift+G), `gitStage`, `gitUnstage`, `gitPull`, `gitPush` |
 | `src/components/{ListView,IconView,ColumnView}.tsx` | `<GitBadge>` junto al nombre (IconView: `relative` en la celda) |
 | `src/components/QuickLook.tsx` | Botón **Diff** (con icono) y `<GitDiffView>` en lugar de la vista previa |
+| `src/components/ContextMenu.tsx` | Posición del menú con `offsetWidth`/`offsetHeight` en vez de `getBoundingClientRect()` (la animación `scale(0.96)` lo medía un 4 % más bajo y abajo de la ventana se cortaba el final). Fallo también en el original: si ellos lo arreglan, quedarse con lo suyo |
 | `src/components/CommandPalette.tsx` | Icono propio para los comandos `git*` (`gitCommandIcon(command.id) ?? <Zap>`) |
 | `src/components/StatusBar.tsx` (Git) | Props `git`, `onGitClick` y `<GitBranchChip>` |
 | `src/index.css` | Variables `--git-*` (claro y oscuro) |

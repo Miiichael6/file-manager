@@ -329,7 +329,11 @@ export function ContextMenu({ x, y, items: given, onClose, triggerSelector }: Co
     const menu = menuRef.current;
     if (!menu) return;
 
-    const { width, height } = menu.getBoundingClientRect();
+    // MI-FORK: offset* = rozměr bez transformace. Menu se otevírá animací ze
+    // scale(0.96) a getBoundingClientRect by vrátil o 4 % menší výšku — u
+    // spodního okraje okna pak konec menu (Vlastnosti) přetekl ven z okna.
+    const width = menu.offsetWidth;
+    const height = menu.offsetHeight;
     const left = Math.max(MARGIN, Math.min(x, window.innerWidth - width - MARGIN));
     const top = Math.max(MARGIN, Math.min(y, window.innerHeight - height - MARGIN));
 
