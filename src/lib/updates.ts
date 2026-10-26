@@ -8,11 +8,13 @@ import * as storage from "./storage";
  */
 
 // Repo se dřív jmenovalo krystof2-ops/finder-win a krystof2-ops/dirwise (staré adresy API GitHub přesměruje).
-const LATEST_RELEASE = "https://api.github.com/repos/arcly-studio/dirwise/releases/latest";
+// MI-FORK: las versiones nuevas se buscan en mi repo, no en arcly-studio/dirwise.
+const LATEST_RELEASE = "https://api.github.com/repos/Miiichael6/file-manager/releases/latest";
 /** Stránka vydání — stejné pravidlo hlídá i backend (is_release_page). Starší verze
  *  aplikace dostávaly adresy pod krystof2-ops (finder-win i dirwise), proto platí všechny tři. */
+// MI-FORK: se añade Miiichael6/file-manager a las páginas de release aceptadas.
 const RELEASE_PAGE =
-  /^https:\/\/github\.com\/(arcly-studio\/dirwise|krystof2-ops\/(dirwise|finder-win))\/releases\/tag\/[A-Za-z0-9.-]+$/;
+  /^https:\/\/github\.com\/(Miiichael6\/file-manager|arcly-studio\/dirwise|krystof2-ops\/(dirwise|finder-win))\/releases\/tag\/[A-Za-z0-9.-]+$/;
 
 function isReleasePage(url: string): boolean {
   return RELEASE_PAGE.test(url) && !url.includes("..");
