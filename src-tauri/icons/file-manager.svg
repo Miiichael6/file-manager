@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#14b8a6"/>
+      <stop offset="1" stop-color="#0e7490"/>
+    </linearGradient>
+    <linearGradient id="front" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#e0f2f1"/>
+    </linearGradient>
+  </defs>
+  <rect x="32" y="32" width="960" height="960" rx="216" fill="url(#bg)"/>
+  <!-- zadní list složky s ouškem -->
+  <path d="M232 300 a40 40 0 0 1 40 -40 h170 a40 40 0 0 1 30 14 l44 50 h236 a40 40 0 0 1 40 40 v360 H232 Z" fill="#ffffff" fill-opacity="0.55"/>
+  <!-- přední list -->
+  <path d="M232 420 a40 40 0 0 1 40 -40 h480 a40 40 0 0 1 40 40 v300 a40 40 0 0 1 -40 40 H272 a40 40 0 0 1 -40 -40 Z" fill="url(#front)"/>
+  <!-- tři řádky = seznam souborů -->
+  <rect x="332" y="480" width="360" height="40" rx="20" fill="#0e7490" fill-opacity="0.85"/>
+  <rect x="332" y="560" width="280" height="40" rx="20" fill="#0e7490" fill-opacity="0.6"/>
+  <rect x="332" y="640" width="200" height="40" rx="20" fill="#0e7490" fill-opacity="0.4"/>
+</svg>

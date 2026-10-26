@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, Folder, Trash2 } from "lucide-react";
 
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 
 import { ContextMenu, type MenuItem } from "./ContextMenu";
 import { fileVisual, sidebarIcon, sidebarIconColor, sidebarLabel } from "./icons";
-import { openDevice, openInExplorer, openTerminal, parentPath } from "../fileops";
+import { openDevice, openInExplorer, openTerminal, openWith, parentPath } from "../fileops";
 import { formatRelative } from "../format";
 import { failure, useT, type MessageKey } from "../i18n";
 import type { ConfirmRequest } from "./ConfirmDialog";
@@ -47,6 +47,8 @@ type SidebarProps = {
   currentPath: string | null;
   windowFocused: boolean;
   onNavigate: (path: string) => void;
+  /** Otevře složku v nové záložce (prostřední tlačítko myši). */
+  onOpenTab: (path: string) => void;
   /** Otevře soubor v systému (klik na nedávný soubor). */
   onOpenFile: (path: string, name: string) => void;
   /** Naviguje do rodičovské složky a označí v ní tuhle položku. */
@@ -139,6 +141,18 @@ function SectionHeading({
           control.collapsed ? "-rotate-90" : ""
         }`}
       />
+    </div>
+  );
+}
+
+/**
+ * Obsah sekce zůstává v DOM a sbalení animuje výšku (grid 0fr ↔ 1fr) s
+ * prolnutím — okamžité zmizení řádků působilo trhaně.
+ */
+function Collapsible({ open, children }: { open: boolean; children: React.ReactNode }) {
+  return (
+    <div className="fw-collapse" data-collapsed={!open} inert={!open}>
+      <div className="fw-collapse-inner">{children}</div>
     </div>
   );
 }
@@ -346,7 +360,7 @@ function CustomFavorites({
       <SectionHeading control={heading}>{t("sidebar.custom")}</SectionHeading>
 
       {/* Sbalená sekce se během tažení otevře — jinak by nebylo kam pustit. */}
-      {(!heading.collapsed || accepts) && (
+      <Collapsible open={!heading.collapsed || accepts}>
         <nav ref={navRef} className="relative flex flex-col pb-0.5">
           {items.map((item, index) => {
             // Soubor v sidebaru nikdy "nejsme uvnitř" — zvýrazňují se jen složky.
@@ -443,7 +457,7 @@ function CustomFavorites({
             </div>
           )}
         </nav>
-      )}
+      </Collapsible>
     </div>
   );
 }
@@ -516,11 +530,15 @@ type RecentsProps = {
   windowFocused: boolean;
   onActivate: (entry: RecentEntry) => void;
   onContextMenu: (entry: RecentEntry, x: number, y: number) => void;
+  onOpenTab: (path: string) => void;
   heading: HeadingControl;
+  leaving: string | null;
 };
 
 function Recents({
   items,
+  leaving,
+  onOpenTab,
   currentPath,
   windowFocused,
   onActivate,
@@ -535,7 +553,7 @@ function Recents({
     <div className="fw-sidebar-section">
       <SectionHeading control={heading}>{t("sidebar.recents")}</SectionHeading>
 
-      {!heading.collapsed && (
+      <Collapsible open={!heading.collapsed}>
         <nav className="flex flex-col pb-0.5">
           {shown.length === 0 && (
             <div className="mx-1.5 px-3 py-1 text-[12px] text-secondary italic">
@@ -555,12 +573,19 @@ function Recents({
                 type="button"
                 data-tooltip={entry.path}
                 onClick={() => onActivate(entry)}
+                // Prostřední tlačítko: mousedown zabrání autoscrollu, auxclick otevře záložku.
+                onMouseDown={(event) => {
+                  if (event.button === 1) event.preventDefault();
+                }}
+                onAuxClick={(event) => {
+                  if (event.button === 1 && entry.type === "folder") onOpenTab(entry.path);
+                }}
                 onContextMenu={(event) => {
                   event.preventDefault();
                   event.stopPropagation();
                   onContextMenu(entry, event.clientX, event.clientY);
                 }}
-                className={`${ROW_CLASS} ${rowStateClass(isActive, windowFocused)}`}
+                className={`${ROW_CLASS} ${rowStateClass(isActive, windowFocused)}${entry.path === leaving ? " fw-sidebar-row-leave" : ""}`}
               >
                 <EntryIcon
                   name={entry.name}
@@ -576,7 +601,7 @@ function Recents({
             );
           })}
         </nav>
-      )}
+      </Collapsible>
     </div>
   );
 }
@@ -609,7 +634,7 @@ function TagsSection({
     <div className="fw-sidebar-section">
       <SectionHeading control={heading}>{t("sidebar.tags")}</SectionHeading>
 
-      {!heading.collapsed && (
+      <Collapsible open={!heading.collapsed}>
         <nav className="flex flex-col pb-0.5">
           {used.map((color) => (
             <button
@@ -638,7 +663,7 @@ function TagsSection({
             </button>
           ))}
         </nav>
-      )}
+      </Collapsible>
     </div>
   );
 }
@@ -661,6 +686,7 @@ export function Sidebar({
   currentPath,
   windowFocused,
   onNavigate,
+  onOpenTab,
   onOpenFile,
   onReveal,
   activeTag,
@@ -714,6 +740,14 @@ export function Sidebar({
     };
   }
   const { favorites, recents, tags, sidebarWidth } = useStorage();
+  // Odebíraný nedávný řádek se nejdřív sbalí, teprve pak zmizí ze storage.
+  const [leavingRecent, setLeavingRecent] = useState<string | null>(null);
+  function removeRecentAnimated(path: string) {
+    setLeavingRecent(path);
+    window.setTimeout(() => {
+      void storage.removeRecent(path).finally(() => setLeavingRecent(null));
+    }, 180);
+  }
   const panelRef = useRef<HTMLDivElement>(null);
   const asideRef = useRef<HTMLElement>(null);
 
@@ -808,6 +842,15 @@ export function Sidebar({
       label: t("menu.openInTerminal"),
       onSelect: () => {
         openTerminal(path).catch((err: unknown) => onError(failure("op.terminal", err)));
+      },
+    });
+
+    // MI-FORK: «Abrir con…» también para archivos en Acceso rápido y Recientes.
+    const openWithItem = (path: string): MenuItem => ({
+      type: "item",
+      label: t("menu.openWith"),
+      onSelect: () => {
+        openWith(path).catch((err: unknown) => onError(failure("op.openWith", err)));
       },
     });
 
@@ -949,6 +992,7 @@ export function Sidebar({
 
       return [
         { type: "item", label: t("menu.open"), onSelect: () => activateFavorite(item) },
+        ...(item.type === "file" ? [openWithItem(item.path)] : []), // MI-FORK
         { type: "separator" },
         {
           type: "item",
@@ -981,6 +1025,7 @@ export function Sidebar({
 
     return [
       { type: "item", label: t("menu.open"), onSelect: () => activateRecent(entry) },
+      ...(entry.type === "file" ? [openWithItem(entry.path)] : []), // MI-FORK
       reveal(entry.path),
       {
         type: "item",
@@ -995,7 +1040,7 @@ export function Sidebar({
       {
         type: "item",
         label: t("menu.removeFromRecents"),
-        onSelect: () => void storage.removeRecent(entry.path),
+        onSelect: () => removeRecentAnimated(entry.path),
       },
       {
         type: "item",
@@ -1030,12 +1075,12 @@ export function Sidebar({
       <div key={section.id}>
         <SectionHeading control={heading}>{t(SECTION_TITLES[section.id])}</SectionHeading>
 
-        {!heading.collapsed && (
+        <Collapsible open={!heading.collapsed}>
           <nav className="flex flex-col pb-0.5">
             {section.items.map((item) => {
               const Icon = sidebarIcon(item.icon_name);
               const isActive =
-                !item.external && currentPath !== null && storage.samePath(item.path, currentPath);
+                !item.external && highlightPath !== null && storage.samePath(item.path, highlightPath);
 
               return (
                 <button
@@ -1088,7 +1133,7 @@ export function Sidebar({
               </button>
             )}
           </nav>
-        )}
+        </Collapsible>
       </div>
     );
   }
@@ -1138,6 +1183,58 @@ export function Sidebar({
     window.addEventListener("mouseup", onUp);
   }
 
+  // V Koši se složka, ze které uživatel přišel, nezvýrazňuje.
+  const highlightPath = trashActive ? null : currentPath;
+
+  // Výběr jako deska, která mezi řádky sjíždí nahoru/dolů. Stejná složka může
+  // být ve více sekcích (Rychlý přístup i Tento počítač) — pak má desku každý
+  // aktivní řádek; první sjíždí, další se objeví na místě. Měří se po každém
+  // renderu (aktivní řádek, sbalení sekce) a při změně velikosti.
+  const indicatorsRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const aside = asideRef.current;
+    const layer = indicatorsRef.current;
+    if (!aside || !layer) return;
+    const place = () => {
+      const rows = aside.querySelectorAll<HTMLElement>(
+        ".fw-collapse:not([data-collapsed='true']) .fw-sidebar-row:is(.is-active, .is-active-dim)",
+      );
+      while (layer.children.length < rows.length) {
+        const plate = document.createElement("div");
+        plate.className = "fw-sidebar-indicator";
+        plate.dataset.visible = "false";
+        layer.append(plate);
+      }
+      const box = aside.getBoundingClientRect();
+      Array.from(layer.children as HTMLCollectionOf<HTMLElement>).forEach((indicator, index) => {
+        const row = rows[index];
+        if (!row) {
+          indicator.dataset.visible = "false";
+          return;
+        }
+        const rect = row.getBoundingClientRect();
+        const first = indicator.dataset.visible !== "true";
+        if (first) indicator.style.transition = "none";
+        indicator.style.transform = `translateY(${rect.top - box.top + aside.scrollTop}px)`;
+        indicator.style.left = `${rect.left - box.left}px`;
+        indicator.style.width = `${rect.width}px`;
+        indicator.style.height = `${rect.height}px`;
+        indicator.dataset.dim = String(row.classList.contains("is-active-dim"));
+        indicator.dataset.visible = "true";
+        if (first) {
+          void indicator.offsetWidth;
+          indicator.style.transition = "";
+        }
+      });
+    };
+    place();
+    const observer = new ResizeObserver(place);
+    observer.observe(aside);
+    // Během sbalování sekce nad výběrem se řádek posouvá — deska jde s ním.
+    aside.querySelectorAll(".fw-collapse").forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  });
+
   return (
     <div ref={panelRef} className="fw-sidebar-box relative flex shrink-0" style={{ width: sidebarWidth }}>
       <aside
@@ -1151,11 +1248,13 @@ export function Sidebar({
         }}
         // Hodnoty vpravo (čas, počty) jsou u úzkého panelu vidět jen při najetí.
         data-wide={sidebarWidth > 240}
-        className="fw-sidebar fw-scroll flex w-full flex-col overflow-y-auto pt-1"
+        className="fw-sidebar fw-scroll relative isolate flex w-full flex-col overflow-y-auto pt-1"
       >
+        {/* display: contents — desky se umisťují vůči <aside>. */}
+        <div ref={indicatorsRef} className="contents" aria-hidden="true" />
         <CustomFavorites
           items={favorites}
-          currentPath={currentPath}
+          currentPath={highlightPath}
           windowFocused={windowFocused}
           onActivate={activateFavorite}
           onContextMenu={(item, x, y) => setMenu({ kind: "favorite", item, x, y })}
@@ -1174,7 +1273,9 @@ export function Sidebar({
 
         <Recents
           items={recents}
-          currentPath={currentPath}
+          leaving={leavingRecent}
+          onOpenTab={onOpenTab}
+          currentPath={highlightPath}
           windowFocused={windowFocused}
           onActivate={activateRecent}
           onContextMenu={(entry, x, y) => setMenu({ kind: "recent", entry, x, y })}

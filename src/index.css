@@ -527,8 +527,103 @@ body {
   background-color: var(--row-selected);
 }
 
+/* Odebírání nedávné položky: řádek se prolne a sbalí, ostatní plynule dojedou. */
+.fw-sidebar-row-leave {
+  pointer-events: none;
+  overflow: hidden;
+  animation: fw-row-leave 180ms var(--ease-out) forwards;
+}
+
+@keyframes fw-row-leave {
+  to {
+    opacity: 0;
+    height: 0;
+  }
+}
+
 .fw-sidebar-row.is-active-dim {
   background-color: var(--row-selected-inactive);
+}
+
+/* Sbalení sekce sidebaru: výška přes grid řádky, obsah se prolne a lehce posune. */
+.fw-collapse {
+  display: grid;
+  grid-template-rows: 1fr;
+  /* Bez pevné šířky sloupce by se řádky smrskly na obsah a názvy
+     (flex-1 + min-w-0) by měly nulovou šířku. */
+  grid-template-columns: minmax(0, 1fr);
+  transition: grid-template-rows 280ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.fw-collapse[data-collapsed="true"] {
+  grid-template-rows: 0fr;
+}
+
+.fw-collapse-inner {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity 200ms ease 60ms,
+    transform 280ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.fw-collapse[data-collapsed="true"] > .fw-collapse-inner {
+  opacity: 0;
+  transform: translateY(-6px);
+  transition:
+    opacity 140ms ease,
+    transform 280ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fw-collapse,
+  .fw-collapse-inner {
+    transition: none;
+  }
+}
+
+/* Deska výběru sjíždí mezi řádky (Sidebar.tsx); řádek sám pak pozadí nemá. */
+.fw-sidebar-indicator {
+  position: absolute;
+  top: 0;
+  z-index: -1;
+  border-radius: 6px;
+  background-color: var(--row-selected);
+  pointer-events: none;
+  transition:
+    transform 260ms cubic-bezier(0.32, 0.72, 0, 1),
+    height 260ms cubic-bezier(0.32, 0.72, 0, 1),
+    background-color 150ms ease;
+}
+
+.fw-sidebar-indicator[data-dim="true"] {
+  background-color: var(--row-selected-inactive);
+}
+
+.fw-sidebar-indicator[data-visible="false"] {
+  display: none;
+}
+
+.fw-sidebar .fw-sidebar-row:is(.is-active, .is-active-dim),
+:root[data-glass="on"] .fw-sidebar .fw-sidebar-row:is(.is-active, .is-active-dim) {
+  background-color: transparent;
+}
+
+:root[data-glass="on"] .fw-sidebar-indicator {
+  background-color: var(--glass-sidebar-selected);
+}
+
+:root[data-glass="on"] .fw-sidebar-indicator[data-dim="true"] {
+  background-color: var(--glass-sidebar-selected-inactive);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fw-sidebar-indicator {
+    transition: none;
+  }
 }
 
 /* Nadpis sekce: 12 px polotučně normálním písmem, barva --text-section

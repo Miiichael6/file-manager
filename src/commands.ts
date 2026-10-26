@@ -47,6 +47,8 @@ export type CommandId =
   | "transparencyMedium"
   | "transparencyStrong"
   | "transparencyBlur"
+  // MI-FORK: Liquid Glass (src/mi-fork/liquidGlass.ts).
+  | "toggleLiquidGlass"
   | "terminalAuto"
   | "terminalWindows"
   | "terminalPwsh"
@@ -165,6 +167,8 @@ const DEFINITIONS: Record<CommandId, CommandDefinition> = {
   transparencyStrong: { title: "transparency.strong" },
   // Styl průhlednosti jen s rozmazanou (zatím vypnutá, lib/storage.ts).
   transparencyBlur: { title: "transparency.blur" },
+  // MI-FORK: Liquid Glass.
+  toggleLiquidGlass: { title: "liquidGlass.toggle" },
   terminalAuto: { title: "command.terminalAuto" },
   terminalWindows: { title: "command.terminalWindows" },
   terminalPwsh: { title: "command.terminalPwsh" },

@@ -42,7 +42,7 @@ const BAR_PADDING = 16;
 
 /** Popisek záložky: přeložený název složky jako v záhlaví toolbaru. */
 function tabTitle(path: string | null): string {
-  if (path === null) return "Dirwise";
+  if (path === null) return "File Manager"; // MI-FORK
   const crumbs = breadcrumbs(path);
   const last = crumbs[crumbs.length - 1];
   return last ? folderDisplayName(last.path, last.label) : path;

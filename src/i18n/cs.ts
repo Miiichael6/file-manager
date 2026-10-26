@@ -65,6 +65,10 @@ export const cs = {
   "transparency.strong": "Síla průhlednosti: silná",
   "transparency.blur": "Průhlednost: rozmazaná",
   "transparency.blurHint": "Rozmaže plochu a okna za aplikací (Acrylic). Potřebuje zapnuté Efekty průhlednosti ve Windows. Bez fokusu je okno plné, jako ostatní okna Windows.",
+  // MI-FORK: Liquid Glass.
+  "liquidGlass.menu": "Liquid Glass",
+  "liquidGlass.toggle": "Vzhled: Liquid Glass",
+  "liquidGlass.hint": "Lišty, menu a paleta jako zakřivené sklo: obsah se na okrajích láme, se světelným lemem a oblejšími rohy. Obsah zůstává beze změny.",
   "terminal.menu": "Terminál",
   "terminal.auto": "Automaticky (Windows Terminal, jinak Windows PowerShell)",
   "terminal.windowsTerminal": "Windows Terminal",
@@ -75,7 +79,7 @@ export const cs = {
   "update.available": "Verze {version} je k dispozici",
   "update.download": "Stáhnout",
   "update.dismiss": "Skrýt",
-  "toolbar.about": "O aplikaci Dirwise",
+  "toolbar.about": "O aplikaci File Manager",
 
   "motion.system": "Podle systému",
 
@@ -155,6 +159,11 @@ export const cs = {
   /* ----------------------------------- menu ----------------------------------- */
   "menu.open": "Otevřít",
   "menu.openWith": "Otevřít v aplikaci…",
+  "folderApps.choose": "Vybrat jinou aplikaci…", // MI-FORK
+  "folderApps.filter": "Programy", // MI-FORK
+  "folderApps.openIn": "Otevřít složku v aplikaci {app}", // MI-FORK
+  "folderApps.button": "Otevřít složku v aplikaci", // MI-FORK
+  "jumpList.recent": "Nedávné", // MI-FORK
   "menu.openInExplorer": "Otevřít v Průzkumníku",
   "menu.openInTerminal": "Otevřít v Terminálu",
   "menu.showInFolder": "Zobrazit ve složce",
@@ -338,6 +347,7 @@ export const cs = {
   "op.explorer": "Průzkumníka se nepodařilo otevřít",
   "op.terminal": "Terminál se nepodařilo otevřít",
   "op.openWith": "Dialog se nepodařilo otevřít",
+  "op.openFolderWith": "Složku se v té aplikaci nepodařilo otevřít", // MI-FORK
   "op.device": "Zařízení se nepodařilo otevřít",
   "op.openFile": "Soubor se nepodařilo otevřít",
   "op.openFolder": "Složku se nepodařilo otevřít",
@@ -524,6 +534,7 @@ export const cs = {
   "error.noParent": "cesta nemá nadřazenou složku",
   "error.noName": "cesta nemá název",
   "error.openWithDialog": "dialog se nepodařilo otevřít (kód {code})",
+  "error.openFolderWith": "aplikace se nespustila (kód {code})", // MI-FORK
   "error.launchFailed": "spuštění se nezdařilo (kód {code})",
   "error.windowsOnly": "podporováno jen na Windows",
   "error.folderNotFound": "složka neexistuje",

@@ -68,6 +68,9 @@ export const es = {
   "transparency.strong": "Intensidad de transparencia: fuerte",
   "transparency.blur": "Transparencia: difuminada",
   "transparency.blurHint": "Difumina el escritorio y las ventanas detrás de la aplicación (Acrylic). Requiere activar los Efectos de transparencia en Windows. Cuando la ventana no está activa se vuelve opaca, como las demás ventanas de Windows.",
+  "liquidGlass.menu": "Liquid Glass",
+  "liquidGlass.toggle": "Apariencia: Liquid Glass",
+  "liquidGlass.hint": "Las barras, los menús y la paleta se vuelven cristal curvo: el contenido se dobla en los bordes, con un borde de luz y esquinas más redondeadas. El contenido no cambia.",
   "terminal.menu": "Terminal",
   "terminal.auto": "Automático (Windows Terminal; si no, Windows PowerShell)",
   "terminal.windowsTerminal": "Windows Terminal",
@@ -78,7 +81,7 @@ export const es = {
   "update.available": "La versión {version} está disponible",
   "update.download": "Descargar",
   "update.dismiss": "Descartar",
-  "toolbar.about": "Acerca de Dirwise",
+  "toolbar.about": "Acerca de File Manager",
 
   "motion.system": "Según el sistema",
 
@@ -156,6 +159,11 @@ export const es = {
   /* ----------------------------------- menu ----------------------------------- */
   "menu.open": "Abrir",
   "menu.openWith": "Abrir con…",
+  "folderApps.choose": "Elegir otra aplicación…", // MI-FORK
+  "folderApps.filter": "Programas", // MI-FORK
+  "folderApps.openIn": "Abrir carpeta en {app}", // MI-FORK
+  "folderApps.button": "Abrir carpeta con", // MI-FORK
+  "jumpList.recent": "Recientes", // MI-FORK
   "menu.openInExplorer": "Abrir en el Explorador de archivos",
   "menu.openInTerminal": "Abrir en Terminal",
   "menu.showInFolder": "Mostrar en la carpeta",
@@ -318,6 +326,7 @@ export const es = {
   "op.explorer": "No se pudo abrir el Explorador de archivos",
   "op.terminal": "No se pudo abrir Terminal",
   "op.openWith": "No se pudo abrir el cuadro de diálogo",
+  "op.openFolderWith": "No se pudo abrir la carpeta con esa aplicación", // MI-FORK
   "op.device": "No se pudo abrir el dispositivo",
   "op.openFile": "No se pudo abrir el archivo",
   "op.openFolder": "No se pudo abrir la carpeta",
@@ -501,6 +510,7 @@ export const es = {
   "error.noParent": "la ruta no tiene carpeta superior",
   "error.noName": "la ruta no tiene nombre",
   "error.openWithDialog": "no se pudo abrir el cuadro de diálogo (código {code})",
+  "error.openFolderWith": "la aplicación no se inició (código {code})", // MI-FORK
   "error.launchFailed": "no se pudo iniciar (código {code})",
   "error.windowsOnly": "solo es compatible con Windows",
   "error.folderNotFound": "la carpeta no existe",

@@ -99,6 +99,10 @@ import { refreshExplorerExtensions, useDisplayNames } from "./lib/extensions";
 import { applyMotion, motionEnabled, motionMs, smoothIfAllowed } from "./lib/motion";
 import * as storage from "./lib/storage";
 import type { TransparencyStrength } from "./lib/storage";
+import { setLiquidGlass, useLiquidGlass } from "./mi-fork/liquidGlass"; // MI-FORK
+import { folderOpenWithMenu, useFolderApps } from "./mi-fork/folderApps";
+import { FolderOpenButton } from "./mi-fork/FolderOpenButton"; // MI-FORK
+import { useJumpList } from "./mi-fork/jumpList"; // MI-FORK // MI-FORK
 import { TAG_COLORS, TAG_HEX, tagLabel } from "./lib/tags";
 import { useStableCallback } from "./lib/rowDnd";
 import { usePanel, type Panel } from "./panel";
@@ -282,6 +286,8 @@ export default function App() {
     windowTransparency,
     transparencyStrength,
   } = useStorage();
+  const liquidGlass = useLiquidGlass(); // MI-FORK
+  const folderApps = useFolderApps(); // MI-FORK
   // Překreslení po přepnutí jazyka; texty se berou z `t`, které čte aktuální locale.
   const locale = useLocale();
   useEffect(() => applyMotion(motion), [motion]);
@@ -1818,6 +1824,9 @@ export default function App() {
     );
   });
 
+  // MI-FORK: carpetas recientes en la lista de saltos del icono de la barra de tareas.
+  useJumpList(tagFilter === null && search === null && !trashView ? nav.current : null, openTab);
+
   /** Poslední záložka se nezavírá — okno s jedinou záložkou zůstává. */
   const closeTab = useStableCallback((id: number) => {
     if (openTabs.length <= 1) return;
@@ -2249,6 +2258,12 @@ export default function App() {
 
       return [
         { type: "item", label: t("menu.open"), onSelect: () => openFile(entry) },
+        // MI-FORK: «Abrir con…» también desde la vista previa.
+        {
+          type: "item",
+          label: t("menu.openWith"),
+          onSelect: () => void runOperation("op.openWith", () => openWith(entry.path)),
+        },
         {
           type: "item",
           label: t("menu.openInExplorer"),
@@ -2274,6 +2289,7 @@ export default function App() {
           onSelect: () => paste(dir),
         },
         { type: "separator" },
+        folderOpenWithMenu(dir, folderApps, t, (label, action) => void runOperation(label, action), false), // MI-FORK
         {
           type: "item",
           label: t("menu.openInExplorer"),
@@ -2424,7 +2440,7 @@ export default function App() {
             onSelect: () => (overlay ? setOverlayPreview(entry) : previewEntry(entry)),
           },
       entry.is_dir
-        ? null
+        ? folderOpenWithMenu(entry.path, folderApps, t, (label, action) => void runOperation(label, action), !single) // MI-FORK
         : {
             type: "item",
             label: t("menu.openWith"),
@@ -2608,6 +2624,7 @@ export default function App() {
     otherDir,
     transferToOther,
     locale,
+    folderApps, // MI-FORK
   ]);
 
   /* ------------------------- menu tlačítek toolbaru ------------------------ */
@@ -2727,6 +2744,8 @@ export default function App() {
         ...strengthCommand("strong", windowTransparency && transparencyStrength === "strong"),
         enabled: acrylicAvailable,
       },
+      // MI-FORK: Liquid Glass (Más → Apariencia).
+      toggleLiquidGlass: { run: () => void setLiquidGlass(!liquidGlass), checked: liquidGlass },
       terminalAuto: { run: () => void storage.setTerminal("auto"), checked: terminal === "auto" },
       terminalWindows: {
         run: () => void storage.setTerminal("windowsTerminal"),
@@ -2941,7 +2960,7 @@ export default function App() {
         ? t("toolbar.searchResults")
         : crumbs.length > 0
           ? folderDisplayName(crumbs[crumbs.length - 1].path, crumbs[crumbs.length - 1].label)
-          : "Dirwise";
+          : "File Manager"; // MI-FORK
 
   // Status bar i Quick Look musí počítat s tím, co je opravdu vidět —
   // v column view tedy se zaměřeným sloupcem, ne s obsahem nav.current.
@@ -3285,6 +3304,7 @@ export default function App() {
           currentPath={nav.current}
           windowFocused={windowFocused}
           onNavigate={navigate}
+          onOpenTab={openTab}
           onOpenFile={openRecentFile}
           onReveal={reveal}
           activeTag={tagFilter}
@@ -3321,6 +3341,13 @@ export default function App() {
             commands={commands}
             onMenuOpenChange={setToolbarMenuOpen}
             onNotice={showInfo}
+            openWith={
+              // MI-FORK
+              <FolderOpenButton
+                path={tagFilter === null && search === null && !trashView ? nav.current : null}
+                run={(label, action) => void runOperation(label, action)}
+              />
+            }
           />
 
           <TabBar
@@ -3399,6 +3426,9 @@ export default function App() {
         editing={pathEditing}
         onEditingChange={setPathEditing}
         onContextMenu={openStatusMenu}
+        onCopyPath={() => {
+          if (currentDir !== null) copyText(currentDir, "op.copyPath");
+        }}
       />
 
       {/* Hláška plave nad status barem. Vnější obal centruje, vnitřní animuje —

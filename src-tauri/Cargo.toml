@@ -34,6 +34,7 @@ notify = "8"
 png = "0.18"
 base64 = "0.23"
 encoding_rs = "0.8"
+tauri-plugin-single-instance = "2"
 
 [target."cfg(windows)".dependencies]
 # Cesty souborů přetažených z Průzkumníku (postMessageWithAdditionalObjects).
@@ -57,6 +58,7 @@ windows = { version = "0.61", features = [
     "Win32_UI_Shell_PropertiesSystem",
     # ShellExecuteW s verbem "openas" (dialog Otevřít v aplikaci) a COM pro něj.
     "Win32_System_Com",
+    "Win32_System_Com_StructuredStorage",
     # Dotaz na sběrnici disku — USB SSD se hlásí jako pevný disk, ne jako výměnný.
     "Win32_Security",
     "Win32_System_IO",

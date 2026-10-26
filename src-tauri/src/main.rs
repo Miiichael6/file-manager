@@ -17,6 +17,7 @@ mod native_drag;
 mod recycle;
 mod shellnew;
 mod snap;
+mod mi_fork; // MI-FORK
 
 /* --------------------------------- chyby ----------------------------------- */
 
@@ -2979,6 +2980,8 @@ fn main() {
     import_nsis_settings();
 
     tauri::Builder::default()
+        // MI-FORK: una sola instancia — la lista de saltos abre carpetas en la ventana abierta.
+        .plugin(tauri_plugin_single_instance::init(|app, argv, _| mi_fork::second_instance(app, argv)))
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_store::Builder::default().build())
         .setup(|app| {
@@ -3045,6 +3048,11 @@ fn main() {
             search_recursive,
             open_with,
             open_terminal,
+            mi_fork::folder_apps, // MI-FORK
+            mi_fork::open_folder_with, // MI-FORK
+            mi_fork::pick_folder_app, // MI-FORK
+            mi_fork::startup_folder, // MI-FORK
+            mi_fork::set_jump_list, // MI-FORK
             available_terminals,
             shellnew::list_shell_new,
             shellnew::create_shell_new,

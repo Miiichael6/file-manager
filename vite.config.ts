@@ -34,7 +34,8 @@ export default defineConfig(async () => ({
       : undefined,
     watch: {
       // 3. tell Vite to ignore watching `src-tauri`
-      ignored: ["**/src-tauri/**"],
+      // MI-FORK: los worktrees (.claude/worktrees) son otras copias del repo.
+      ignored: ["**/src-tauri/**", "**/.claude/worktrees/**"],
     },
   },
 }));

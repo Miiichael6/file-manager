@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Copy } from "lucide-react";
 import { invoke } from "../fileops";
 import { folderDisplayName } from "./icons";
 import { breadcrumbs, formatFreeSpace, formatItemCount } from "../format";
@@ -104,6 +105,8 @@ type StatusBarProps = {
   onEditingChange: (editing: boolean) => void;
   /** Pravý klik kamkoliv do lišty mimo editaci cesty. */
   onContextMenu: (x: number, y: number) => void;
+  /** Zkopíruje aktuální cestu do schránky. */
+  onCopyPath: () => void;
 };
 
 export function StatusBar({
@@ -118,6 +121,7 @@ export function StatusBar({
   editing,
   onEditingChange,
   onContextMenu,
+  onCopyPath,
 }: StatusBarProps) {
   const t = useT();
   const crumbs = path ? breadcrumbs(path) : [];
@@ -154,7 +158,14 @@ export function StatusBar({
       ) : (
         // key: jiná cesta = nové drobky. Přeskládání starých uzlů by se
         // počítalo jako posun obsahu (layout shift).
-        <div key={path ?? ""} className="flex min-w-0 items-center">
+        // Klik do volného místa vedle drobků otevře editaci cesty (jako Průzkumník).
+        <div
+          key={path ?? ""}
+          className="flex min-w-0 flex-1 cursor-text items-center self-stretch"
+          onClick={(event) => {
+            if (path !== null && event.target === event.currentTarget) onEditingChange(true);
+          }}
+        >
           {crumbs.map((crumb, index) => (
             <span key={crumb.path} className="flex min-w-0 items-center">
               {index > 0 && <span className="px-1 opacity-60">›</span>}
@@ -167,6 +178,17 @@ export function StatusBar({
               </button>
             </span>
           ))}
+          {path !== null && (
+            <button
+              type="button"
+              data-tooltip={t("menu.copyCurrentPath")}
+              aria-label={t("menu.copyCurrentPath")}
+              onClick={onCopyPath}
+              className="ml-1.5 flex shrink-0 cursor-default items-center rounded p-0.5 opacity-70 hover:text-primary hover:opacity-100"
+            >
+              <Copy size={11} strokeWidth={2} />
+            </button>
+          )}
         </div>
       )}
 

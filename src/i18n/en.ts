@@ -68,6 +68,10 @@ export const en = {
   "transparency.strong": "Transparency Strength: Strong",
   "transparency.blur": "Transparency: Blurred",
   "transparency.blurHint": "Blurs the desktop and windows behind the app (Acrylic). Needs Transparency effects turned on in Windows. When the window isn't active it turns solid, like other Windows windows.",
+  // MI-FORK: Liquid Glass.
+  "liquidGlass.menu": "Liquid Glass",
+  "liquidGlass.toggle": "Appearance: Liquid Glass",
+  "liquidGlass.hint": "Bars, menus and the palette turn into curved glass: content bends at the edges, with a light rim and rounder corners. Content stays as it is.",
   "terminal.menu": "Terminal",
   "terminal.auto": "Automatic (Windows Terminal, otherwise Windows PowerShell)",
   "terminal.windowsTerminal": "Windows Terminal",
@@ -78,7 +82,7 @@ export const en = {
   "update.available": "Version {version} is available",
   "update.download": "Download",
   "update.dismiss": "Dismiss",
-  "toolbar.about": "About Dirwise",
+  "toolbar.about": "About File Manager",
 
   "motion.system": "Match System",
 
@@ -156,6 +160,11 @@ export const en = {
   /* ----------------------------------- menu ----------------------------------- */
   "menu.open": "Open",
   "menu.openWith": "Open With…",
+  "folderApps.choose": "Choose Another App…", // MI-FORK
+  "folderApps.filter": "Programs", // MI-FORK
+  "folderApps.openIn": "Open Folder in {app}", // MI-FORK
+  "folderApps.button": "Open Folder With", // MI-FORK
+  "jumpList.recent": "Recent", // MI-FORK
   "menu.openInExplorer": "Open in File Explorer",
   "menu.openInTerminal": "Open in Terminal",
   "menu.showInFolder": "Show in Folder",
@@ -318,6 +327,7 @@ export const en = {
   "op.explorer": "Couldn't open File Explorer",
   "op.terminal": "Couldn't open Terminal",
   "op.openWith": "Couldn't open the dialog",
+  "op.openFolderWith": "Couldn't open the folder in that app", // MI-FORK
   "op.device": "Couldn't open the device",
   "op.openFile": "Couldn't open the file",
   "op.openFolder": "Couldn't open the folder",
@@ -501,6 +511,7 @@ export const en = {
   "error.noParent": "the path has no parent folder",
   "error.noName": "the path has no name",
   "error.openWithDialog": "couldn't open the dialog (code {code})",
+  "error.openFolderWith": "the app didn't start (code {code})", // MI-FORK
   "error.launchFailed": "couldn't launch it (code {code})",
   "error.windowsOnly": "supported on Windows only",
   "error.folderNotFound": "the folder doesn't exist",

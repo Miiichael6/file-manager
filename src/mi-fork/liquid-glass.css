@@ -1,0 +1,201 @@
+/* MI-FORK: material «Liquid Glass» (Más → Apariencia → Liquid Glass).
+   Encima del vidrio base (:root[data-glass="on"], index.css), solo en la capa
+   de controles que flota sobre el contenido (barras, menús, paleta).
+   - Refracción: --lg-lens = url(#filtro) que genera lens.ts con la forma de
+     cada elemento; el fondo se curva en los bordes y el centro queda plano.
+     Va antes del blur, para que el blur suavice la curvatura.
+   - Menos desenfoque que el vidrio base (12–16 px en vez de 20–24): con 24 px
+     la curvatura ni se ve.
+   - Aro especular (::after con máscara): degradado con la luz arriba a la
+     izquierda y un rebote más tenue abajo a la derecha.
+   Contraste (peor caso, sin contar el blur): menú claro 0,70 sobre negro con
+   texto secundario #3a3a3c = 5,2 : 1; menú oscuro 0,76 sobre blanco con
+   secundario #e5e5ea = 4,6 : 1. Barras: mismo relleno 0,80 que el vidrio base.
+   Este archivo se importa antes que index.css: cada selector lleva
+   [data-liquid] además de [data-glass] para ganar en especificidad. */
+
+:root[data-glass="on"][data-liquid] {
+  --lg-bar-blur: blur(12px) saturate(160%);
+  --lg-menu-blur: blur(14px) saturate(170%) brightness(1.04);
+  --lg-menu-fill: rgb(250 250 252 / 0.7);
+  --lg-sheen: linear-gradient(180deg, rgb(255 255 255 / 0.4), rgb(255 255 255 / 0) 42%);
+  --lg-rim: linear-gradient(
+    150deg,
+    rgb(255 255 255 / 1) 0%,
+    rgb(255 255 255 / 0.35) 18%,
+    rgb(255 255 255 / 0.06) 45%,
+    rgb(255 255 255 / 0.06) 62%,
+    rgb(255 255 255 / 0.5) 88%,
+    rgb(255 255 255 / 0.8) 100%
+  );
+  --lg-inner: inset 0 1px 1px rgb(255 255 255 / 0.9), inset 0 -1px 1px rgb(255 255 255 / 0.35),
+    inset 0 0 18px rgb(255 255 255 / 0.25);
+  --lg-outline: 0 0 0 0.5px rgb(0 0 0 / 0.16);
+  --lg-shadow-ink: 20 20 30;
+  --lg-float-shadow: 0 2px 6px rgb(var(--lg-shadow-ink) / 0.1), 0 18px 48px -8px rgb(var(--lg-shadow-ink) / 0.32);
+  --lg-bar-lit: inset 0 -1px 0 rgb(255 255 255 / 0.75);
+}
+
+:root.dark[data-glass="on"][data-liquid] {
+  --lg-menu-fill: rgb(40 40 44 / 0.76);
+  --lg-sheen: linear-gradient(180deg, rgb(255 255 255 / 0.1), rgb(255 255 255 / 0) 42%);
+  --lg-rim: linear-gradient(
+    150deg,
+    rgb(255 255 255 / 0.55) 0%,
+    rgb(255 255 255 / 0.16) 18%,
+    rgb(255 255 255 / 0.03) 45%,
+    rgb(255 255 255 / 0.03) 62%,
+    rgb(255 255 255 / 0.16) 88%,
+    rgb(255 255 255 / 0.32) 100%
+  );
+  --lg-inner: inset 0 1px 1px rgb(255 255 255 / 0.18), inset 0 0 18px rgb(255 255 255 / 0.05);
+  --lg-outline: 0 0 0 0.5px rgb(0 0 0 / 0.7);
+  --lg-shadow-ink: 0 0 0;
+  --lg-float-shadow: 0 2px 6px rgb(0 0 0 / 0.35), 0 20px 52px -8px rgb(0 0 0 / 0.65);
+  --lg-bar-lit: inset 0 -1px 0 rgb(255 255 255 / 0.1);
+}
+
+/* Texto secundario más fuerte: el relleno de los menús baja de 0,80 a 0,70.
+   Con Transparencia ya es casi negro/blanco (index.css), no se toca. */
+:root[data-glass="on"][data-liquid]:not([data-transparency]) {
+  --glass-text-secondary: #3a3a3c;
+}
+
+:root.dark[data-glass="on"][data-liquid]:not([data-transparency]) {
+  --glass-text-secondary: #e5e5ea;
+}
+
+/* Contraste alto o colores forzados: vidrio base sin efectos. */
+@media (forced-colors: none) {
+  @media not (prefers-contrast: more) {
+    /* ------------------------------ barras ---------------------------------- */
+
+    /* Barra superior (título + toolbar + pestañas): lente en la arista
+       inferior — los archivos se curvan al entrar bajo la barra. Sombra
+       solo con contenido debajo (.is-scrolled). */
+    :root[data-glass="on"][data-liquid] .fw-main::before {
+      background: var(--lg-sheen), var(--glass-bar);
+      backdrop-filter: var(--lg-lens,) var(--lg-bar-blur);
+      box-shadow: var(--lg-bar-lit);
+      transition:
+        border-color var(--dur-fade) var(--ease-out),
+        box-shadow var(--dur-fade) var(--ease-out);
+    }
+
+    :root[data-glass="on"][data-liquid] .fw-main.is-scrolled::before {
+      border-bottom-color: transparent;
+      box-shadow:
+        var(--lg-bar-lit),
+        0 1px 0 rgb(var(--lg-shadow-ink) / 0.1),
+        0 12px 28px -16px rgb(var(--lg-shadow-ink) / 0.45);
+    }
+
+    :root[data-glass="on"][data-liquid] .fw-statusbar {
+      background: var(--lg-sheen), var(--glass-bar);
+      backdrop-filter: var(--lg-lens,) var(--lg-bar-blur);
+      border-top-color: transparent;
+      box-shadow:
+        inset 0 1px 0 rgb(255 255 255 / 0.6),
+        0 -1px 0 rgb(var(--lg-shadow-ink) / 0.1),
+        0 -12px 28px -18px rgb(var(--lg-shadow-ink) / 0.45);
+    }
+
+    :root.dark[data-glass="on"][data-liquid] .fw-statusbar {
+      box-shadow:
+        inset 0 1px 0 rgb(255 255 255 / 0.1),
+        0 -1px 0 rgb(0 0 0 / 0.5),
+        0 -12px 28px -18px rgb(0 0 0 / 0.75);
+    }
+
+    :root[data-glass="on"][data-liquid] .fw-list-header {
+      backdrop-filter: var(--lg-bar-blur) !important;
+      box-shadow: var(--lg-bar-lit);
+    }
+
+    /* --------------------- menús, submenús, avisos --------------------------- */
+
+    :root[data-glass="on"][data-liquid] .fw-popover {
+      border-color: transparent;
+      box-shadow: none;
+    }
+
+    :root[data-glass="on"][data-liquid] .fw-popover::before {
+      background: var(--lg-sheen), var(--lg-menu-fill);
+      backdrop-filter: var(--lg-lens,) var(--lg-menu-blur);
+      box-shadow: var(--lg-inner), var(--lg-outline), var(--lg-float-shadow);
+    }
+
+    /* Aro especular: anillo de 1 px (máscara content-box ⊕ border-box). Sin
+       mix-blend-mode: aislaría al padre y el vidrio dejaría de ver el fondo. */
+    :root[data-glass="on"][data-liquid] :is(.fw-popover, .fw-palette)::after {
+      content: "";
+      position: absolute;
+      inset: -1px;
+      z-index: 1;
+      padding: 1px;
+      border-radius: inherit;
+      background: var(--lg-rim);
+      -webkit-mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    :root[data-glass="on"][data-liquid] .fw-tooltip::after {
+      opacity: 0.6;
+    }
+
+    /* Radios concéntricos: menú 14 − relleno 4 = elementos 10. */
+    :root[data-glass="on"][data-liquid] .fw-menu,
+    :root[data-glass="on"][data-liquid] .fw-menu .fw-popover {
+      border-radius: 14px;
+    }
+
+    :root[data-glass="on"][data-liquid] .fw-menu-item {
+      border-radius: 10px;
+    }
+
+    /* Resaltado como gota de cristal tintado: brillo arriba que se apaga antes
+       de la línea del texto (en el centro de la fila el acento queda puro,
+       blanco sobre #0068da = 5,4 : 1) y canto de luz de 1 px. */
+    :root[data-glass="on"][data-liquid] .fw-menu-item:hover:not(:disabled),
+    :root[data-glass="on"][data-liquid] .fw-menu-item.is-highlighted {
+      background-image: linear-gradient(180deg, rgb(255 255 255 / 0.16), rgb(255 255 255 / 0) 45%);
+      box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3), inset 0 -1px 0 rgb(0 0 0 / 0.08);
+    }
+
+    /* ------------------------------ paleta ----------------------------------
+       Lleva el vidrio ella misma (overflow: hidden la hace backdrop root).
+       Radio 18 − relleno 6 = elementos 12. */
+    :root[data-glass="on"][data-liquid] .fw-palette {
+      border-radius: 18px;
+      border-color: transparent;
+      background: var(--lg-sheen), var(--lg-menu-fill);
+      backdrop-filter: var(--lg-lens,) var(--lg-menu-blur) !important;
+      box-shadow: var(--lg-inner), var(--lg-outline), var(--lg-float-shadow);
+    }
+
+    :root[data-glass="on"][data-liquid] .fw-palette::after {
+      inset: 0;
+    }
+
+    :root[data-glass="on"][data-liquid] .fw-palette [role="option"] {
+      border-radius: 12px;
+    }
+
+    /* ------------------------------ diálogos --------------------------------
+       Relleno sólido (texto denso); detrás el scrim ya desenfoca. */
+    :root[data-glass="on"][data-liquid] .fw-dialog {
+      position: relative;
+      border-radius: 22px;
+      border-color: transparent;
+      box-shadow: var(--lg-inner), var(--lg-outline), var(--shadow-dialog);
+    }
+
+    :root[data-glass="on"][data-liquid] .fw-dialog .fw-button {
+      border-radius: 10px;
+    }
+  }
+}
