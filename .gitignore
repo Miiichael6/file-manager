@@ -41,3 +41,6 @@ docs/demo/
 # Pracovní soubory pro sociální sítě (lokálně)
 dirwise-socialni-site/
 dirwise-socialni-site.zip
+
+# MI-FORK: worktrees de git dentro del proyecto (Claude Code: .claude/worktrees/<nombre>)
+.claude/worktrees/

@@ -3,6 +3,7 @@ import { useMemo, useSyncExternalStore } from "react";
 import { getSnapshot, setLanguage, subscribe as subscribeStorage } from "../lib/storage";
 import { cs } from "./cs";
 import { en } from "./en";
+import { es } from "./es";
 
 /**
  * Překlady UI. Výchozí je angličtina, čeština se zapne podle jazyka systému
@@ -16,7 +17,7 @@ import { en } from "./en";
  * Mimo React (callbacky, toasty) stačí obyčejné `t`, které čte aktuální locale.
  */
 
-export type Locale = "en" | "cs";
+export type Locale = "en" | "cs" | "es";
 export type LanguageSetting = "system" | Locale;
 export type MessageKey = keyof typeof cs;
 export type Params = Record<string, string | number>;
@@ -25,13 +26,14 @@ export type Translate = (key: MessageKey, params?: Params) => string;
 type Plural = { one: string; few?: string; many?: string; other: string };
 type Message = string | Plural;
 
-const DICTIONARIES: Record<Locale, Record<MessageKey, Message>> = { cs, en };
+const DICTIONARIES: Record<Locale, Record<MessageKey, Message>> = { cs, en, es };
 
-/** Jazyk systému — čeština jen pro "cs", všechno ostatní dostane angličtinu. */
+/** Jazyk systému — "cs" a "en" podle systému, všechno ostatní dostane španělštinu. */
 export function systemLocale(): Locale {
-  return typeof navigator !== "undefined" && navigator.language.toLowerCase().startsWith("cs")
-    ? "cs"
-    : "en";
+  const lang = typeof navigator !== "undefined" ? navigator.language.toLowerCase() : "";
+  if (lang.startsWith("cs")) return "cs";
+  if (lang.startsWith("en")) return "en";
+  return "es";
 }
 
 export function resolveLocale(setting: LanguageSetting): Locale {
@@ -57,7 +59,7 @@ subscribeStorage(() => {
   for (const listener of listeners) listener();
 });
 
-/** Aktuální jazyk UI ("en" | "cs"). Mění se jen přes languageSetting. */
+/** Aktuální jazyk UI ("en" | "cs" | "es"). Mění se jen přes languageSetting. */
 export const localeSignal = {
   get value(): Locale {
     return current;

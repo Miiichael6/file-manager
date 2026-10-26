@@ -74,7 +74,7 @@ export function TitleBar({ windowFocused }: { windowFocused: boolean }) {
     >
       <div data-tauri-drag-region className="fw-titlebar-title flex h-full flex-1 items-center gap-2 pl-[12px]">
         <img src={appIcon} width={16} height={16} alt="" draggable={false} className="pointer-events-none" />
-        <span className="pointer-events-none text-[12px]">Dirwise</span>
+        <span className="pointer-events-none text-[12px]">{"File Manager" /* i18n-ignore MI-FORK */}</span>
       </div>
 
       <div className="flex h-full">

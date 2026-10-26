@@ -1,0 +1,53 @@
+/* MI-FORK: botón «Abrir carpeta con» (FolderOpenButton.tsx). Botón partido de
+   28 px de alto como el resto de la barra: icono de la app + flecha estrecha;
+   al pasar el ratón se ve el conjunto y se resalta la mitad bajo el cursor. */
+.mi-open-btn {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  height: 28px;
+  border-radius: 6px;
+}
+
+.mi-open-btn:hover,
+.mi-open-btn.is-open {
+  box-shadow: inset 0 0 0 1px var(--hover);
+}
+
+.mi-open-btn > button {
+  display: flex;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary, currentColor);
+}
+
+.mi-open-btn > button:disabled {
+  pointer-events: none;
+  opacity: 0.35;
+}
+
+.mi-open-main {
+  width: 28px;
+  border-radius: 6px 0 0 6px;
+}
+
+.mi-open-arrow {
+  width: 16px;
+  border-radius: 0 6px 6px 0;
+}
+
+.mi-open-btn > button:hover,
+.mi-open-btn.is-open > .mi-open-arrow {
+  background: var(--hover);
+}
+
+.mi-open-btn.is-open > .mi-open-arrow {
+  background: var(--row-selected);
+}
+
+/* Mientras carga el icono del .exe: inicial de la app. */
+.mi-open-letter {
+  font-size: 12px;
+  font-weight: 600;
+}

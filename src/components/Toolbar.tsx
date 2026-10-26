@@ -156,6 +156,8 @@ type ToolbarProps = {
   onMenuOpenChange: (open: boolean) => void;
   /** Krátká hláška nad status barem (klik na nedostupné Štítky). */
   onNotice: (message: string) => void;
+  /** MI-FORK: botón «Abrir carpeta con» (src/mi-fork/FolderOpenButton.tsx). */
+  openWith?: React.ReactNode;
 };
 
 /** Položka menu z příkazu registru — název, zkratka a stav z jednoho místa. */
@@ -191,6 +193,7 @@ export function Toolbar({
   commands,
   onMenuOpenChange,
   onNotice,
+  openWith, // MI-FORK
 }: ToolbarProps) {
   const t = useT();
   // Otevřené může být jen jedno menu. Pozice se bere z rámečku tlačítka.
@@ -261,6 +264,9 @@ export function Toolbar({
         item("themeLight", t("appearance.light")),
         item("themeDark", t("appearance.dark")),
         item("themeSystem", t("appearance.system")),
+        // MI-FORK: Liquid Glass (material de barras y menús).
+        { type: "separator" },
+        { ...item("toggleLiquidGlass", t("liquidGlass.menu")), tooltip: t("liquidGlass.hint") },
         // Průhlednost (vypnuto / rozmazaná) a síla jen tam, kde Windows
         // Acrylic umí (enabled = Windows 11 22H2+); jinde se nenabízí vůbec.
         ...(commands.transparencyBlur.enabled
@@ -303,6 +309,7 @@ export function Toolbar({
         item("languageSystem", t("language.system")),
         item("languageEnglish", t("language.english")),
         item("languageCzech", t("language.czech")),
+        item("languageSpanish", t("language.spanish")),
       ],
     },
     { type: "separator" },
@@ -377,6 +384,8 @@ export function Toolbar({
             onMouseDown={toggleMenu("sort")}
           />
         </div>
+
+        {openWith /* MI-FORK */}
 
         <div className="fw-tool-group">
           <IconButton
