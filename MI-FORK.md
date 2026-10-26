@@ -7,10 +7,12 @@ Copia privada de [arcly-studio/dirwise](https://github.com/arcly-studio/dirwise)
 | `origin`   | https://github.com/Miiichael6/file-manager.git   | Mi repo: aquí subo mis cambios   |
 | `upstream` | https://github.com/arcly-studio/dirwise.git      | Original: solo lectura (push = `DISABLE`) |
 
+Mi rama es `main`; la de ellos es `master` (`upstream/master`).
+
 ## Traer los cambios de ellos
 
 ```bash
-git checkout master
+git checkout main
 git status                     # debe estar limpio; si no, haz commit o git stash
 git fetch upstream
 git merge upstream/master      # si hay conflictos: resolver, git add <archivo>, git commit
@@ -23,8 +25,8 @@ Para ver qué traen antes de fusionar:
 
 ```bash
 git fetch upstream
-git log --oneline master..upstream/master
-git diff master...upstream/master --stat
+git log --oneline main..upstream/master
+git diff main...upstream/master --stat
 ```
 
 ## Archivos que modifiqué (posibles conflictos)
