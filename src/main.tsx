@@ -8,6 +8,8 @@ import "@fontsource/inter/400.css";
 import "@fontsource/inter/500.css";
 import "@fontsource/inter/600.css";
 import "./index.css";
+// MI-FORK: světlé téma fork (po index.css – vyhrává pořadím).
+import "./mi-fork/light-style.css";
 
 // Nastavit třídu ještě před prvním renderem, ať dark uživatel nevidí bílý záblesk.
 applyTheme(resolveTheme(readThemeMirror()));

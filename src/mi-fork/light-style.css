@@ -1,0 +1,195 @@
+/* MI-FORK: světlé téma ve stylu referenčního snímku – jasně bílé plochy,
+   plný modrý výběr s bílým textem, chladně tónovaný sidebar, bílá matná menu
+   a jemné pruhy. Tmavé téma se nemění (vše pod :root:not(.dark)).
+
+   Importuje se v main.tsx hned za index.css, takže při stejné specificitě
+   vyhrává pořadí. Plochy (okno, výpis, lišty, sidebar) se přepisují jen bez
+   průhlednosti (:not([data-transparency])) – s ní platí dosavadní logika krytí
+   (--see-*) z index.css. Výběr a menu platí v obou režimech.
+   Liquid Glass (:root[data-liquid], liquid-glass.css) si menu a lišty kreslí
+   sám – geometrie menu a linka pod lištou se proto při něm nemění.
+
+   Kontrast (WCAG):
+   - bílá na výběru #0f6be0 = 5,00 : 1 (výpis, sloupce, ikony, sidebar, menu);
+   - sekundární text lišt #5b5b60 na liště 0,86 bílé: nad bílou 6,75, nejhorší
+     případ nad černým obsahem 4,89, nad modrým řádkem 5,51;
+   - zkratky v menu #4a4a4e na menu 0,78 bílé nad černou 5,21 (nad bílou 8,82);
+   - #636366 ve výpisu: na bílé 5,99, na pruhu 5,54, na šedém neaktivním
+     výběru 5,00; v sidebaru na spodku přechodu 5,32, na neaktivním výběru 4,59;
+   - nadpisy sekcí sidebaru #3c3c43: 9,73. */
+
+/* ------------------------------- tokeny ---------------------------------- */
+
+:root:not(.dark) {
+  /* Plný výběr pod bílým textem (5,00 : 1). */
+  --mi-select: #0f6be0;
+  --mi-on-select: #ffffff;
+  /* Výběr v neaktivním okně: světle šedý s tmavým textem (jako Průzkumník). */
+  --row-selected-inactive: rgba(0, 0, 0, 0.08);
+  /* Pruh každého druhého řádku ≈ #f5f6f8 na bílé. */
+  --row-stripe: rgba(10, 30, 70, 0.04);
+  --scroll-thumb: rgba(0, 0, 0, 0.2);
+  --text-section: #3c3c43;
+  /* Měkký velký stín menu a tooltipů. */
+  --shadow-popover: 0 12px 36px rgba(0, 0, 0, 0.16), 0 2px 6px rgba(0, 0, 0, 0.06);
+  /* Sidebar: výběr plnou modří, neaktivní jemně šedomodrý. */
+  --glass-sidebar-selected: var(--mi-select);
+  --glass-sidebar-selected-inactive: rgba(20, 40, 80, 0.08);
+  /* Menu: matně bílé (bez Liquid Glass). */
+  --glass-menu: rgba(255, 255, 255, 0.78);
+}
+
+/* Plochy jen bez průhlednosti – s ní je přepisuje :root[data-transparency]. */
+:root:not(.dark):not([data-transparency]) {
+  --bg-window: #ffffff;
+  --bg-main: #ffffff;
+  --bg-toolbar: #ffffff;
+  /* Lišty nad výpisem: skoro plná bílá, obsah pod nimi jen tuší. */
+  --glass-bar: rgba(255, 255, 255, 0.86);
+  --glass-text-secondary: #5b5b60;
+  /* Sidebar: téměř bílý s nádechem chladné modři. */
+  --glass-sidebar: linear-gradient(180deg, #f6f9fd 0%, #edf2f9 100%);
+  --bg-sidebar: rgba(240, 245, 251, 0.92);
+}
+
+/* Zkratky a popisky v menu tmavší než na liště (menu má krytí jen 0,78). */
+:root:not(.dark) .fw-popover {
+  --text-secondary: #4a4a4e;
+}
+
+/* ------------------------------ lišty ------------------------------------ */
+
+/* Tenká linka pod horní deskou vždy, ne až při posunu. */
+:root:not(.dark):not([data-liquid]) .fw-main::before {
+  border-bottom-color: var(--border);
+}
+
+/* Pole hledání: světle šedá pilulka (≈ #f0f0f2). */
+:root:not(.dark) .fw-search-bg {
+  background-color: rgb(118 118 128 / 0.1);
+}
+
+/* Hlavička seznamu: tenké svislé dělítka mezi sloupci (datum, velikost, druh).
+   Podklad prvku, ne pseudoprvek – tlačítka mají overflow: hidden. Záporný
+   okraj posune čáru do mezery gridu, text zůstane na místě. */
+:root:not(.dark) .fw-list-header.grid > :nth-child(n + 3) {
+  margin-left: -6px;
+  padding-left: 6px;
+  background: linear-gradient(var(--border), var(--border)) left center / 1px 12px no-repeat;
+}
+
+/* --------------------------- výpis: seznam ------------------------------- */
+
+/* Řádky odsazené od okrajů a zaoblené; vnitřní odsazení zmenšené o totéž,
+   aby sloupce seděly s hlavičkou (6 + 6 = px-3). */
+:root:not(.dark) .fw-list-row {
+  left: 6px;
+  right: 6px;
+  padding-inline: 6px;
+  border-radius: 5px;
+}
+
+:root:not(.dark) .fw-list-row.is-selected,
+:root:not(.dark) .fw-col-row.bg-selected,
+:root:not(.dark) .fw-result-row.bg-selected {
+  background-color: var(--mi-select);
+  color: var(--mi-on-select);
+  text-shadow: none;
+}
+
+/* Všechen text a ikony kreslené currentColor ve vybraném řádku bílé. */
+:root:not(.dark) :is(.fw-list-row.is-selected, .fw-col-row.bg-selected, .fw-result-row.bg-selected)
+  :is(.text-secondary, .text-primary, .fw-chevron) {
+  color: var(--mi-on-select);
+}
+
+/* Odznak Gitu má barvu inline – na modré bílý (písmeno i tečka složky). */
+:root:not(.dark) :is(.fw-list-row.is-selected, .fw-col-row.bg-selected, .fw-result-row.bg-selected)
+  [style*="color: var(--git"] {
+  color: var(--mi-on-select) !important;
+}
+
+:root:not(.dark) :is(.fw-list-row.is-selected, .fw-col-row.bg-selected, .fw-result-row.bg-selected)
+  [style*="background-color: var(--git"] {
+  background-color: var(--mi-on-select) !important;
+}
+
+/* Fokus z klávesnice na modrém řádku: bílý prstenec uvnitř. */
+:root:not(.dark) :is(.fw-list-row.is-selected, .fw-col-row.bg-selected, .fw-result-row.bg-selected):focus-visible {
+  box-shadow: inset 0 0 0 2px var(--mi-select), inset 0 0 0 3px var(--mi-on-select);
+}
+
+/* --------------------------- výpis: sloupce ------------------------------ */
+
+:root:not(.dark) .fw-col-row {
+  left: 4px;
+  right: 4px;
+  padding-inline: 6px;
+  border-radius: 5px;
+}
+
+/* ---------------------------- výpis: ikony ------------------------------- */
+
+/* Dlaždice jemně šedá, název v modré pilulce s bílým textem. */
+:root:not(.dark) .fw-icon-cell.is-selected {
+  background-color: rgba(0, 0, 0, 0.06);
+}
+
+:root:not(.dark) .fw-icon-cell.is-selected .fw-icon-name {
+  border-radius: 4px;
+  background-color: var(--mi-select);
+  color: var(--mi-on-select);
+  text-shadow: none;
+}
+
+/* ------------------------------- sidebar --------------------------------- */
+
+/* Deska výběru (Sidebar.tsx) bere --glass-sidebar-selected; text a ikony bílé. */
+:root:not(.dark) .fw-sidebar-row.is-active {
+  color: var(--mi-on-select);
+  text-shadow: none;
+}
+
+:root:not(.dark) .fw-sidebar-row.is-active :is(.text-primary, .text-secondary, .fw-sidebar-value) {
+  color: var(--mi-on-select);
+}
+
+/* Ikony mají barvu jako atribut stroke/fill (lucide color=…) – CSS ho přebije. */
+:root:not(.dark) .fw-sidebar-row.is-active svg {
+  color: var(--mi-on-select);
+  stroke: var(--mi-on-select);
+}
+
+:root:not(.dark) .fw-sidebar-row.is-active svg[fill]:not([fill="none"]) {
+  fill: var(--mi-on-select);
+}
+
+/* ------------------------------ menu ------------------------------------- */
+
+:root:not(.dark) .fw-popover {
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Nebezpečná položka (červená) zůstává červená. */
+:root:not(.dark) .fw-menu-item:not(.is-danger):hover:not(:disabled),
+:root:not(.dark) .fw-menu-item.is-highlighted:not(.is-danger) {
+  background-color: var(--mi-select);
+}
+
+/* Geometrie jako v referenci: rádius 10, vnitřní okraj 5, položky 22 px
+   se zaoblením 5. S Liquid Glass platí jeho soustředné rádiusy. */
+:root:not(.dark):not([data-liquid]) .fw-menu,
+:root:not(.dark):not([data-liquid]) .fw-menu .fw-popover.p-1 {
+  border-radius: 10px;
+  padding: 5px;
+}
+
+:root:not(.dark):not([data-liquid]) .fw-menu-item {
+  height: 22px;
+  border-radius: 5px;
+}
+
+:root:not(.dark) .fw-menu-separator {
+  margin: 5px 10px;
+  background: rgba(0, 0, 0, 0.1);
+}
