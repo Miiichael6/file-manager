@@ -5,6 +5,7 @@ import { ChevronRight } from "lucide-react";
 import { canThumbnail, EntryIcon, SmallEntryIcon } from "./icons";
 import { RenameInput } from "./RenameInput";
 import { TagDots } from "./TagDots";
+import { GitBadge } from "./GitBadge"; // MI-FORK: Git integrado.
 import { dragItemsFor, endDrag, startEntryDrag } from "../lib/dnd";
 import {
   dropPropsFor,
@@ -109,6 +110,8 @@ const ColumnRow = memo(
         ) : (
           <span className="min-w-0 flex-1 truncate">{names.entry(entry)}</span>
         )}
+        {/* MI-FORK: estado en Git. */}
+        {!renaming && <GitBadge path={entry.path} isDir={entry.is_dir} className="" />}
         {!entry.is_dir && !renaming && <TagDots colors={tags} size={6} />}
         {entry.is_dir && !renaming && (
           <ChevronRight size={13} strokeWidth={2} className="fw-chevron shrink-0 text-secondary" />

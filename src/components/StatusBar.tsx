@@ -4,6 +4,9 @@ import { folderDisplayName } from "./icons";
 import { breadcrumbs, formatFreeSpace, formatItemCount } from "../format";
 import { useT } from "../i18n";
 import { isTypingTarget } from "../lib/dom";
+// MI-FORK: Git integrado.
+import type { GitStatus } from "../lib/git";
+import { GitBranchChip } from "./GitBranchChip";
 
 /**
  * Vlastní komponenta schválně: mountuje se až ve chvíli editace, takže
@@ -104,6 +107,9 @@ type StatusBarProps = {
   onEditingChange: (editing: boolean) => void;
   /** Pravý klik kamkoliv do lišty mimo editaci cesty. */
   onContextMenu: (x: number, y: number) => void;
+  /** MI-FORK: repo, ve kterém složka leží (větev vpravo); null mimo repo. */
+  git?: GitStatus | null;
+  onGitClick?: () => void;
 };
 
 export function StatusBar({
@@ -118,6 +124,8 @@ export function StatusBar({
   editing,
   onEditingChange,
   onContextMenu,
+  git = null,
+  onGitClick,
 }: StatusBarProps) {
   const t = useT();
   const crumbs = path ? breadcrumbs(path) : [];
@@ -169,6 +177,9 @@ export function StatusBar({
           ))}
         </div>
       )}
+
+      {/* MI-FORK: rama de Git. */}
+      {git && !editing && <GitBranchChip status={git} onClick={() => onGitClick?.()} />}
 
       {/* Pevná šířka: počty se při výběru mění ("1 z 2000 vybráno") a pružný
           blok by pokaždé posunul a přezkrátil drobky vlevo (layout shift).

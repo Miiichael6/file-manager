@@ -5,6 +5,7 @@ import { LargeEntryIcon } from "./icons";
 import { canShellThumbnail, SHELL_THUMBNAIL_LIMIT } from "../lib/fileIcons";
 import { RenameInput } from "./RenameInput";
 import { TagDots } from "./TagDots";
+import { GitBadge } from "./GitBadge"; // MI-FORK: Git integrado.
 import { entryOpacity } from "../format";
 import { dragItemsFor, endDrag, startEntryDrag } from "../lib/dnd";
 import {
@@ -103,7 +104,7 @@ const IconCell = memo(
           event.stopPropagation();
           handlers.contextMenu(entry, event.clientX, event.clientY);
         }}
-        className={`fw-row fw-icon-cell flex shrink-0 flex-col items-center gap-1 rounded-[8px] ${selectionClass} ${
+        className={`fw-row fw-icon-cell relative flex shrink-0 flex-col items-center gap-1 rounded-[8px] ${selectionClass} ${
           dropTarget ? "fw-drop-target" : ""
         }`}
         style={{ width: CELL_WIDTH, height: CELL_HEIGHT, opacity: entryOpacity(entry, cut) }}
@@ -134,6 +135,10 @@ const IconCell = memo(
         )}
 
         {!renaming && <TagDots colors={tags} size={8} />}
+        {/* MI-FORK: estado en Git. */}
+        {!renaming && (
+          <GitBadge path={entry.path} isDir={entry.is_dir} className="absolute top-1.5 right-2" />
+        )}
       </div>
     );
   },

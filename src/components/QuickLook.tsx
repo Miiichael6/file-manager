@@ -12,6 +12,9 @@ import { errorText, useT } from "../i18n";
 import { motionMs } from "../lib/motion";
 import type { FileEntry } from "../types";
 import { useDisplayNames } from "../lib/extensions";
+// MI-FORK: Git integrado.
+import { gitFileFor, useGitVersion } from "../lib/gitStore";
+import { GitDiffView } from "./GitDiffView";
 
 const MAX_PREVIEW_BYTES = 1_048_576;
 
@@ -293,6 +296,12 @@ export function QuickLook({
 
   const textState = useTextContent(current, previewKind(current));
 
+  // MI-FORK: diff místo náhledu — jen u souborů se změnou v gitu (ne ignorovaných).
+  useGitVersion();
+  const [showDiff, setShowDiff] = useState(false);
+  const git = gitFileFor(current.path);
+  const diffable = git !== null && git.file.index !== "!";
+
   const requestClose = useCallback(() => {
     if (closeTimer.current !== null) return;
 
@@ -454,6 +463,18 @@ export function QuickLook({
             {names.entry(current)}
           </span>
 
+          {/* MI-FORK: přepínač Diff. */}
+          {diffable && (
+            <button
+              type="button"
+              aria-pressed={showDiff}
+              onClick={() => setShowDiff((value) => !value)}
+              className={`shrink-0 rounded-full px-3 py-1 text-[12px] font-medium text-primary ${showDiff ? "bg-[color:var(--row-selected-inactive)]" : "hover:bg-hover"}`}
+            >
+              {t("git.diff")}
+            </button>
+          )}
+
           <button
             type="button"
             onClick={handleOpen}
@@ -475,7 +496,12 @@ export function QuickLook({
         <div className="min-h-0 flex-1 overflow-hidden" style={{ background: "var(--bg-main)" }}>
           {/* key vynutí remount, čímž se přehraje 100ms cross-fade při přepnutí souboru. */}
           <div key={current.path} className="ql-fade h-full w-full">
-            <PreviewBody entry={current} state={textState} />
+            {/* MI-FORK: diff v gitu. */}
+            {showDiff && diffable ? (
+              <GitDiffView root={git.root} path={current.path} untracked={git.file.index === "?"} />
+            ) : (
+              <PreviewBody entry={current} state={textState} />
+            )}
           </div>
         </div>
 

@@ -36,8 +36,16 @@ Todos los cambios llevan el comentario `MI-FORK` (`git grep MI-FORK`), salvo los
 | `src/lib/updates.ts` | `LATEST_RELEASE` apunta a `Miiichael6/file-manager`; `RELEASE_PAGE` acepta mi repo |
 | `src-tauri/src/main.rs` | `RELEASE_TAG_URLS` pasa de 3 a 4 entradas con mi repo; un `assert!` más en el test `accepts_only_release_tag_pages` |
 | `src-tauri/tauri.conf.json` | `productName` y `app.windows[0].title` = "Mi Dirwise"; `identifier` = `com.miiichael6.midirwise`; quitado `bundle.windows.nsis.installerHooks` |
+| `src-tauri/src/main.rs` (Git) | `mod git; mod git_parse;` y 7 commands `git::git_*` en `generate_handler!` |
+| `src/App.tsx` | Git: `useGitIntegration`, `GitDialog`, `...git.handlers` en los comandos, `...git.menuItems(targets)` en el menú contextual, props `git`/`onGitClick` del `StatusBar` |
+| `src/commands.ts` | Comandos `gitPanel` (Ctrl+Shift+G), `gitStage`, `gitUnstage`, `gitPull`, `gitPush` |
+| `src/components/{ListView,IconView,ColumnView}.tsx` | `<GitBadge>` junto al nombre (IconView: `relative` en la celda) |
+| `src/components/QuickLook.tsx` | Botón **Diff** y `<GitDiffView>` en lugar de la vista previa |
+| `src/components/StatusBar.tsx` | Props `git`, `onGitClick` y `<GitBranchChip>` |
+| `src/index.css` | Variables `--git-*` (claro y oscuro) |
+| `src/i18n/cs.ts`, `en.ts` | Claves `git.*`, `error.git*` al final |
 
-Archivos nuevos (no generan conflictos): `MI-FORK.md`.
+Archivos nuevos (no generan conflictos): `MI-FORK.md`; Git integrado: `src-tauri/src/git.rs`, `git_parse.rs`, `src/lib/{git,gitStore,gitActions,useGitIntegration}.ts`, `src/components/Git{Badge,BranchChip,Dialog,DiffView}.tsx`.
 
 Al resolver un conflicto en estos archivos, acepta lo de ellos y vuelve a aplicar encima solo mi cambio de la tabla.
 
@@ -53,6 +61,12 @@ Al resolver un conflicto en estos archivos, acepta lo de ellos y vuelve a aplica
   npm run tauri dev
   ```
   La solución de fondo es reinstalar los proxies de rustup como hardlinks (`rustup self uninstall` y reinstalar, o `rustup update`).
+
+## Git integrado
+
+- Llama a `git.exe` del PATH (sin dependencias nativas nuevas, sin `git2`). Sin Git instalado o fuera de un repo no aparece nada.
+- Estado por archivo (M, U, A, D, R, ! conflicto, I ignorado; carpetas con un punto), rama + ↑↓ + cambios en la barra de estado, diálogo **Git** (clic en la rama o Ctrl+Shift+G): stage/unstage, diff, commit (Ctrl+Enter), push, pull. Stage/Unstage también en el menú contextual y la paleta; **Diff** en la vista previa (Espacio).
+- `GIT_TERMINAL_PROMPT=0`: push/pull sin credenciales guardadas (Git Credential Manager) falla con error en vez de quedarse esperando. Rama sin upstream → `push --set-upstream origin HEAD`. Pull = `git pull --no-edit`.
 
 ## Regla para mis mejoras
 

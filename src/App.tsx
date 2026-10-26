@@ -19,6 +19,9 @@ import { PropertiesDialog } from "./components/PropertiesDialog";
 import { IconView } from "./components/IconView";
 import { ListView } from "./components/ListView";
 import { QuickLook } from "./components/QuickLook";
+// MI-FORK: Git integrado.
+import { GitDialog } from "./components/GitDialog";
+import { useGitIntegration } from "./lib/useGitIntegration";
 import { SearchView } from "./components/SearchView";
 import { Sidebar } from "./components/Sidebar";
 import { StatusBar } from "./components/StatusBar";
@@ -421,6 +424,9 @@ export default function App() {
     targetEntries,
     activeEntry,
   } = panel;
+
+  // MI-FORK: Git integrado.
+  const git = useGitIntegration({ dir: currentDir, token: sortedEntries, targets: targetEntries, setNotice, showInfo });
 
   /** Klik do panelu ho aktivuje hned — ještě než dojde na výběr, menu nebo
    *  tažení, které tak už míří na něj. */
@@ -2560,6 +2566,8 @@ export default function App() {
                 for (const path of targetPaths) await storage.clearTags(path);
               }),
           },
+      // MI-FORK: Git integrado (Stage / Unstage).
+      ...git.menuItems(targets),
       { type: "separator" },
       {
         type: "item",
@@ -2607,6 +2615,7 @@ export default function App() {
     openTab,
     otherDir,
     transferToOther,
+    git.menuItems, // MI-FORK
     locale,
   ]);
 
@@ -2802,6 +2811,7 @@ export default function App() {
       },
       checkUpdates: { run: () => void storage.setUpdates({ check: !updates.check }), checked: updates.check },
       about: { run: () => setAboutOpen(true) },
+      ...git.handlers, // MI-FORK: Git integrado.
     },
     t,
   );
@@ -3398,6 +3408,9 @@ export default function App() {
         editing={pathEditing}
         onEditingChange={setPathEditing}
         onContextMenu={openStatusMenu}
+        // MI-FORK: rama de Git en la barra de estado.
+        git={git.status}
+        onGitClick={() => git.setDialogOpen(true)}
       />
 
       {/* Hláška plave nad status barem. Vnější obal centruje, vnitřní animuje —
@@ -3505,6 +3518,11 @@ export default function App() {
 
       {aboutOpen && (
         <AboutDialog onClose={() => setAboutOpen(false)} />
+      )}
+
+      {/* MI-FORK: Git integrado. */}
+      {git.dialogOpen && git.status && (
+        <GitDialog status={git.status} onClose={() => git.setDialogOpen(false)} />
       )}
 
       {quickLookOpen && activeEntry && !activeEntry.is_dir && (

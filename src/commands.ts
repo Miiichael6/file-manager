@@ -73,7 +73,13 @@ export type CommandId =
   | "copyPath"
   | "openTerminal"
   | "checkUpdates"
-  | "about";
+  | "about"
+  // MI-FORK: Git integrado.
+  | "gitPanel"
+  | "gitStage"
+  | "gitUnstage"
+  | "gitPull"
+  | "gitPush";
 
 /**
  * Kde smí zkratka běžet:
@@ -208,6 +214,12 @@ const DEFINITIONS: Record<CommandId, CommandDefinition> = {
   // Ve Store buildu se nenabízí (ani v menu Více, viz Toolbar).
   checkUpdates: { title: "toolbar.checkUpdates", palette: !__STORE__ },
   about: { title: "toolbar.about" },
+  // MI-FORK: Git (lib/useGitIntegration.ts) — povolené jen ve složce uvnitř repa.
+  gitPanel: { title: "git.open", shortcut: "Ctrl+Shift+G", keys: [{ code: "KeyG", ctrl: true, shift: true }], scope: "overlay" },
+  gitStage: { title: "git.stageSelection" },
+  gitUnstage: { title: "git.unstageSelection" },
+  gitPull: { title: "git.pull" },
+  gitPush: { title: "git.push" },
 };
 
 export const COMMAND_IDS = Object.keys(DEFINITIONS) as CommandId[];

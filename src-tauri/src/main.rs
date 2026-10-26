@@ -13,6 +13,9 @@ mod clipboard;
 mod extensions;
 mod external_drop;
 mod fileop;
+// MI-FORK: Git integrado (git.exe), ver git.rs.
+mod git;
+mod git_parse;
 mod native_drag;
 mod recycle;
 mod shellnew;
@@ -3027,6 +3030,14 @@ fn main() {
             read_text_file,
             rename_path,
             fileop::delete_paths,
+            // MI-FORK: Git integrado.
+            git::git_status,
+            git::git_stage,
+            git::git_unstage,
+            git::git_commit,
+            git::git_push,
+            git::git_pull,
+            git::git_diff,
             fileop::transfer_elevated,
             fileop::rename_elevated,
             fileop::create_folder_elevated,

@@ -5,6 +5,7 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { SmallEntryIcon } from "./icons";
 import { RenameInput } from "./RenameInput";
 import { TagDots } from "./TagDots";
+import { GitBadge } from "./GitBadge"; // MI-FORK: Git integrado.
 import { dragItemsFor, endDrag, startEntryDrag } from "../lib/dnd";
 import {
   dropPropsFor,
@@ -145,6 +146,8 @@ const ListRow = memo(
           ) : (
             <span className="truncate">{names.entry(entry)}</span>
           )}
+          {/* MI-FORK: estado en Git. */}
+          {!renaming && <GitBadge path={entry.path} isDir={entry.is_dir} />}
         </div>
         <span className="truncate text-right text-secondary tabular-nums">
           {formatModified(entry.modified)}

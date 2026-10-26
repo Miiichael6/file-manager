@@ -107,6 +107,15 @@
      --danger-fill plocha pod bílým textem. */
   --danger: #d70015;
   --danger-fill: #d70015;
+  /* MI-FORK: Git: odznaky stavu ve výpisu a řádky diffu (≥ 4,5 : 1 na --bg-main). */
+  --git-modified: #9a6700;
+  --git-added: #1a7f37;
+  --git-deleted: #cf222e;
+  --git-untracked: #1a7f37;
+  --git-conflicted: #bc4c00;
+  --git-ignored: #6e7781;
+  --git-diff-add: rgb(26 127 55 / 0.14);
+  --git-diff-del: rgb(207 34 46 / 0.14);
   --success: #28a745;
 
   /* Podklad pod dialogem a pod Quick Look. */
@@ -218,6 +227,15 @@
 
   --danger: #ff7b73;
   --danger-fill: #d70015;
+  /* MI-FORK: Git. */
+  --git-modified: #e3b341;
+  --git-added: #56d364;
+  --git-deleted: #ff7b72;
+  --git-untracked: #56d364;
+  --git-conflicted: #ffa657;
+  --git-ignored: #8b949e;
+  --git-diff-add: rgb(86 211 100 / 0.16);
+  --git-diff-del: rgb(255 123 114 / 0.16);
   --success: #32d74b;
 
   --overlay: rgba(0, 0, 0, 0.45);
