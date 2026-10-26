@@ -106,6 +106,7 @@ import { setLiquidGlass, useLiquidGlass } from "./mi-fork/liquidGlass"; // MI-FO
 import { folderOpenWithMenu, useFolderApps } from "./mi-fork/folderApps";
 import { FolderOpenButton } from "./mi-fork/FolderOpenButton"; // MI-FORK
 import { useJumpList } from "./mi-fork/jumpList"; // MI-FORK // MI-FORK
+import { useNativeMenu } from "./mi-fork/nativeMenu"; // MI-FORK
 import { TAG_COLORS, TAG_HEX, tagLabel } from "./lib/tags";
 import { useStableCallback } from "./lib/rowDnd";
 import { usePanel, type Panel } from "./panel";
@@ -2635,6 +2636,9 @@ export default function App() {
     locale,
     folderApps, // MI-FORK
   ]);
+  // MI-FORK: menu souboru nativně (smí přesáhnout okno); false = selhalo, kreslí se HTML.
+  const closeMenu = useCallback(() => setMenu(null), []);
+  const nativeEntryMenu = useNativeMenu(menu?.kind === "entry" ? menu : null, menuItems, closeMenu);
 
   /* ------------------------- menu tlačítek toolbaru ------------------------ */
 
@@ -3492,7 +3496,7 @@ export default function App() {
         </div>
       )}
 
-      {menu && (
+      {menu && !(menu.kind === "entry" && nativeEntryMenu) /* MI-FORK */ && (
         <ContextMenu x={menu.x} y={menu.y} items={menuItems} onClose={() => setMenu(null)} />
       )}
 
