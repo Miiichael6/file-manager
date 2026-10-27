@@ -14,7 +14,7 @@
      barva na přání uživatele, pod WCAG AA (dřív #0f6be0 = 5,00);
    - sekundární text lišt #5b5b60 na liště 0,86 bílé: nad bílou 6,75, nejhorší
      případ nad černým obsahem 4,89, nad modrým řádkem 5,51;
-   - zkratky v menu #4a4a4e na menu 0,78 bílé nad černou 5,21 (nad bílou 8,82);
+   - zkratky v menu #333336 na menu 0,62 bílé nad černou ≈ 4,6 (nad bílou 12,6);
    - #636366 ve výpisu: na bílé 5,99, na pruhu 5,54, na šedém neaktivním
      výběru 5,00; v sidebaru na spodku přechodu 5,32, na neaktivním výběru 4,59;
    - nadpisy sekcí sidebaru #3c3c43: 9,73. */
@@ -36,8 +36,10 @@
   /* Sidebar: výběr plnou modří, neaktivní jemně šedomodrý. */
   --glass-sidebar-selected: var(--mi-select);
   --glass-sidebar-selected-inactive: rgba(20, 40, 80, 0.08);
-  /* Menu: matně bílé (bez Liquid Glass). */
-  --glass-menu: rgba(255, 255, 255, 0.78);
+  /* Menu: bílé, poloprůhledné a rozmazané stejně jako v tmavém tématu
+     (krytí 0,62, dark-style.css; bez Liquid Glass). */
+  --glass-menu: rgba(255, 255, 255, 0.62);
+  --glass-menu-blur: blur(14px) saturate(170%);
 }
 
 /* Plochy jen bez průhlednosti – s ní je přepisuje :root[data-transparency]. */
@@ -53,9 +55,9 @@
   --bg-sidebar: rgba(240, 245, 251, 0.92);
 }
 
-/* Zkratky a popisky v menu tmavší než na liště (menu má krytí jen 0,78). */
+/* Zkratky a popisky v menu tmavší než na liště (menu má krytí jen 0,62). */
 :root:not(.dark) .fw-popover {
-  --text-secondary: #4a4a4e;
+  --text-secondary: #333336;
 }
 
 /* ------------------------------ lišty ------------------------------------ */
@@ -177,6 +179,12 @@
 
 :root:not(.dark) .fw-popover {
   border-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Bez skla (data-glass) kreslí menu sám prvek – stejná poloprůhledná výplň. */
+:root:not(.dark):not([data-glass="on"]) .fw-popover {
+  background: var(--glass-menu);
+  backdrop-filter: var(--glass-menu-blur);
 }
 
 /* Nebezpečná položka (červená) zůstává červená. */

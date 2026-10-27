@@ -20,3 +20,52 @@
 .fw-tree-toggle:hover {
   color: var(--text-primary);
 }
+
+/* Flecha: giro un poco más largo que el resto de la fila. rotate-90 de
+   Tailwind 4 usa la propiedad `rotate`, no `transform` (fw-t-reveal no la
+   animaba). */
+.fw-tree-toggle > svg {
+  transition:
+    rotate var(--dur-slow) cubic-bezier(0.32, 0.72, 0, 1),
+    opacity var(--dur-fade) var(--ease-out);
+}
+
+/* Expandir/contraer: la caja cambia de altura y las filas de debajo se
+   deslizan a su sitio, con la misma curva que las secciones del sidebar
+   (.fw-collapse), así la placa de selección las sigue. data-motion lo decide
+   FolderTree.tsx — al arrancar o con cambios en disco no se mueve nada. */
+.fw-tree-box[data-motion="on"] {
+  transition: height var(--dur-zoom) cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.fw-tree-box[data-motion="on"] > .fw-tree-row {
+  transition:
+    top var(--dur-zoom) cubic-bezier(0.32, 0.72, 0, 1),
+    background-color var(--dur-quick) var(--ease-out);
+}
+
+/* Hijos recién mostrados: bajan un poco desde el padre y aparecen, en cascada
+   (animation-delay por fila). */
+@keyframes fw-tree-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+.fw-tree-enter {
+  animation: fw-tree-enter var(--dur-enter) var(--ease-out) backwards;
+}
+
+/* Hijos que se van: se desvanecen hacia el padre mientras lo de abajo sube. */
+@keyframes fw-tree-leave {
+  to {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+.fw-tree-leave {
+  pointer-events: none;
+  animation: fw-tree-leave var(--dur-fade) var(--ease-out) forwards;
+}

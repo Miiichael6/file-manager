@@ -38,6 +38,38 @@ let showHidden = false;
 let version = 0;
 const listeners = new Set<() => void>();
 
+/*
+ * Animación: solo tras una acción del usuario (expandir, contraer, seguir a la
+ * carpeta). Al arrancar o con cambios en disco el árbol cambia sin moverse.
+ * `revealedAt` = cuándo se vieron los hijos de un nodo recién abierto
+ * ("pending" mientras list_dir no responde).
+ */
+const MOTION_WINDOW_MS = 600;
+const ENTER_WINDOW_MS = 500;
+const revealedAt = new Map<string, number | "pending">();
+let lastAction = -Infinity;
+
+function markAction() {
+  lastAction = performance.now();
+}
+
+function markRevealed(path: string) {
+  const k = key(path);
+  revealedAt.set(k, children.get(k)?.status === "ready" ? performance.now() : "pending");
+  markAction();
+}
+
+/** ¿Debe el árbol animar este cambio? (Lo pregunta el render.) */
+export function treeInMotion(): boolean {
+  return performance.now() - lastAction < MOTION_WINDOW_MS;
+}
+
+/** ¿Los hijos de `path` acaban de aparecer por una acción del usuario? */
+export function revealedRecently(path: string): boolean {
+  const at = revealedAt.get(key(path));
+  return typeof at === "number" && performance.now() - at < ENTER_WINDOW_MS;
+}
+
 function emit() {
   version += 1;
   for (const listener of listeners) listener();
@@ -87,8 +119,14 @@ export function loadChildren(path: string, force = false): Promise<void> {
   }
   const request = invoke<FileEntry[]>("list_dir", { path, showHidden })
     .then(
-      (entries) => void children.set(k, { status: "ready", entries: sortTree(entries) }),
-      () => void children.set(k, { status: "error" }),
+      (entries) => {
+        children.set(k, { status: "ready", entries: sortTree(entries) });
+        if (revealedAt.get(k) === "pending") markRevealed(path);
+      },
+      () => {
+        children.set(k, { status: "error" });
+        revealedAt.delete(k);
+      },
     )
     .finally(() => {
       pending.delete(k);
@@ -132,9 +170,12 @@ export function setExpanded(path: string, open: boolean) {
   if (open === map.has(k)) return;
   if (open) {
     map.set(k, path);
+    markRevealed(path);
     void loadChildren(path);
   } else {
     map.delete(k);
+    revealedAt.delete(k);
+    markAction();
   }
   emit();
   save();
@@ -144,8 +185,13 @@ export function toggleExpanded(path: string) {
   setExpanded(path, !isExpanded(path));
 }
 
-/** Expande la raíz y los antepasados de `target` (no `target` mismo). */
+/**
+ * Expande los antepasados de `target` (no `target` mismo) bajo `root`, solo si
+ * el usuario ya tiene `root` desplegada — navegar a C:\dev desde un favorito no
+ * debe abrir C:\ entero.
+ */
 export function revealPath(root: string, target: string) {
+  if (!expanded().has(key(root))) return;
   const chain: string[] = [];
   let parent = parentPath(target);
   while (parent !== null && key(parent).length >= key(root).length) {
@@ -160,6 +206,7 @@ export function revealPath(root: string, target: string) {
   for (const path of chain) {
     if (!map.has(key(path))) {
       map.set(key(path), path);
+      markRevealed(path);
       changed = true;
     }
     void loadChildren(path);
@@ -177,6 +224,7 @@ export function collapseAll(root?: string) {
   for (const k of [...map.keys()]) {
     if (prefix === null || k === prefix || k.startsWith(`${prefix}\\`)) map.delete(k);
   }
+  markAction();
   emit();
   save();
 }
@@ -192,6 +240,7 @@ export async function expandSubtree(root: string) {
   const map = expanded();
   while (queue.length > 0 && count < EXPAND_ALL_LIMIT) {
     const path = queue.shift()!;
+    if (!map.has(key(path))) markRevealed(path);
     map.set(key(path), path);
     count += 1;
     await loadChildren(path);

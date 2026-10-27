@@ -724,8 +724,8 @@ export function Sidebar({
     () => sections.flatMap((section) => section.items.filter((item) => !item.external).map((item) => item.path)),
     [sections],
   );
-  // El árbol sigue a la carpeta actual: se abre la raíz más profunda que la
-  // contiene y los antepasados hasta ella.
+  // El árbol sigue a la carpeta actual: bajo la raíz más profunda que la
+  // contiene se abren los antepasados, pero solo si esa raíz ya está desplegada.
   useEffect(() => {
     if (currentPath === null) return;
     // Lo que muestra la carpeta actual en el árbol se refresca al entrar en ella.
@@ -737,7 +737,8 @@ export function Sidebar({
     for (const root of treeRoots) {
       const rootKey = storage.pathKey(root);
       const inside = key.startsWith(rootKey.endsWith("\\") ? rootKey : `${rootKey}\\`);
-      if (inside && key !== rootKey && (best === null || rootKey.length > storage.pathKey(best).length)) best = root;
+      if (!inside || !tree.isExpanded(root)) continue;
+      if (key !== rootKey && (best === null || rootKey.length > storage.pathKey(best).length)) best = root;
     }
     if (best !== null) tree.revealPath(best, currentPath);
   }, [currentPath, treeRoots]);
@@ -1227,7 +1228,8 @@ export function Sidebar({
                       </span>
                     )}
                   </button>
-                  {!item.external && tree.isExpanded(item.path) && (
+                  {/* Montado también contraído: así la raíz anima al cerrarse. */}
+                  {!item.external && (
                     <FolderTree
                       root={item.path}
                       rows={tree.flatten(item.path)}

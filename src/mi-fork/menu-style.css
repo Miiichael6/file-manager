@@ -43,3 +43,50 @@
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
+
+
+/* --------------------------- fondo cristalizado ---------------------------
+   Como en la referencia (Folders): el menú es una lámina de cristal con
+   relieve — brillo en la parte de arriba, luz en los cantos izquierdo y
+   derecho, un poco de reflejo abajo y un canto de luz de 1 px por dentro.
+   Las capas van encima de la misma --glass-menu (opacidad y desenfoque no
+   cambian). Sin cristal (data-glass) las pinta el propio menú, con cristal
+   su ::before (index.css). Liquid Glass tiene su propio vidrio. */
+
+:root:not([data-liquid]) {
+  --mi-crystal-sheen: rgb(255 255 255 / 0.6);
+  --mi-crystal-side: rgb(255 255 255 / 0.4);
+  --mi-crystal-floor: rgb(255 255 255 / 0.25);
+  --mi-crystal-rim: rgb(255 255 255 / 0.95);
+  --mi-crystal-rim-soft: rgb(255 255 255 / 0.5);
+}
+
+:root.dark:not([data-liquid]) {
+  --mi-crystal-sheen: rgb(255 255 255 / 0.14);
+  --mi-crystal-side: rgb(255 255 255 / 0.07);
+  --mi-crystal-floor: rgb(255 255 255 / 0.05);
+  --mi-crystal-rim: rgb(255 255 255 / 0.24);
+  --mi-crystal-rim-soft: rgb(255 255 255 / 0.1);
+}
+
+:root:not([data-liquid]) {
+  --mi-crystal-layers:
+    linear-gradient(180deg, var(--mi-crystal-sheen), transparent 22%),
+    linear-gradient(90deg, var(--mi-crystal-side), transparent 5%, transparent 95%, var(--mi-crystal-side)),
+    linear-gradient(0deg, var(--mi-crystal-floor), transparent 12%);
+  --mi-crystal-edge:
+    inset 0 1px 0 var(--mi-crystal-rim),
+    inset 0 0 0 1px var(--mi-crystal-rim-soft);
+}
+
+:root:not([data-liquid]):not([data-glass="on"]) .fw-menu,
+:root:not([data-liquid]):not([data-glass="on"]) .fw-menu .fw-popover {
+  background: var(--mi-crystal-layers), var(--glass-menu);
+  box-shadow: var(--mi-crystal-edge), var(--shadow-popover);
+}
+
+:root[data-glass="on"]:not([data-liquid]) .fw-menu::before,
+:root[data-glass="on"]:not([data-liquid]) .fw-menu .fw-popover::before {
+  background: var(--mi-crystal-layers), var(--glass-menu);
+  box-shadow: var(--mi-crystal-edge);
+}

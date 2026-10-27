@@ -14,6 +14,8 @@ import "./mi-fork/light-style.css";
 import "./mi-fork/dark-style.css";
 // MI-FORK: kontextové menu s ikonami.
 import "./mi-fork/menu-style.css";
+// MI-FORK: sidebar como tarjeta flotante de cristal.
+import "./mi-fork/sidebar-card.css";
 
 // Nastavit třídu ještě před prvním renderem, ať dark uživatel nevidí bílý záblesk.
 applyTheme(resolveTheme(readThemeMirror()));

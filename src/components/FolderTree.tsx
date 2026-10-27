@@ -11,10 +11,13 @@ import {
   childrenOf,
   expandSubtree,
   isExpanded,
+  revealedRecently,
   setExpanded,
   toggleExpanded,
+  treeInMotion,
   type TreeRow,
 } from "../lib/folderTree";
+import { motionMs } from "../lib/motion";
 import * as storage from "../lib/storage";
 import type { FileEntry } from "../types";
 
@@ -33,6 +36,14 @@ const OVERSCAN = 12;
 const INDENT = 14;
 /** Arrastrando encima de una carpeta cerrada, se abre tras este tiempo. */
 const DRAG_OPEN_MS = 650;
+/** Escalonado de la entrada de hijos (ms por fila, como mucho tantas filas). */
+const STAGGER_MS = 14;
+const STAGGER_ROWS = 12;
+/** Cambios mayores (expandir con `*`, contraer node_modules) van sin deslizar. */
+const MAX_ANIMATED_DELTA = 40;
+
+/** Fila que acaba de salir: se pinta un momento donde estaba, desvaneciéndose. */
+type Ghost = TreeRow & { index: number };
 
 type DropHandlers = {
   onDragOver: (event: React.DragEvent) => void;
@@ -211,8 +222,10 @@ export function FolderTree({
     };
   }, [rows.length, scrollRef]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useLayoutEffect(() => onLayout(), [range, rows]);
+  useLayoutEffect(() => {
+    if (rows.length > 0 || prevRows.current.length > 0) onLayout();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [range, rows]);
 
   // Sigue a la carpeta actual: al navegar, su fila se desplaza a la vista (una
   // vez — luego el usuario puede hacer scroll libremente).
@@ -236,16 +249,77 @@ export function FolderTree({
     dragTimer.current = null;
   }
 
-  if (rows.length === 0) return null;
+  // Animación: las filas que siguen se deslizan (top) y la caja cambia de
+  // altura; solo tras una acción del usuario y si el cambio no es enorme.
+  const prevRows = useRef<TreeRow[]>(rows);
+  const delta = Math.abs(rows.length - prevRows.current.length);
+  const motion = treeInMotion() && delta <= MAX_ANIMATED_DELTA;
+
+  // Las filas que desaparecen (contraer) se desvanecen en su sitio.
+  const [ghosts, setGhosts] = useState<Ghost[]>([]);
+  const ghostTimer = useRef(0);
+  useLayoutEffect(() => {
+    const prev = prevRows.current;
+    prevRows.current = rows;
+    if (!motion || prev.length <= rows.length) return;
+    const present = new Set(rows.map((row) => storage.pathKey(row.entry.path)));
+    const gone = prev.flatMap((row, index) =>
+      index >= range.start && index < range.end && !present.has(storage.pathKey(row.entry.path))
+        ? [{ ...row, index }]
+        : [],
+    );
+    if (gone.length === 0) return;
+    setGhosts(gone);
+    window.clearTimeout(ghostTimer.current);
+    ghostTimer.current = window.setTimeout(() => setGhosts([]), motionMs("--dur-slow"));
+  });
+  useLayoutEffect(() => () => window.clearTimeout(ghostTimer.current), []);
+
+  // La caja nace con su altura final (raíz recién abierta): crece desde 0.
+  const hadBox = useRef(false);
+  useLayoutEffect(() => {
+    const box = boxRef.current;
+    if (box !== null && !hadBox.current && motion) {
+      box.animate([{ height: "0px" }, { height: `${rows.length * ROW}px` }], {
+        duration: motionMs("--dur-zoom"),
+        easing: "cubic-bezier(0.32, 0.72, 0, 1)",
+      });
+    }
+    hadBox.current = box !== null;
+  });
+
+  if (rows.length === 0 && ghosts.length === 0) return null;
 
   const visible = rows.slice(range.start, range.end);
+  let entering = 0;
 
   return (
-    <div ref={boxRef} role="group" className="relative shrink-0" style={{ height: rows.length * ROW }}>
+    <div
+      ref={boxRef}
+      role="group"
+      className="fw-tree-box relative shrink-0"
+      data-motion={motion ? "on" : "off"}
+      style={{ height: rows.length * ROW }}
+    >
+      {ghosts.map(({ entry, depth, index }) => (
+        <div
+          key={`ghost:${entry.path}`}
+          aria-hidden
+          className={`${rowClass(false, false)} fw-tree-leave absolute inset-x-0`}
+          style={{ top: index * ROW, gap: 6, paddingLeft: 4 + (depth - 1) * INDENT }}
+        >
+          <span className="inline-block w-3 shrink-0" />
+          <SmallEntryIcon entry={entry} />
+          <span className="truncate">{names.entry(entry)}</span>
+        </div>
+      ))}
       {visible.map(({ entry, depth }, offset) => {
         const index = range.start + offset;
         const active = highlightPath !== null && storage.samePath(entry.path, highlightPath);
         const drop = entry.is_dir ? dropProps(entry.path) : null;
+        const parent = parentPath(entry.path);
+        const enter = parent !== null && revealedRecently(parent);
+        const delay = enter ? Math.min(entering++, STAGGER_ROWS) * STAGGER_MS : 0;
 
         return (
           <button
@@ -299,8 +373,15 @@ export function FolderTree({
                 drop.onDrop(event);
               },
             })}
-            className={`${rowClass(active, dropPath === entry.path)} absolute inset-x-0`}
-            style={{ top: index * ROW, gap: 6, paddingLeft: 4 + (depth - 1) * INDENT }}
+            className={`${rowClass(active, dropPath === entry.path)} fw-tree-row absolute inset-x-0 ${
+              enter ? "fw-tree-enter" : ""
+            }`}
+            style={{
+              top: index * ROW,
+              gap: 6,
+              paddingLeft: 4 + (depth - 1) * INDENT,
+              ...(enter && { animationDelay: `${delay}ms` }),
+            }}
           >
             {entry.is_dir ? <TreeToggle path={entry.path} /> : <span className="inline-block w-3 shrink-0" />}
             <SmallEntryIcon entry={entry} />
