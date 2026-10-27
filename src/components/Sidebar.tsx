@@ -33,6 +33,13 @@ import type {
   TagColor,
 } from "../types";
 import { useDisplayNames } from "../lib/extensions";
+// MI-FORK: árbol de carpetas y Git en el sidebar.
+import { listen } from "@tauri-apps/api/event";
+import { FolderTree, TreeToggle, handleTreeKey } from "./FolderTree";
+import { GitBadge } from "./GitBadge";
+import * as tree from "../lib/folderTree";
+import type { FileEntry } from "../types";
+import "../mi-fork/folder-tree.css";
 
 /** Nedávných se ukládá 20, ale sidebar by z nich neúměrně narostl. */
 const RECENTS_SHOWN = 10;
@@ -65,6 +72,9 @@ type SidebarProps = {
   onError: (message: string) => void;
   /** Potvrzení nevratné akce — dialog drží App, ať je jediný v aplikaci. */
   onConfirm: (request: ConfirmRequest) => void;
+  /** MI-FORK: árbol — archivos ocultos y pestaña activa (cada una recuerda sus nodos). */
+  showHidden: boolean;
+  tabId: number;
 };
 
 /* -------------------------- sdílené stavební díly -------------------------- */
@@ -679,7 +689,9 @@ type SidebarMenu =
   /** Nadpis sekce — sbalit/rozbalit, u Nedávných i vymazat. */
   | { kind: "heading"; x: number; y: number; id: string }
   /** Prázdný stav nebo volná plocha pod poslední sekcí. */
-  | { kind: "background"; x: number; y: number };
+  | { kind: "background"; x: number; y: number }
+  /** MI-FORK: fila del árbol de carpetas. */
+  | { kind: "tree"; x: number; y: number; entry: FileEntry };
 
 export function Sidebar({
   sections,
@@ -697,9 +709,46 @@ export function Sidebar({
   onDropInto,
   onError,
   onConfirm,
+  showHidden,
+  tabId,
 }: SidebarProps) {
   const t = useT();
   const drag = useDrag();
+
+  // MI-FORK: árbol de carpetas.
+  tree.useFolderTree();
+  useEffect(() => tree.setTreeShowHidden(showHidden), [showHidden]);
+  useEffect(() => tree.setTreeTab(tabId), [tabId]);
+  /** Raíces del árbol: carpetas de las secciones del backend (no teléfonos). */
+  const treeRoots = useMemo(
+    () => sections.flatMap((section) => section.items.filter((item) => !item.external).map((item) => item.path)),
+    [sections],
+  );
+  // El árbol sigue a la carpeta actual: se abre la raíz más profunda que la
+  // contiene y los antepasados hasta ella.
+  useEffect(() => {
+    if (currentPath === null) return;
+    // Lo que muestra la carpeta actual en el árbol se refresca al entrar en ella.
+    tree.refreshLoaded([currentPath]);
+    const key = storage.pathKey(currentPath);
+    let best: string | null = null;
+    // La carpeta ya es una raíz (Escritorio, C:\): su fila basta, no se despliega otra.
+    if (treeRoots.some((root) => storage.pathKey(root) === key)) return;
+    for (const root of treeRoots) {
+      const rootKey = storage.pathKey(root);
+      const inside = key.startsWith(rootKey.endsWith("\\") ? rootKey : `${rootKey}\\`);
+      if (inside && key !== rootKey && (best === null || rootKey.length > storage.pathKey(best).length)) best = root;
+    }
+    if (best !== null) tree.revealPath(best, currentPath);
+  }, [currentPath, treeRoots]);
+  // Cambios en disco (el watcher vigila la carpeta actual).
+  useEffect(() => {
+    if (currentPath === null) return;
+    const unlisten = listen("dir-changed", () => tree.refreshLoaded([currentPath]));
+    return () => void unlisten.then((stop) => stop());
+  }, [currentPath]);
+  /** Coloca de nuevo la placa de selección (el árbol pinta filas al hacer scroll). */
+  const placeIndicatorsRef = useRef<() => void>(() => undefined);
 
   /** Složka v sidebaru, nad kterou visí tažení (rámeček jako ve výpisu). */
   const [dropPath, setDropPath] = useState<string | null>(null);
@@ -961,6 +1010,57 @@ export function Sidebar({
     // Sekce od backendu se nedají přejmenovat ani odebrat — nejsou naše. Zbytek
     // nabídky ale smí být stejný jako u vlastních oblíbených; bez toho na nich
     // pravý klik vytáhl menu webview.
+    // MI-FORK: acciones del árbol, en filas del árbol y en sus raíces.
+    const treeItems = (path: string | null): MenuItem[] => [
+      { type: "separator" },
+      ...(path === null
+        ? []
+        : [
+            {
+              type: "item" as const,
+              label: t("tree.expandAll"),
+              shortcut: "*",
+              onSelect: () => void tree.expandSubtree(path),
+            },
+          ]),
+      { type: "item", label: t("tree.collapseAll"), onSelect: () => tree.collapseAll() },
+      {
+        type: "item",
+        label: t("tree.showFiles"),
+        checked: tree.treeShowsFiles(),
+        onSelect: () => tree.setTreeShowFiles(!tree.treeShowsFiles()),
+      },
+    ];
+
+    if (menu.kind === "tree") {
+      const { entry } = menu;
+
+      if (!entry.is_dir) {
+        return [
+          { type: "item", label: t("menu.open"), onSelect: () => onOpenFile(entry.path, entry.name) },
+          openWithItem(entry.path),
+          { type: "item", label: t("menu.showInFolder"), onSelect: () => onReveal(entry.path) },
+          reveal(entry.path),
+          copyPathItem(entry.path),
+          { type: "separator" },
+          toggleFavorite(entry.path, entry.name, "file"),
+          ...treeItems(null),
+        ];
+      }
+
+      return [
+        { type: "item", label: t("menu.open"), onSelect: () => onNavigate(entry.path) },
+        { type: "item", label: t("menu.openInNewTab"), onSelect: () => onOpenTab(entry.path) },
+        { type: "separator" },
+        reveal(entry.path),
+        terminal(entry.path),
+        { type: "separator" },
+        toggleFavorite(entry.path, entry.name, "folder"),
+        copyPathItem(entry.path),
+        ...treeItems(entry.path),
+      ];
+    }
+
     if (menu.kind === "section") {
       const { item } = menu;
 
@@ -984,6 +1084,7 @@ export function Sidebar({
         toggleFavorite(item.path, sidebarLabel(item), "folder"),
         copyPathItem(item.path),
         showPath(item.path),
+        ...treeItems(item.path), // MI-FORK
       ];
     }
 
@@ -1058,6 +1159,7 @@ export function Sidebar({
     collapsed,
     currentPath,
     onNavigate,
+    onOpenTab,
     onReveal,
     onOpenFile,
     onSelectTag,
@@ -1083,33 +1185,68 @@ export function Sidebar({
                 !item.external && highlightPath !== null && storage.samePath(item.path, highlightPath);
 
               return (
-                <button
-                  key={`${section.id}/${item.path}`}
-                  type="button"
-                  // Shellová cesta telefonu ("::{20D04FE0…}\\?\usb#…") nikomu nic neřekne.
-                  data-tooltip={item.external ? t("sidebar.opensInExplorer") : item.path}
-                  onClick={() => {
-                    if (item.external) openDeviceOrReport(item.path);
-                    else onNavigate(item.path);
-                  }}
-                  {...(item.external ? {} : folderDropProps(item.path))}
-                  onContextMenu={(event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    setMenu({ kind: "section", item, x: event.clientX, y: event.clientY });
-                  }}
-                  className={`${ROW_CLASS} ${rowStateClass(isActive, windowFocused)} ${
-                    dropPath === item.path ? "fw-drop-target" : ""
-                  }`}
-                >
-                  <Icon
-                    size={16}
-                    strokeWidth={1.75}
-                    className="fw-sidebar-icon shrink-0"
-                    color={iconColor(sidebarIconColor(section.id), isActive)}
-                  />
-                  <span className="truncate">{sidebarLabel(item)}</span>
-                </button>
+                <div key={`${section.id}/${item.path}`} className="contents">
+                  <button
+                    type="button"
+                    // Shellová cesta telefonu ("::{20D04FE0…}\\?\usb#…") nikomu nic neřekne.
+                    data-tooltip={item.external ? t("sidebar.opensInExplorer") : item.path}
+                    onClick={() => {
+                      if (item.external) openDeviceOrReport(item.path);
+                      else onNavigate(item.path);
+                    }}
+                    {...(item.external ? {} : folderDropProps(item.path))}
+                    onContextMenu={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      setMenu({ kind: "section", item, x: event.clientX, y: event.clientY });
+                    }}
+                    // MI-FORK: raíz del árbol — doble clic y teclado como en el Explorador.
+                    {...(!item.external && {
+                      "data-tree-path": item.path,
+                      "aria-expanded": tree.isExpanded(item.path),
+                      onDoubleClick: () => tree.toggleExpanded(item.path),
+                      onKeyDown: (event: React.KeyboardEvent<HTMLElement>) => handleTreeKey(event, item.path, true),
+                    })}
+                    className={`group ${ROW_CLASS} ${rowStateClass(isActive, windowFocused)} ${
+                      dropPath === item.path ? "fw-drop-target" : ""
+                    }`}
+                  >
+                    <Icon
+                      size={16}
+                      strokeWidth={1.75}
+                      className="fw-sidebar-icon shrink-0"
+                      color={iconColor(sidebarIconColor(section.id), isActive)}
+                    />
+                    <span className="truncate">{sidebarLabel(item)}</span>
+                    {!item.external && (
+                      <span className="ml-auto flex shrink-0 items-center gap-1.5">
+                        <GitBadge path={item.path} isDir className="" />
+                        {/* Flecha a la derecha y solo al pasar el ratón (como en los
+                            títulos de sección), así las raíces no se desalinean. */}
+                        <TreeToggle path={item.path} className="fw-tree-root-toggle -mr-1" />
+                      </span>
+                    )}
+                  </button>
+                  {!item.external && tree.isExpanded(item.path) && (
+                    <FolderTree
+                      root={item.path}
+                      rows={tree.flatten(item.path)}
+                      highlightPath={highlightPath}
+                      scrollRef={asideRef}
+                      rowClass={(active, drop) =>
+                        `${ROW_CLASS} ${rowStateClass(active, windowFocused)} ${drop ? "fw-drop-target" : ""}`
+                      }
+                      dropPath={dropPath}
+                      dropProps={folderDropProps}
+                      onNavigate={onNavigate}
+                      onOpenTab={onOpenTab}
+                      onOpenFile={onOpenFile}
+                      onReveal={onReveal}
+                      onContextMenu={(entry, x, y) => setMenu({ kind: "tree", entry, x, y })}
+                      onLayout={() => placeIndicatorsRef.current()}
+                    />
+                  )}
+                </div>
               );
             })}
             {section.id === "devices" && (
@@ -1228,6 +1365,7 @@ export function Sidebar({
       });
     };
     place();
+    placeIndicatorsRef.current = place; // MI-FORK
     const observer = new ResizeObserver(place);
     observer.observe(aside);
     // Během sbalování sekce nad výběrem se řádek posouvá — deska jde s ním.

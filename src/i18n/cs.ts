@@ -266,6 +266,11 @@ export const cs = {
   "sidebar.nothingYet": "Zatím nic",
   "sidebar.opensInExplorer": "Otevře se v Průzkumníku",
   "sidebar.resize": "Šířka postranního panelu",
+  "tree.expand": "Rozbalit",
+  "tree.collapse": "Sbalit",
+  "tree.expandAll": "Rozbalit všechny podsložky",
+  "tree.collapseAll": "Sbalit celý strom",
+  "tree.showFiles": "Zobrazit soubory ve stromu",
 
   "folder.desktop": "Plocha",
   "folder.downloads": "Stažené",

@@ -10,23 +10,23 @@ Marca cada casilla al terminarla. Prioridad: 🔴 alta · 🟡 media · 🟢 baj
 
 ## 1. Árbol de carpetas (la base de Folders) 🔴
 
-- [ ] **Vista de árbol** en el sidebar o como cuarta vista: carpetas que se expanden y contraen (▸ / ▾) sin salir de la carpeta actual.
-- [ ] Carga perezosa de los hijos (solo al expandir) y virtualización para árboles grandes.
-- [ ] El árbol sigue a la carpeta actual (se expande y resalta la ruta al navegar).
-- [ ] Teclado en el árbol: ←/→ contrae/expande, ↑/↓ mueve, Enter abre, `*` expande todo el subárbol.
-- [ ] Arrastrar y soltar archivos sobre nodos del árbol (mover / copiar, con expansión automática al pasar por encima).
-- [ ] Mostrar archivos dentro del árbol (opcional, no solo carpetas).
-- [ ] Expandir **enlaces simbólicos / uniones (junctions)** como carpetas, con un indicador visual y protección contra ciclos.
-- [ ] Recordar qué nodos estaban expandidos (por pestaña, en `settings.json`).
+- [x] **Vista de árbol** en el sidebar o como cuarta vista: carpetas que se expanden y contraen (▸ / ▾) sin salir de la carpeta actual.
+- [x] Carga perezosa de los hijos (solo al expandir) y virtualización para árboles grandes.
+- [x] El árbol sigue a la carpeta actual (se expande y resalta la ruta al navegar).
+- [x] Teclado en el árbol: ←/→ contrae/expande, ↑/↓ mueve, Enter abre, `*` expande todo el subárbol.
+- [x] Arrastrar y soltar archivos sobre nodos del árbol (mover / copiar, con expansión automática al pasar por encima).
+- [x] Mostrar archivos dentro del árbol (opcional, no solo carpetas).
+- [x] Expandir **enlaces simbólicos / uniones (junctions)** como carpetas, con un indicador visual y protección contra ciclos.
+- [x] Recordar qué nodos estaban expandidos (por pestaña, en `settings.json`).
 
 ## 2. Git integrado 🔴
 
-- [ ] Detectar si la carpeta está dentro de un repositorio Git.
-- [ ] Estado por archivo en el árbol y en la lista: modificado, nuevo, eliminado, ignorado, en conflicto (iconos o colores).
-- [ ] Rama actual en la barra de estado.
-- [ ] Acciones: **stage / unstage**, **commit** (con mensaje), **push**, **pull**.
-- [ ] Ver diff de un archivo en la vista previa.
-- [ ] Decidir implementación: llamar a `git.exe` (sin dependencias nativas nuevas) o crate `git2` (requiere aprobación – nueva dependencia nativa).
+- [x] Detectar si la carpeta está dentro de un repositorio Git.
+- [x] Estado por archivo en el árbol y en la lista: modificado, nuevo, eliminado, ignorado, en conflicto (iconos o colores).
+- [x] Rama actual en la barra de estado.
+- [x] Acciones: **stage / unstage**, **commit** (con mensaje), **push**, **pull**.
+- [x] Ver diff de un archivo en la vista previa.
+- [x] Decidir implementación: llamar a `git.exe` (sin dependencias nativas nuevas) o crate `git2` (requiere aprobación – nueva dependencia nativa).
 
 ## 3. Organización: etiquetas, valoraciones y metadatos 🟡
 

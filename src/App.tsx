@@ -109,6 +109,7 @@ import { folderOpenWithMenu, useFolderApps } from "./mi-fork/folderApps";
 import { FolderOpenButton } from "./mi-fork/FolderOpenButton"; // MI-FORK
 import { GitToolbarButtons } from "./mi-fork/GitToolbarButtons"; // MI-FORK
 import { useJumpList } from "./mi-fork/jumpList"; // MI-FORK // MI-FORK
+import { forgetTreeTab, setTreeTabOrder } from "./lib/folderTree"; // MI-FORK: árbol por pestaña
 import { TAG_COLORS, TAG_HEX, tagLabel } from "./lib/tags";
 import { useStableCallback } from "./lib/rowDnd";
 import { usePanel, type Panel } from "./panel";
@@ -1851,6 +1852,7 @@ export default function App() {
     if (openTabs.length <= 1) return;
     const index = openTabs.findIndex((tab) => tab.id === id);
     if (index < 0) return;
+    forgetTreeTab(id); // MI-FORK
 
     if (id === activeTabId) {
       const neighbor = openTabs[index + 1] ?? openTabs[index - 1];
@@ -1894,6 +1896,7 @@ export default function App() {
   // záložkou se nic neukládá: start zůstává jako dřív, v první oblíbené.
   useEffect(() => {
     if (!tabsLoaded.current) return;
+    setTreeTabOrder(openTabs.map((tab) => tab.id)); // MI-FORK: árbol por pestaña
     const saved = (state: Pick<TabSnapshot, "nav" | "viewMode" | "sortKey" | "sortDirection">) =>
       state.nav.current === null
         ? null
@@ -3370,6 +3373,8 @@ export default function App() {
           onDropInto={dropInto}
           onError={setNotice}
           onConfirm={setConfirm}
+          showHidden={showHidden === true}
+          tabId={activeTabId}
         />
 
         <main ref={mainRef} className="fw-main flex min-w-0 flex-1 flex-col bg-main">

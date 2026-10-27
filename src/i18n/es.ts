@@ -254,6 +254,11 @@ export const es = {
   "sidebar.nothingYet": "Nada todavía",
   "sidebar.opensInExplorer": "Se abre en el Explorador de archivos",
   "sidebar.resize": "Ancho de la barra lateral",
+  "tree.expand": "Expandir",
+  "tree.collapse": "Contraer",
+  "tree.expandAll": "Expandir todas las subcarpetas",
+  "tree.collapseAll": "Contraer todo el árbol",
+  "tree.showFiles": "Mostrar archivos en el árbol",
 
   "folder.desktop": "Escritorio",
   "folder.downloads": "Descargas",

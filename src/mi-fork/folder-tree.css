@@ -1,0 +1,22 @@
+/* MI-FORK: árbol de carpetas del sidebar (components/FolderTree.tsx). */
+
+/* Flecha de las raíces: a la derecha, visible al pasar el ratón, con el foco
+   del teclado o cuando la raíz está expandida. */
+.fw-tree-root-toggle {
+  opacity: 0;
+  transition: opacity var(--dur-quick) var(--ease-out);
+}
+
+.fw-sidebar-row:hover .fw-tree-root-toggle,
+.fw-sidebar-row:focus-visible .fw-tree-root-toggle,
+.fw-tree-root-toggle[data-open="true"] {
+  opacity: 1;
+}
+
+.fw-tree-toggle {
+  border-radius: 3px;
+}
+
+.fw-tree-toggle:hover {
+  color: var(--text-primary);
+}

@@ -255,6 +255,11 @@ export const en = {
   "sidebar.nothingYet": "Nothing yet",
   "sidebar.opensInExplorer": "Opens in File Explorer",
   "sidebar.resize": "Sidebar width",
+  "tree.expand": "Expand",
+  "tree.collapse": "Collapse",
+  "tree.expandAll": "Expand All Subfolders",
+  "tree.collapseAll": "Collapse Whole Tree",
+  "tree.showFiles": "Show Files in Tree",
 
   "folder.desktop": "Desktop",
   "folder.downloads": "Downloads",
