@@ -1,0 +1,45 @@
+/* MI-FORK: kontextové menu jako na referenčním snímku – tenké ikony před
+   položkami (menuIcons.tsx), text lícuje i u položek bez ikony a barvy
+   štítků jsou řada kroužků přímo v menu. Barvy a geometrie podle tématu
+   jsou v light-style.css / dark-style.css. */
+
+.fw-menu-icon {
+  color: inherit;
+  opacity: 0.92;
+}
+
+/* Položka bez ikony v menu, kde ikony jsou: odsadit o ikonu + mezeru
+   (10 + 16 + 8), ať text lícuje s ostatními. Řádek podmenu je obalený
+   v .relative, proto dva selektory. */
+.fw-popover:has(> .fw-menu-item > .fw-menu-icon, > .relative > .fw-menu-item > .fw-menu-icon)
+  > .fw-menu-item:not(:has(> .fw-menu-icon)):not([aria-checked]),
+.fw-popover:has(> .fw-menu-item > .fw-menu-icon, > .relative > .fw-menu-item > .fw-menu-icon)
+  > .relative > .fw-menu-item:not(:has(> .fw-menu-icon)) {
+  padding-left: 34px;
+}
+
+/* Řada barev štítků: kroužky 13 px v barvě štítku, přiřazený plný. */
+.fw-menu-tags {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  height: 24px;
+  padding: 0 10px;
+}
+
+.fw-menu-tag {
+  flex-shrink: 0;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 1.5px solid;
+}
+
+.fw-menu-tag[aria-pressed="true"] {
+  box-shadow: 0 0 0 1.5px var(--text-primary);
+}
+
+.fw-menu-tag:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}

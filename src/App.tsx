@@ -5,7 +5,7 @@ import { CircleAlert, CircleCheck, FolderOpen, Plus, Search, SearchX, Trash2, X 
 
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 
-import { ColumnView } from "./components/ColumnView";
+import { ColumnView, InfoPanel } from "./components/ColumnView";
 import {
   ConflictDialog,
   type ConflictAnswer,
@@ -22,13 +22,14 @@ import { QuickLook } from "./components/QuickLook";
 // MI-FORK: Git integrado.
 import { GitDialog } from "./components/GitDialog";
 import { useGitIntegration } from "./lib/useGitIntegration";
+import { SearchCriteriaBar, type SearchLocation } from "./components/SearchCriteriaBar";
 import { SearchView } from "./components/SearchView";
 import { Sidebar } from "./components/Sidebar";
-import { StatusBar } from "./components/StatusBar";
+import { QuickBar, StatusBar } from "./components/StatusBar";
 import { TabBar } from "./components/TabBar";
 import { TagView } from "./components/TagView";
 import { RecycleBinView } from "./components/RecycleBinView";
-import { FolderIcon, folderDisplayName, sidebarIcon, sidebarIconColor } from "./components/icons";
+import { FolderIcon, folderDisplayName, sidebarIcon, sidebarIconColor, sidebarLabel } from "./components/icons";
 import { TitleBar } from "./components/TitleBar";
 import { Toolbar } from "./components/Toolbar";
 import { CommandPalette, type PaletteAction, type PaletteFolder } from "./components/CommandPalette";
@@ -91,6 +92,7 @@ import {
   GLASS_STATUS,
   GLASS_TOP,
   GLASS_UPDATE_BAR,
+  GLASS_QUICK,
   GlassInsetsContext,
   systemTransparency,
   acrylicSupported,
@@ -105,6 +107,7 @@ import type { TransparencyStrength } from "./lib/storage";
 import { setLiquidGlass, useLiquidGlass } from "./mi-fork/liquidGlass"; // MI-FORK
 import { folderOpenWithMenu, useFolderApps } from "./mi-fork/folderApps";
 import { FolderOpenButton } from "./mi-fork/FolderOpenButton"; // MI-FORK
+import { GitToolbarButtons } from "./mi-fork/GitToolbarButtons"; // MI-FORK
 import { useJumpList } from "./mi-fork/jumpList"; // MI-FORK // MI-FORK
 import { TAG_COLORS, TAG_HEX, tagLabel } from "./lib/tags";
 import { useStableCallback } from "./lib/rowDnd";
@@ -332,6 +335,14 @@ export default function App() {
   const theme: Theme = themePreference === "system" ? osTheme : themePreference;
 
   const [quickLookOpen, setQuickLookOpen] = useState(false);
+  /** MI-FORK: panel informací vpravo (ⓘ v liště rychlých přepínačů). */
+  const [infoOpen, setInfoOpen] = useState(false);
+  /** Panel po zavření ještě dojede animací, teprve pak zmizí z DOM. */
+  const [infoClosing, setInfoClosing] = useState(false);
+  const toggleInfo = useCallback(() => {
+    setInfoClosing(infoOpen);
+    setInfoOpen(!infoOpen);
+  }, [infoOpen]);
   /** Přepínač skrytých souborů. null = ještě se neví (čeká se na settings.json
    *  a případně na nastavení Průzkumníku) — výpis se do té doby nenačítá. */
   const [showHidden, setShowHidden] = useState<boolean | null>(null);
@@ -393,6 +404,7 @@ export default function App() {
     goBack,
     goForward,
     submitSearch,
+    openAdvancedSearch,
     selectEntry,
     viewMetrics,
     selectIndex,
@@ -719,7 +731,7 @@ export default function App() {
 
   // Sklo: lišty leží přes výpis, views o tom vědí kvůli virtualizaci.
   const glassInsets = useMemo<GlassInsets>(
-    () => ({ top: GLASS_TOP, bottom: GLASS_STATUS + (updateBarShown ? GLASS_UPDATE_BAR : 0) }),
+    () => ({ top: GLASS_TOP, bottom: GLASS_STATUS + GLASS_QUICK + (updateBarShown ? GLASS_UPDATE_BAR : 0) }),
     [updateBarShown],
   );
 
@@ -915,6 +927,7 @@ export default function App() {
   // se odmontuje sám, ale příznak by zůstal a jako "otevřený modal" by
   // blokoval všechny zkratky i tlačítka myši až do restartu.
   const quickLookShown = quickLookOpen && activeEntry !== null && !activeEntry.is_dir;
+  const infoEntry = activeEntry ?? (currentDir !== null ? folderEntry(currentDir) : null);
   useEffect(() => {
     if (quickLookOpen && !quickLookShown) setQuickLookOpen(false);
   }, [quickLookOpen, quickLookShown]);
@@ -2784,6 +2797,7 @@ export default function App() {
           searchRef.current?.select();
         },
       },
+      advancedSearch: { run: openAdvancedSearch, enabled: currentDir !== null },
       refresh: { run: refresh },
       undo: {
         run: () => void stepHistory("undo"),
@@ -2960,6 +2974,22 @@ export default function App() {
     }
     return <FolderIcon size={16} />;
   })();
+
+  /** Místa pro lištu rozšířeného hledání: složka hledání, domov, disky. */
+  function searchLocationsFor(root: string): SearchLocation[] {
+    const rootCrumbs = breadcrumbs(root);
+    const locations: SearchLocation[] = [
+      { path: root, label: folderDisplayName(root, rootCrumbs[rootCrumbs.length - 1]?.label ?? root) },
+    ];
+    for (const section of sections) {
+      for (const item of section.items) {
+        if (item.external || (item.id !== "home" && item.letter === null)) continue;
+        if (locations.some((location) => storage.samePath(location.path, item.path))) continue;
+        locations.push({ path: item.path, label: sidebarLabel(item) });
+      }
+    }
+    return locations;
+  }
 
   const crumbs = nav.current ? breadcrumbs(nav.current) : [];
   const folderName = trashView
@@ -3165,10 +3195,11 @@ export default function App() {
     }
 
     if (search !== null) {
-      return (
+      const view = (
         <SearchView
           root={search.root}
           query={search.query}
+          criteria={search.criteria}
           windowFocused={windowFocused}
           selectedPath={overlaySelected?.path ?? null}
           onSelectionChange={setOverlaySelected}
@@ -3178,6 +3209,20 @@ export default function App() {
           showHidden={showHidden ?? false}
           onCountChange={setSearchCount}
         />
+      );
+      return (
+        <div className="flex min-h-full flex-col">
+          {/* Klíč: nové hledání z toolbaru (Enter) začíná od čisté lišty. */}
+          <SearchCriteriaBar
+            key={`${search.root}\0${search.query}\0${search.criteria === undefined}`}
+            root={search.root}
+            query={search.query}
+            criteria={search.criteria ?? []}
+            locations={searchLocationsFor(search.root)}
+            onApply={q.applySearch}
+          />
+          <div className="flex min-h-0 flex-1 flex-col">{view}</div>
+        </div>
       );
     }
 
@@ -3358,6 +3403,15 @@ export default function App() {
                 run={(label, action) => void runOperation(label, action)}
               />
             }
+            gitTools={
+              // MI-FORK: rama y acciones rápidas de Git, solo dentro de un repositorio.
+              // Siempre montado: con null se oculta con animación en lugar de desaparecer de golpe.
+              <GitToolbarButtons
+                status={tagFilter === null && search === null && !trashView ? git.status : null}
+                commands={commands}
+                run={git.run}
+              />
+            }
           />
 
           <TabBar
@@ -3392,7 +3446,38 @@ export default function App() {
                 {renderPanel(index)}
               </Fragment>
             ))}
+            {/* MI-FORK: panel informací vpravo — vybraná položka, bez výběru
+                aktuální složka. Sloupcové zobrazení má vlastní v posledním sloupci. */}
+            {(infoOpen || infoClosing) && !isColumnView && infoEntry !== null && (
+              <div
+                className={`mi-info-dock ${infoClosing ? "is-closing" : ""}`}
+                onAnimationEnd={(event) => {
+                  if (event.target === event.currentTarget && infoClosing) setInfoClosing(false);
+                }}
+              >
+                <InfoPanel
+                  key={infoEntry.path}
+                  entry={infoEntry}
+                  onOpen={(entry) => (entry.is_dir ? navigate(entry.path) : openFile(entry))}
+                  tags={tags}
+                  onPreview={() => setQuickLookOpen(true)}
+                />
+              </div>
+            )}
           </div>
+
+          {/* MI-FORK: rychlé přepínače dole v hlavní ploše, nad status barem. */}
+          <QuickBar
+            showHidden={showHidden === true}
+            onToggleHidden={toggleHidden}
+            previewOpen={quickLookShown}
+            onPreview={
+              activeEntry !== null && !activeEntry.is_dir
+                ? () => setQuickLookOpen((open) => !open)
+                : null}
+            infoOpen={infoOpen}
+            onInfo={isColumnView ? null : toggleInfo}
+          />
         </main>
       </div>
 

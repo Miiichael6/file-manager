@@ -1,0 +1,16 @@
+/* MI-FORK: atrás / adelante / carpeta superior dentro de una cápsula con el
+   mismo borde que los botones de Git (git-toolbar.css). Los botones de dentro
+   son redondos para que el resaltado siga la forma de la cápsula. */
+.mi-nav-capsule {
+  height: 30px;
+  padding: 0 2px;
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  border-radius: 15px;
+  color: var(--text-primary, currentColor);
+}
+
+.mi-nav-capsule > .fw-tool-btn {
+  width: 30px;
+  height: 26px;
+  border-radius: 13px;
+}

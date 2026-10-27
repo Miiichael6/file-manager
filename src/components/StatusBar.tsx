@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Copy } from "lucide-react";
+import { createPortal } from "react-dom";
+import { Check, Copy, Eye, EyeOff, Image, Info } from "lucide-react";
 import { invoke } from "../fileops";
 import { folderDisplayName } from "./icons";
 import { breadcrumbs, formatFreeSpace, formatItemCount } from "../format";
@@ -115,6 +116,123 @@ type StatusBarProps = {
   onGitClick?: () => void;
 };
 
+/** MI-FORK: rychlé přepínače — skryté soubory, náhled, vlastnosti. */
+type QuickBarProps = {
+  showHidden: boolean;
+  onToggleHidden: () => void;
+  previewOpen: boolean;
+  /** null = vybraná položka náhled nemá (složka, nic vybráno). */
+  onPreview: (() => void) | null;
+  /** Panel informací vpravo je otevřený. */
+  infoOpen: boolean;
+  /** null = zobrazení má vlastní panel (sloupce). */
+  onInfo: (() => void) | null;
+};
+
+/** MI-FORK: ikonové tlačítko lišty (20 × 18, ikona 13 px). */
+function QuickButton({
+  label,
+  pressed,
+  onClick,
+  children,
+}: {
+  label: string;
+  pressed?: boolean;
+  onClick: (() => void) | null;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      data-tooltip={label}
+      aria-label={label}
+      aria-pressed={pressed}
+      disabled={onClick === null}
+      // Fokus zůstává ve výpisu (šipky), jako u tlačítek toolbaru.
+      onMouseDown={(event) => event.preventDefault()}
+      onClick={() => onClick?.()}
+      className={`fw-status-quick ${pressed ? "is-on" : ""}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+/**
+ * MI-FORK: lišta s rychlými přepínači dole v hlavní ploše (nad status barem,
+ * vedle sidebaru). Leží přes výpis jako status bar — výšku drží
+ * --quick-bar v index.css a GLASS_QUICK v lib/glass.ts.
+ */
+export function QuickBar({ showHidden, onToggleHidden, previewOpen, onPreview, infoOpen, onInfo }: QuickBarProps) {
+  const t = useT();
+  return (
+    <div className="fw-quickbar">
+      <QuickButton label={t("view.hiddenFiles")} pressed={showHidden} onClick={onToggleHidden}>
+        {showHidden ? <Eye size={13} strokeWidth={1.75} /> : <EyeOff size={13} strokeWidth={1.75} />}
+      </QuickButton>
+      <QuickButton label={t("menu.quickLook")} pressed={previewOpen} onClick={onPreview}>
+        <Image size={13} strokeWidth={1.75} />
+      </QuickButton>
+      <QuickButton label={t("info.panel")} pressed={infoOpen} onClick={onInfo}>
+        <Info size={13} strokeWidth={1.75} />
+      </QuickButton>
+    </div>
+  );
+}
+
+/** MI-FORK: jak dlouho po kliku svítí bublina „Zkopírováno". */
+const COPIED_MS = 1200;
+
+/**
+ * MI-FORK: kopírování cesty s potvrzením. Bublina jde přes portál nad tlačítko —
+ * globální vrstva tooltipů se při mousedown schová, takže tady vlastní.
+ */
+function CopyPathButton({ onCopy }: { onCopy: () => void }) {
+  const t = useT();
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [copiedAt, setCopiedAt] = useState<{ x: number; y: number } | null>(null);
+
+  useEffect(() => {
+    if (copiedAt === null) return;
+    const timer = window.setTimeout(() => setCopiedAt(null), COPIED_MS);
+    return () => window.clearTimeout(timer);
+  }, [copiedAt]);
+
+  return (
+    <>
+      <button
+        ref={buttonRef}
+        type="button"
+        data-tooltip={t("menu.copyCurrentPath")}
+        aria-label={t("menu.copyCurrentPath")}
+        onClick={() => {
+          onCopy();
+          const rect = buttonRef.current?.getBoundingClientRect();
+          if (rect) setCopiedAt({ x: rect.left + rect.width / 2, y: rect.top });
+        }}
+        className="ml-1.5 flex shrink-0 cursor-default items-center rounded p-0.5 opacity-70 hover:text-primary hover:opacity-100"
+      >
+        {copiedAt ? (
+          <Check size={11} strokeWidth={2.5} className="fw-copied-check" />
+        ) : (
+          <Copy size={11} strokeWidth={2} />
+        )}
+      </button>
+      {copiedAt &&
+        createPortal(
+          <div
+            role="status"
+            className="fw-copied-bubble fw-tooltip fw-popover pointer-events-none fixed z-[70] rounded-md px-2 py-1 text-[11px] whitespace-nowrap text-primary"
+            style={{ left: copiedAt.x, top: copiedAt.y - 6, translate: "-50% -100%" }}
+          >
+            <span className="block">{t("status.copied")}</span>
+          </div>,
+          document.body,
+        )}
+    </>
+  );
+}
+
 export function StatusBar({
   path,
   itemCount,
@@ -186,17 +304,7 @@ export function StatusBar({
               </button>
             </span>
           ))}
-          {path !== null && (
-            <button
-              type="button"
-              data-tooltip={t("menu.copyCurrentPath")}
-              aria-label={t("menu.copyCurrentPath")}
-              onClick={onCopyPath}
-              className="ml-1.5 flex shrink-0 cursor-default items-center rounded p-0.5 opacity-70 hover:text-primary hover:opacity-100"
-            >
-              <Copy size={11} strokeWidth={2} />
-            </button>
-          )}
+          {path !== null && <CopyPathButton onCopy={onCopyPath} />}
         </div>
       )}
 

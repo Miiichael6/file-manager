@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { EmptyState } from "./EmptyState";
 import { SmallEntryIcon } from "./icons";
@@ -70,9 +70,24 @@ export function ResultsView({
     onCountChange(sorted.length);
   }, [sorted.length, onCountChange]);
 
+  // Výsledky po načítací obrazovce najedou postupně (řádek po řádku). Jen při
+  // prvním zobrazení seznamu — přenačtení po operaci nechává řádky v klidu a nové
+  // se objeví bez animace, jinak by seznam při každém smazání „poskočil".
+  const showList = !(loading && entries.length === 0) && error === null && sorted.length > 0;
+  const [settled, setSettled] = useState(false);
+  useEffect(() => {
+    if (!showList) {
+      setSettled(false);
+      return;
+    }
+    const timer = window.setTimeout(() => setSettled(true), 800);
+    return () => window.clearTimeout(timer);
+  }, [showList]);
+
   if (loading && entries.length === 0) {
     return (
-      <div className="flex h-full items-center justify-center p-6 text-[13px] text-secondary">
+      <div className="fw-results-loading flex h-full flex-col items-center justify-center gap-3 p-6 text-[13px] text-secondary">
+        <span className="fw-spinner" aria-hidden />
         {loadingMessage}
       </div>
     );
@@ -86,7 +101,13 @@ export function ResultsView({
     );
   }
 
-  if (sorted.length === 0) return <EmptyState {...empty} />;
+  if (sorted.length === 0) {
+    return (
+      <div className="fw-results-empty h-full">
+        <EmptyState {...empty} />
+      </div>
+    );
+  }
 
   const selectedClass = windowFocused ? "bg-selected" : "bg-selected-inactive";
 
@@ -122,7 +143,13 @@ export function ResultsView({
   }
 
   return (
-    <div className="min-w-0" role="listbox" aria-label={t("results.label")} onKeyDown={handleKeyDown}>
+    <div
+      className="fw-results min-w-0"
+      role="listbox"
+      aria-label={t("results.label")}
+      data-entering={settled ? undefined : ""}
+      onKeyDown={handleKeyDown}
+    >
       <div
         className="fw-list-header sticky top-0 z-10 grid h-6 items-center gap-3 border-b border-line bg-toolbar px-3 text-[11px] font-medium text-secondary"
         style={{ gridTemplateColumns: GRID_TEMPLATE, backdropFilter: "blur(20px)" }}
@@ -133,7 +160,7 @@ export function ResultsView({
         <span className="truncate">{t("sort.modified")}</span>
       </div>
 
-      {sorted.map((entry) => {
+      {sorted.map((entry, index) => {
         const isSelected = entry.path === selected;
         const where =
           root === undefined ? (parentPath(entry.path) ?? entry.path) : relativeParent(entry.path, root);
@@ -162,7 +189,13 @@ export function ResultsView({
             className={`fw-row fw-result-row grid h-6 items-center gap-3 px-3 text-[13px] text-primary ${
               isSelected ? selectedClass : "hover:bg-hover"
             }`}
-            style={{ gridTemplateColumns: GRID_TEMPLATE, opacity: entryOpacity(entry, false) }}
+            style={
+              {
+                gridTemplateColumns: GRID_TEMPLATE,
+                opacity: entryOpacity(entry, false),
+                "--i": index,
+              } as React.CSSProperties
+            }
           >
             <span className="flex items-center">
               <TagDots colors={tagsOf(tags, entry.path)} size={8} />

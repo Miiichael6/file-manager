@@ -69,6 +69,10 @@ export const gitUnstage = (root: string, paths: string[]) => run("git_unstage", 
 export const gitCommit = (root: string, message: string) => run("git_commit", root, { message });
 export const gitPush = (root: string) => run("git_push", root);
 export const gitPull = (root: string) => run("git_pull", root);
+export const gitFetch = (root: string) => run("git_fetch", root);
+export const gitCheckout = (root: string, branch: string) => run("git_checkout", root, { branch });
+/** Místní větve, naposledy použité první. */
+export const gitBranches = (root: string) => invoke<string[]>("git_branches", { root });
 
 type DiffState = { text: string | null; truncated: boolean; error: unknown };
 

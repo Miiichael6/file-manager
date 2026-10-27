@@ -2,6 +2,7 @@ import { Channel, invoke as tauriInvoke, type InvokeArgs } from "@tauri-apps/api
 
 import { joinPath, splitPath } from "./format";
 import { errorText, isMessageKey, t, type Params } from "./i18n";
+import type { SearchRule } from "./lib/searchCriteria";
 import { getSnapshot, type TerminalPreference } from "./lib/storage";
 import type { FileEntry, FileProperties, FolderStats, OpResult, StatResult } from "./types";
 
@@ -285,8 +286,10 @@ export function searchRecursive(
   maxResults: number,
   showHidden: boolean,
   searchId: number,
+  /** Pravidla rozšířeného hledání; když jsou, `query` se nepoužije. */
+  criteria: SearchRule[] | null = null,
 ): Promise<FileEntry[]> {
-  return invoke<FileEntry[]>("search_recursive", { root, query, maxResults, showHidden, searchId });
+  return invoke<FileEntry[]>("search_recursive", { root, query, maxResults, showHidden, searchId, criteria });
 }
 
 /** Zastaví běžící hledání — backend by jinak prošel celý disk až do konce. */
@@ -367,6 +370,27 @@ export type MediaInfo = {
   width: number | null;
   height: number | null;
   pages: number | null;
+  // MI-FORK: hudba, video, fotka.
+  title: string | null;
+  artist: string | null;
+  album: string | null;
+  year: number | null;
+  genre: string | null;
+  /** bit/s */
+  bitrate: number | null;
+  sample_rate: number | null;
+  channels: number | null;
+  /** Snímky za 1000 s. */
+  frame_rate: number | null;
+  camera: string | null;
+  /** Unix ms. */
+  taken: number | null;
+  iso: number | null;
+  f_number: number | null;
+  /** Sekundy. */
+  exposure: number | null;
+  /** mm */
+  focal_length: number | null;
 };
 
 export function getMediaInfo(path: string): Promise<MediaInfo> {

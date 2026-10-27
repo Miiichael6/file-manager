@@ -219,7 +219,7 @@ function Thumbnail({ entry, size, contain = false }: { entry: FileEntry; size: n
 /**
  * Náhled videa nebo PDF od Windows (snímek, první strana). Dokud nedorazí —
  * nebo když ho systém pro typ nemá — stojí na jeho místě ikona ze shellu.
- * Video má v rohu malý odznak ▶. `contain` = celý obrázek (náhledový
+ * Video má v rohu malý odznak ▶ (ne s `contain`). `contain` = celý obrázek (náhledový
  * sloupec), jinak ořez na čtverec jako u fotek v mřížce.
  */
 function ShellThumbnail({ entry, size, contain = false }: { entry: FileEntry; size: number; contain?: boolean }) {
@@ -241,7 +241,9 @@ function ShellThumbnail({ entry, size, contain = false }: { entry: FileEntry; si
       ) : (
         <ShellIcon entry={entry} size={size} />
       )}
-      {url && !failed && isVideo(entry) && (
+      {/* MI-FORK: v panelu informací (contain) má video vlastní ▶ uprostřed —
+          roh čtvercového boxu by navíc ležel pod snímkem. */}
+      {url && !failed && isVideo(entry) && !contain && (
         <span
           aria-hidden
           className="absolute flex items-center justify-center rounded-full"

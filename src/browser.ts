@@ -2,6 +2,7 @@ import { useReducer, useState } from "react";
 
 import type { ColumnSnapshot } from "./columns";
 import type { SortDirection, SortKey } from "./format";
+import type { PanelSearch } from "./lib/searchCriteria";
 import { INITIAL_NAV, navReducer, type NavState } from "./navigation";
 import type { FileEntry, TagColor, ViewMode } from "./types";
 
@@ -30,7 +31,7 @@ export function useBrowserState() {
   // Rekurzivní hledání je stejně jako tag view samostatný režim panelu. Kořen
   // se drží spolu s dotazem, aby výsledky nezůstaly viset na jiné složce, než
   // ve které se opravdu hledalo.
-  const [search, setSearch] = useState<{ root: string; query: string } | null>(null);
+  const [search, setSearch] = useState<PanelSearch | null>(null);
 
   // Aktivní položka řídí operace pro jednu položku (přejmenování, Quick Look,
   // vlastnosti); selection drží celý výběr pro hromadné operace.
@@ -68,7 +69,7 @@ export type TabSnapshot = {
   sortKey: SortKey;
   sortDirection: SortDirection;
   query: string;
-  search: { root: string; query: string } | null;
+  search: PanelSearch | null;
   tagFilter: TagColor | null;
   trashView: boolean;
   selection: string[];

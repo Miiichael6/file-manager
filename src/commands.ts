@@ -60,6 +60,7 @@ export type CommandId =
   | "openSelection"
   | "editPath"
   | "find"
+  | "advancedSearch"
   | "refresh"
   | "undo"
   | "redo"
@@ -196,6 +197,7 @@ const DEFINITIONS: Record<CommandId, CommandDefinition> = {
   openSelection: { title: "menu.open", shortcut: "Ctrl+↓", keys: [{ key: "ArrowDown", ctrl: true }], palette: false },
   editPath: { title: "menu.editPath", shortcut: "Ctrl+L", keys: [{ code: "KeyL", ctrl: true }], scope: "overlay" },
   find: { title: "toolbar.search", shortcut: "Ctrl+F", keys: [{ code: "KeyF", ctrl: true }], scope: "overlay" },
+  advancedSearch: { title: "criteria.open", shortcut: "Ctrl+Shift+F", keys: [{ code: "KeyF", ctrl: true, shift: true }], scope: "global" },
   refresh: { title: "menu.refresh", shortcut: "Ctrl+R", keys: [{ key: "F5" }, { code: "KeyR", ctrl: true }], scope: "overlay" },
   // Ctrl+Z podle znaku: na QWERTZ je Z tam, kde ho uživatel vidí.
   undo: { title: "undo.undo", shortcut: "Ctrl+Z", keys: [{ key: "z", ctrl: true }], scope: "overlay" },

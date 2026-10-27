@@ -109,5 +109,5 @@ export function useGitIntegration({ dir, token, targets, setNotice, showInfo }: 
     [inRepo, run, t],
   );
 
-  return { status, dialogOpen, setDialogOpen, handlers, menuItems };
+  return { status, dialogOpen, setDialogOpen, handlers, menuItems, run };
 }

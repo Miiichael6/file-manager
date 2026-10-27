@@ -8,6 +8,7 @@ import { sortEntries, type SortKey } from "./format";
 import { errorText, useLocale } from "./i18n";
 import { motionMs } from "./lib/motion";
 import { useRubberBand } from "./lib/rubberBand";
+import { newRow, type CriterionRow } from "./lib/searchCriteria";
 import * as storage from "./lib/storage";
 import type { ViewHandle } from "./lib/viewHandle";
 import type { NavDirection } from "./navigation";
@@ -429,6 +430,33 @@ export function usePanel({ slot, showHidden, setNotice }: PanelOptions) {
     setOverlaySelected(null);
     setSearch({ root: currentDir, query: needle });
   }, [query, currentDir]);
+
+  /**
+   * Rozšířené hledání (Ctrl+Shift+F): otevře výsledky s lištou kritérií.
+   * Text z pole hledání se stane prvním kritériem „Název obsahuje".
+   */
+  const openAdvancedSearch = useCallback(() => {
+    if (currentDir === null) return;
+
+    setTagFilter(null);
+    setTrashView(false);
+    setOverlaySelected(null);
+    setSearch((previous) =>
+      previous?.criteria !== undefined
+        ? previous
+        : { root: previous?.root ?? currentDir, query: query.trim(), criteria: [newRow("name", query.trim())] },
+    );
+  }, [query, currentDir]);
+
+  /** Tlačítko Hledat v liště kritérií — nové kritérium i místo. */
+  const applySearch = useCallback((root: string, criteria: CriterionRow[]) => {
+    setOverlaySelected(null);
+    const name = criteria.find((row) => row.field === "name" && row.value.trim() !== "");
+    const text = name?.field === "name" ? name.value.trim() : "";
+    // Pole v toolbaru ukazuje první název; prázdné by výsledky zavřelo (efekt níž).
+    if (text !== "") setQuery(text);
+    setSearch((previous) => ({ root, query: text !== "" ? text : (previous?.query ?? ""), criteria }));
+  }, []);
 
   // Vyprázdněné pole (křížek, Escape, smazání textu) zavírá výsledky —
   // jinak by nad panelem visel výsledek dotazu, který už nikde není vidět.
@@ -904,6 +932,8 @@ export function usePanel({ slot, showHidden, setNotice }: PanelOptions) {
     isColumnView,
     currentDir,
     submitSearch,
+    openAdvancedSearch,
+    applySearch,
     selectEntry,
     clickSelect,
     scrollRef,

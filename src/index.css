@@ -52,7 +52,10 @@
   --border: rgba(0, 0, 0, 0.08);
   --hover: rgba(0, 0, 0, 0.05);
   /* Aktivní záložka (čip) — o stupeň tmavší než lišta, výraznější než hover. */
-  --tab-active: rgba(0, 0, 0, 0.08);
+  --tab-active: #ffffff;
+  --tab-track: rgba(0, 0, 0, 0.06);
+  --tab-active-ring: rgba(0, 0, 0, 0.08);
+  --tab-active-shadow: rgba(0, 0, 0, 0.12);
   --row-selected: rgba(10, 132, 255, 0.2);
   --row-selected-inactive: rgba(0, 0, 0, 0.08);
 
@@ -187,7 +190,10 @@
   --accent-bg: rgba(10, 132, 255, 0.25);
   --border: rgba(255, 255, 255, 0.08);
   --hover: rgba(255, 255, 255, 0.06);
-  --tab-active: rgba(255, 255, 255, 0.12);
+  --tab-active: rgba(255, 255, 255, 0.16);
+  --tab-track: rgba(255, 255, 255, 0.06);
+  --tab-active-ring: rgba(255, 255, 255, 0.06);
+  --tab-active-shadow: rgba(0, 0, 0, 0.35);
   --row-selected: rgba(10, 132, 255, 0.4);
   --row-selected-inactive: rgba(255, 255, 255, 0.1);
 
@@ -1442,76 +1448,99 @@ body {
   text-decoration: underline;
 }
 
-/* Lišta záložek pod toolbarem, vždy vidět — záložky jsou samostatné zaoblené
-   čipy (28 px) zarovnané doleva, svisle na ose lišty; pod celou lištou 1px
-   linka. Aktivní čip má výplň --tab-active a jemný rámeček, s obsahem pod
-   lištou nesplývá. Výška 37 px = 36 px řádek + 1 px linka — čip má nad
-   i pod sebou celé 4 px (na 100 % žádný půlpixel). */
+/* MI-FORK: lišta záložek jako segmentovaný ovladač. Šedá dráha přes celou
+   šířku (26 px, vnitřní okraj 2 px), záložky stejně široké s názvem uprostřed,
+   aktivní vystouplá: plná světlá výplň a jemný stín. Mezi neaktivními svislá
+   linka; u aktivní a její sousedky zmizí. + vpravo za dráhou. Výška lišty
+   37 px = 36 px řádek + 1 px linka. */
 .fw-tabbar {
   display: flex;
   flex-shrink: 0;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   height: 37px;
   padding: 0 8px;
   background-color: var(--bg-toolbar);
   border-bottom: 1px solid var(--border);
 }
 
-/* Rozměry (min. šířka 120, mezera 4, + 28, padding lišty 16) zná i TabBar.tsx —
-   podle nich pozná, kdy se čipy nevejdou a přidá is-crowded. */
+.fw-tab-track {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  min-width: 0;
+  height: 28px;
+  padding: 2px;
+  border-radius: 9999px;
+  background-color: var(--tab-track);
+}
+
 .fw-tab {
   position: relative;
   display: flex;
-  flex: 0 1 auto;
+  flex: 1 1 0;
   align-items: center;
-  gap: 6px;
-  height: 28px;
-  min-width: 120px;
-  max-width: 240px;
-  padding: 6px 10px;
-  /* Průhledný rámeček i u neaktivních — přepnutí aktivní záložky nic neposune. */
-  border: 1px solid transparent;
-  border-radius: 8px;
-  font-size: 12px;
+  justify-content: center;
+  min-width: 0;
+  height: 24px;
+  /* Místo pro × vlevo, ať název zůstane opravdu uprostřed. */
+  padding: 0 26px;
+  border-radius: 9999px;
+  font-size: 11.5px;
   color: var(--text-secondary);
   cursor: default;
   user-select: none;
+  container-type: inline-size;
+  /* Nad klouzající výplní (.fw-tab-pill). */
+  z-index: 1;
   transition:
     background-color var(--dur-quick) var(--ease-out),
-    border-color var(--dur-quick) var(--ease-out);
+    color var(--dur-quick) var(--ease-out);
 }
 
-/* Víc čipů, než se vejde — zúží se rovnoměrně (jako v prohlížeči). Čip je pak
-   container: na úzkém aktivní schová ikonu (zbude ×), neaktivní ×, a obsah
-   se ořízne uvnitř zaoblení. Jen tady — mimo is-crowded se šířka čipu
-   počítá z obsahu a size containment by ji vynuloval. */
-.fw-tabbar.is-crowded .fw-tab {
-  flex: 1 1 0;
+/* Výplň aktivní záložky — jeden prvek, který mezi záložkami klouže
+   (poloha a šířka z TabBar.tsx). Bez is-ready se jen umístí. */
+.fw-tab-pill {
+  position: absolute;
+  top: 2px;
+  left: 0;
+  height: 24px;
+  border-radius: 9999px;
+  background-color: var(--tab-active);
+  box-shadow:
+    0 0 0 0.5px var(--tab-active-ring),
+    0 1px 2px var(--tab-active-shadow);
+  pointer-events: none;
+}
+
+.fw-tab-pill.is-ready {
+  transition:
+    transform calc(280ms * var(--motion-scale)) cubic-bezier(0.32, 1.25, 0.5, 1),
+    width calc(280ms * var(--motion-scale)) cubic-bezier(0.32, 1.25, 0.5, 1);
+}
+
+/* Oddělovač mezi záložkami. */
+.fw-tab + .fw-tab::before {
+  content: "";
+  position: absolute;
+  left: -0.5px;
+  top: 5px;
+  bottom: 5px;
+  width: 1px;
+  background-color: var(--border);
+  transition: opacity var(--dur-quick) var(--ease-out);
+}
+
+.fw-tab.is-active::before,
+.fw-tab.is-active + .fw-tab::before,
+.fw-tab:hover::before,
+.fw-tab:hover + .fw-tab::before {
+  opacity: 0;
+}
+
+.fw-tab-title {
   min-width: 0;
-  overflow: hidden;
-  container-type: inline-size;
-}
-
-/* Práh je šířka obsahu (čip bez paddingu 2×10 a rámečku), tj. čip pod ~94 px.
-   × aktivního se pak vycentruje přes celý čip, ať se vejde i do 30 px. */
-@container (max-width: 72px) {
-  .fw-tab.is-active > .fw-tab-icon,
-  .fw-tab.is-active > .fw-tab-title,
-  .fw-tab:not(.is-active) > .fw-tab-close {
-    display: none;
-  }
-
-  .fw-tab.is-active > .fw-tab-close {
-    position: absolute;
-    inset: 0;
-    margin: auto;
-  }
-}
-
-.fw-tab-icon {
-  display: flex;
-  flex-shrink: 0;
 }
 
 .fw-tab:hover:not(.is-active) {
@@ -1519,31 +1548,32 @@ body {
 }
 
 .fw-tab.is-active {
-  background-color: var(--tab-active);
-  border-color: var(--border);
   color: var(--text-primary);
+  font-weight: 500;
 }
 
 .fw-tab.is-active.is-blurred {
   color: var(--text-secondary);
 }
 
-/* × u aktivní vždy, u ostatních při najetí; u jediné záložky vůbec. */
+/* × vlevo, jen při najetí; u jediné záložky vůbec. */
 .fw-tab-close {
+  position: absolute;
+  top: 50%;
+  left: 5px;
   display: flex;
-  flex-shrink: 0;
   align-items: center;
   justify-content: center;
   width: 16px;
   height: 16px;
-  border-radius: 4px;
+  border-radius: 9999px;
   color: var(--text-secondary);
   opacity: 0;
+  transform: translateY(-50%);
   transition: opacity var(--dur-quick) var(--ease-out);
 }
 
-.fw-tab:hover .fw-tab-close,
-.fw-tab.is-active .fw-tab-close {
+.fw-tab:hover .fw-tab-close {
   opacity: 1;
 }
 
@@ -1556,13 +1586,13 @@ body {
   color: var(--text-primary);
 }
 
-/* Na vyplněném aktivním čipu by --hover skoro nebyl vidět. */
-.fw-tab.is-active .fw-tab-close:hover {
-  background-color: var(--tab-active);
+/* Úzká záložka: místo pro × se nechá jen při najetí. */
+@container (max-width: 40px) {
+  .fw-tab-title {
+    display: none;
+  }
 }
 
-/* + hned za posledním čipem (4 px mezera flexu) — stejná výška, zaoblení
-   i osa jako čipy, tlumené jako vedlejší ikony toolbaru. */
 .fw-tab-new {
   display: flex;
   flex-shrink: 0;
@@ -1570,7 +1600,7 @@ body {
   justify-content: center;
   width: 28px;
   height: 28px;
-  border-radius: 8px;
+  border-radius: 9999px;
   color: var(--text-secondary);
   transition: background-color var(--dur-quick) var(--ease-out);
 }
@@ -1680,6 +1710,45 @@ body {
 .fw-toast-out {
   animation: fw-toast-out var(--dur-slow) var(--ease-out) forwards;
   pointer-events: none;
+}
+
+/* MI-FORK: bublina „Zkopírováno" u kopírování cesty ve status baru. Vyskočí
+   s lehkým překmitem, chvíli stojí a odpluje nahoru. Polohu drží vlastnost
+   `translate` (inline), animuje se `transform` — skládají se, nepřepisují.
+   Odchod má pevné zpoždění (doba zobrazení, ne přechod), komponenta ji
+   odstraní po COPIED_MS. */
+@keyframes fw-copied-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.6);
+  }
+}
+
+@keyframes fw-copied-out {
+  to {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.96);
+  }
+}
+
+.fw-copied-bubble {
+  transform-origin: 50% 100%;
+  animation:
+    fw-copied-in var(--dur-zoom) cubic-bezier(0.34, 1.56, 0.64, 1) both,
+    fw-copied-out var(--dur-slow) var(--ease-in-out) 950ms forwards;
+}
+
+/* Fajfka místo ikony kopírování: zhoupne se a zezelená. */
+@keyframes fw-copied-check {
+  from {
+    opacity: 0;
+    transform: scale(0.3) rotate(-25deg);
+  }
+}
+
+.fw-copied-check {
+  color: var(--success);
+  animation: fw-copied-check var(--dur-zoom) cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
 /* Tenký proužek nad obsahem, když se načítá složka. Starý výpis při navigaci
@@ -2038,6 +2107,33 @@ body {
   animation: fw-fade-in var(--dur-quick) var(--ease-out);
 }
 
+/* MI-FORK: bublina „Zkopírováno" ve skle — stejný pohyb, opacity jen na
+   výplni a textu (viz výše). */
+@keyframes fw-glass-copied-in {
+  from {
+    transform: translateY(6px) scale(0.6);
+  }
+}
+
+@keyframes fw-glass-copied-out {
+  to {
+    transform: translateY(-6px) scale(0.96);
+  }
+}
+
+:root[data-glass="on"] .fw-copied-bubble {
+  animation:
+    fw-glass-copied-in var(--dur-zoom) cubic-bezier(0.34, 1.56, 0.64, 1) both,
+    fw-glass-copied-out var(--dur-slow) var(--ease-in-out) 950ms forwards;
+}
+
+:root[data-glass="on"] .fw-copied-bubble::before,
+:root[data-glass="on"] .fw-copied-bubble > * {
+  animation:
+    fw-fade-in var(--dur-slow) var(--ease-out) both,
+    fw-fade-out var(--dur-slow) var(--ease-in-out) 950ms forwards;
+}
+
 :root[data-glass="on"] .fw-toast-in {
   animation-name: fw-glass-toast-in;
 }
@@ -2205,4 +2301,392 @@ body {
 
 :root[data-transparency] .fw-column-pane.is-focused {
   background-color: var(--hover) !important;
+}
+
+/* ------------------------ lišta rozšířeného hledání ------------------------ */
+
+.fw-criteria-select,
+.fw-criteria-input {
+  height: 24px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background-color: color-mix(in srgb, var(--bg-main) 70%, transparent);
+  padding: 0 6px;
+  color: var(--text-primary);
+  font-size: 12px;
+  outline: none;
+}
+
+/* Vlastní rozbalovací tlačítko místo nativního <select> (nabídka Windows
+   neladila s menu aplikace): plné tlačítko s jemným stínem a vpravo akcentový
+   čtvereček se šipkami nahoru/dolů; nabídka se otevře přes něj. */
+.fw-criteria-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 2px 0 8px;
+  border-color: color-mix(in srgb, var(--text-primary) 14%, transparent);
+  background-color: var(--bg-main);
+  box-shadow: 0 1px 1.5px rgb(0 0 0 / 0.08);
+  cursor: default;
+}
+
+.dark .fw-criteria-select {
+  border-color: color-mix(in srgb, var(--text-primary) 12%, transparent);
+  background-color: color-mix(in srgb, var(--text-primary) 12%, var(--bg-main));
+  box-shadow: 0 1px 1.5px rgb(0 0 0 / 0.3);
+}
+
+.fw-criteria-arrows {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 16px;
+  height: 18px;
+  border-radius: 4px;
+  background: var(--accent-fill);
+  color: var(--on-accent);
+}
+
+.fw-criteria-select.is-open {
+  background-color: color-mix(in srgb, var(--text-primary) 6%, var(--bg-main));
+}
+
+/* Otevření: nabídka se rozbalí z vybrané položky (transform-origin nastavuje
+   SearchCriteriaBar) — svisle ze 70 %, vodorovně jen nepatrně, s vyblednutím.
+   Vybraná položka tak zůstává na tlačítku a ostatní se rozjedou nahoru a dolů. */
+@keyframes fw-dropdown-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97, 0.7);
+  }
+}
+
+/* Rozbalovací menu toolbaru (Více, Nový, Řazení…) se rozvine stejně — od
+   tlačítka dolů (transform-origin = místo pod tlačítkem, ContextMenu.tsx). */
+:root .fw-menu.fw-menu-dropdown {
+  animation: fw-dropdown-in var(--dur-enter) var(--ease-out);
+}
+
+/* Jeho podmenu (Vzhled ▸, Zobrazit ▸…) se rozvine od řádku, který ho otevřel;
+   kratší než hlavní menu — při přejíždění myší po řádcích by jinak zdržovalo. */
+:root .fw-menu-dropdown .fw-submenu {
+  animation: fw-dropdown-in var(--dur-shift) var(--ease-out);
+}
+
+:root .fw-menu.fw-criteria-menu {
+  animation: fw-dropdown-in var(--dur-enter) var(--ease-out);
+  /* Okraj drží vnitřní scroller (styl fork menu jinak přidá 5 px navíc). */
+  padding: 0 !important;
+}
+
+/* Řádek 22 px, zaoblení 5 px, fajfka u vybrané položky vlevo. */
+.fw-criteria-option {
+  height: 22px;
+  gap: 5px;
+  padding: 0 12px 0 4px;
+  border-radius: 5px;
+  white-space: nowrap;
+  cursor: default;
+}
+
+.fw-criteria-select:focus-visible,
+.fw-criteria-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.fw-criteria-step {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background-color: var(--hover);
+  color: var(--text-secondary);
+}
+
+.fw-criteria-step:hover {
+  color: var(--text-primary);
+  background-color: color-mix(in srgb, var(--text-primary) 18%, transparent);
+}
+
+.fw-criteria-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  border-radius: 6px;
+  background-color: var(--accent);
+  padding: 0 12px;
+  color: #fff;
+  font-weight: 500;
+}
+
+.fw-criteria-search:hover {
+  filter: brightness(1.08);
+}
+
+/* ------------------------ výsledky hledání a štítků ------------------------ */
+
+/* Načítání: kroužek a text se ukážou až po 150 ms — rychlé hledání tak
+   neprobliká mezistavem. */
+.fw-results-loading {
+  animation: fw-fade-in var(--dur-slow) var(--ease-out) calc(150ms * var(--motion-scale)) backwards;
+}
+
+.fw-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  border-top-color: var(--accent);
+  border-radius: 9999px;
+  animation: fw-spin 0.8s linear infinite;
+}
+
+@keyframes fw-spin {
+  to {
+    rotate: 360deg;
+  }
+}
+
+/* Řádky najedou zdola s vyblednutím, každý o 18 ms později; po 14. řádku
+   už se nečeká (dlouhý seznam by se jinak „sypal" přes půl vteřiny). Bez
+   opacity v cíli — skryté soubory mají vlastní průhlednost v inline stylu. */
+@keyframes fw-result-in {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+}
+
+.fw-results[data-entering] > .fw-list-header {
+  animation: fw-fade-in var(--dur-enter) var(--ease-out);
+}
+
+.fw-results[data-entering] > .fw-result-row {
+  animation: fw-result-in var(--dur-zoom) var(--ease-out) backwards;
+  animation-delay: calc(min(var(--i), 14) * 18ms * var(--motion-scale));
+}
+
+/* Žádná shoda: ikona a text vyplavou stejně jako výsledky. */
+.fw-results-empty {
+  animation: fw-result-in var(--dur-zoom) var(--ease-out);
+}
+
+/* MI-FORK: rychlé přepínače vlevo ve status baru (skryté, náhled, vlastnosti). */
+.fw-status-quick {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 18px;
+  border-radius: 5px;
+  color: var(--text-secondary);
+  transition:
+    background-color var(--dur-quick) var(--ease-out),
+    color var(--dur-quick) var(--ease-out);
+}
+
+.fw-status-quick:hover:not(:disabled) {
+  background-color: var(--hover);
+  color: var(--text-primary);
+}
+
+.fw-status-quick.is-on {
+  color: var(--accent);
+}
+
+.fw-status-quick:disabled {
+  opacity: 0.4;
+}
+
+/* MI-FORK: lišta rychlých přepínačů dole v hlavní ploše — jen nad výpisem
+   (sidebar sahá dál dolů až ke status baru). Leží přes výpis jako status bar
+   a je ze stejného skla; scrollery panelů proto končí o --quick-bar výš
+   (GLASS_QUICK v lib/glass.ts kvůli virtualizaci). */
+:root[data-glass="on"] .fw-main {
+  --quick-bar: 24px;
+}
+
+:root[data-glass="on"] .fw-panels {
+  --glass-bottom: calc(22px + var(--quick-bar));
+}
+
+:root[data-glass="on"] .fw-app:has(> .fw-update-bar) .fw-panels {
+  --glass-bottom: calc(48px + var(--quick-bar));
+}
+
+.fw-quickbar {
+  position: absolute;
+  inset: auto 0 var(--glass-bottom);
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: var(--quick-bar);
+  padding: 0 8px;
+  border-top: 1px solid var(--border);
+  background: var(--glass-bar);
+  backdrop-filter: var(--glass-blur);
+}
+
+/* MI-FORK: panel informací vpravo vedle panelů (mimo sloupcové zobrazení)
+   končí nad lištou rychlých přepínačů a status barem. */
+:root[data-glass="on"] .mi-info-dock > .fw-info-panel {
+  padding-bottom: calc(16px + var(--glass-bottom));
+}
+
+:root[data-glass="on"] .mi-info-dock > .fw-info-panel::-webkit-scrollbar-track {
+  margin-bottom: var(--glass-bottom);
+}
+
+/* MI-FORK: ▶ přes náhled videa v panelu informací. */
+.fw-info-play-badge {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding-left: 3px;
+  border-radius: 9999px;
+  background: rgb(0 0 0 / 0.55);
+  color: #ffffff;
+  backdrop-filter: blur(8px);
+  transition: transform var(--dur-quick) var(--ease-out), background-color var(--dur-quick) var(--ease-out);
+}
+
+.fw-info-play:hover .fw-info-play-badge {
+  transform: scale(1.08);
+  background: rgb(0 0 0 / 0.7);
+}
+
+/* MI-FORK: vjezd panelu informací vpravo. Obal roste z nulové šířky (výpis
+   se plynule zúží, nic neskočí), panel uvnitř zároveň přijede zprava a
+   rozsvítí se; zavření totéž pozpátku. Po změně výběru se znovu nepřisouvá
+   celý panel — obsah jen naskočí postupně odshora (panel je klíčovaný cestou). */
+.mi-info-dock {
+  display: flex;
+  flex-shrink: 0;
+  width: 272px;
+  overflow: hidden;
+  animation: mi-info-dock-in calc(340ms * var(--motion-scale)) cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.mi-info-dock.is-closing {
+  animation: mi-info-dock-out calc(240ms * var(--motion-scale)) cubic-bezier(0.4, 0, 0.6, 1) forwards;
+  pointer-events: none;
+}
+
+.mi-info-dock > .fw-info-panel {
+  animation: none;
+}
+
+.mi-info-dock:not(.is-closing) > .fw-info-panel {
+  animation: mi-info-slide-in calc(420ms * var(--motion-scale)) cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* Při otevření jede panel s obalem; jen jeho obsah se pak mění podle výběru. */
+.mi-info-dock.is-closing > .fw-info-panel {
+  animation: mi-info-slide-out calc(240ms * var(--motion-scale)) cubic-bezier(0.4, 0, 0.6, 1) forwards;
+}
+
+@keyframes mi-info-dock-in {
+  from {
+    width: 0;
+  }
+}
+
+@keyframes mi-info-dock-out {
+  to {
+    width: 0;
+  }
+}
+
+@keyframes mi-info-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+}
+
+@keyframes mi-info-slide-out {
+  to {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+}
+
+/* Obsah naskočí postupně: náhled, název, údaje, tlačítko (i ve sloupcích). */
+.fw-info-panel > * {
+  animation: mi-info-item-in calc(260ms * var(--motion-scale)) var(--ease-out) backwards;
+}
+
+.fw-info-panel > :nth-child(1) {
+  animation-name: mi-info-preview-in;
+}
+
+.fw-info-panel > :nth-child(2) {
+  animation-delay: calc(40ms * var(--motion-scale));
+}
+
+.fw-info-panel > :nth-child(3) {
+  animation-delay: calc(80ms * var(--motion-scale));
+}
+
+.fw-info-panel > :nth-child(4) {
+  animation-delay: calc(120ms * var(--motion-scale));
+}
+
+@keyframes mi-info-item-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes mi-info-preview-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+
+/* MI-FORK: náhled videa v panelu informací v poměru stran videa, ne čtverec. */
+.fw-info-play {
+  width: 100%;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #000000;
+}
+
+.fw-info-play > span:first-child {
+  width: 100% !important;
+  height: auto !important;
+  aspect-ratio: var(--info-ratio);
+}
+
+.fw-info-play > span:first-child img {
+  border-radius: 0;
+}
+
+/* MI-FORK: audio v panelu informací — karta s ikonou (bez náhledu ze shellu)
+   a tlačítkem ▶; po kliku přehrávač s ikonou nahoře a pevnými ovládacími prvky. */
+.fw-info-audio {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 10px;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 18%, transparent), color-mix(in srgb, var(--accent) 6%, transparent));
+}
+
+/* Obrázek: klik otevře velký náhled. */
+.fw-info-zoom {
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  cursor: zoom-in;
+  transition: transform var(--dur-quick) var(--ease-out);
+}
+
+.fw-info-zoom:hover {
+  transform: scale(1.02);
 }

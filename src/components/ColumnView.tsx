@@ -1,11 +1,12 @@
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Play } from "lucide-react";
 
 import { canThumbnail, EntryIcon, SmallEntryIcon } from "./icons";
 import { RenameInput } from "./RenameInput";
 import { TagDots } from "./TagDots";
 import { GitBadge } from "./GitBadge"; // MI-FORK: Git integrado.
+import { InfoVideoPlayer } from "../mi-fork/InfoVideoPlayer"; // MI-FORK
 import { dragItemsFor, endDrag, startEntryDrag } from "../lib/dnd";
 import {
   dropPropsFor,
@@ -23,11 +24,11 @@ import { isTypingTarget } from "../lib/dom";
 import { canShellThumbnail } from "../lib/fileIcons";
 import { motionMs, smoothIfAllowed } from "../lib/motion";
 import { TAG_HEX, tagLabel } from "../lib/tags";
-import { getFileProperties, getMediaInfo, type MediaInfo } from "../fileops";
-import { entryOpacity, formatModified, formatSize, kindLabel } from "../format";
-import { failure, useT } from "../i18n";
+import { cancelFolderStats, folderStats, getFileProperties, getMediaInfo, type MediaInfo } from "../fileops";
+import { entryOpacity, formatItemCount, formatModified, formatSize, kindLabel, previewKind } from "../format";
+import { failure, formatNumber, useT } from "../i18n";
 import type { Column, ColumnsApi } from "../columns";
-import type { FileEntry, FileProperties, SelectMods, TagColor, TagMap } from "../types";
+import type { FileEntry, FileProperties, FolderStats, SelectMods, TagColor, TagMap } from "../types";
 import { useDisplayNames } from "../lib/extensions";
 
 /** Výška řádku a horní okraj sloupce (py-1) — virtualizace i gumička z nich počítají. */
@@ -342,7 +343,23 @@ type InfoPanelProps = {
   entry: FileEntry;
   onOpen: (entry: FileEntry) => void;
   tags: TagMap;
+  /** MI-FORK: klik na náhled obrázku otevře velký náhled (mezerník). */
+  onPreview?: () => void;
 };
+
+/** MI-FORK: id pro zrušení výpočtu velikosti složky (odděleně od Vlastností). */
+let nextInfoStatsId = 1_000_000;
+
+/** MI-FORK: 1/250 s, 0,5 s, 2 s — expozice jako ve fotoaparátu. */
+function formatExposure(seconds: number): string {
+  if (seconds >= 0.3) return `${Math.round(seconds * 10) / 10} s`;
+  return `1/${Math.round(1 / seconds)} s`;
+}
+
+/** MI-FORK: 1 411 200 bit/s → 1411 kb/s. */
+function formatBitrate(bitsPerSecond: number): string {
+  return `${Math.round(bitsPerSecond / 1000)} kb/s`;
+}
 
 /** Typy, u kterých má smysl ptát se Windows na délku, rozměry nebo strany. */
 const MEDIA_EXTENSIONS = new Set([
@@ -366,9 +383,10 @@ function formatDuration(milliseconds: number): string {
  * Poslední sloupec u vybraného souboru — náhled jako ve Finderu: velká ikona
  * nebo obrázek, pod ní název a údaje. Časy se berou z get_file_properties
  * (výpis nese jen změnu a vytvoření, ne přesné atributy). Volající ji
- * klíčuje cestou, takže se stav mezi soubory nepřenáší.
+ * klíčuje cestou, takže se stav mezi soubory nepřenáší. MI-FORK: exportovaný
+ * i pro panel informací vpravo v ostatních zobrazeních (App.tsx).
  */
-function InfoPanel({ entry, onOpen, tags }: InfoPanelProps) {
+export function InfoPanel({ entry, onOpen, tags, onPreview }: InfoPanelProps) {
   const t = useT();
   const names = useDisplayNames();
   const [properties, setProperties] = useState<FileProperties | null>(null);
@@ -390,6 +408,29 @@ function InfoPanel({ entry, onOpen, tags }: InfoPanelProps) {
     };
   }, [entry.path, entry.extension]);
   const info = media?.path === entry.path ? media.info : null;
+
+  // MI-FORK: složka — velikost a počet položek se počítají na pozadí jako ve
+  // Vlastnostech; změna výběru výpočet zruší.
+  const [stats, setStats] = useState<FolderStats | null>(null);
+  useEffect(() => {
+    if (!entry.is_dir) return;
+    const requestId = nextInfoStatsId++;
+    let active = true;
+    setStats(null);
+    folderStats(entry.path, requestId, (progress) => {
+      if (active) setStats(progress);
+    })
+      .then((result) => {
+        if (active) setStats(result);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+      void cancelFolderStats(requestId).catch(() => undefined);
+    };
+  }, [entry.path, entry.is_dir]);
+  const atLeast = (value: string) => (stats?.truncated ? t("props.moreThan", { value }) : value);
+  const pending = stats && !stats.done ? " …" : "";
   const isImage = IMAGE_EXTENSIONS.has(entry.extension ?? "");
   const size = info?.width && info?.height ? { width: info.width, height: info.height } : null;
   // Velký box jen pro obsah (fotka, snímek videa, strana PDF) — ikona ze
@@ -410,12 +451,72 @@ function InfoPanel({ entry, onOpen, tags }: InfoPanelProps) {
   }, [entry.path]);
 
   const colors = tagsOf(tags, entry.path);
+  // MI-FORK: video se dá přehrát přímo v panelu — do kliku jen náhled
+  // s tlačítkem ▶ (přehrávač by jinak načítal soubor u každého výběru).
+  const isVideo = previewKind(entry) === "video";
+  const isAudio = previewKind(entry) === "audio";
+  const [playing, setPlaying] = useState(false);
+  const videoRatio = size ? `${size.width} / ${size.height}` : "16 / 9";
 
   return (
     <div className="fw-info-panel fw-scroll flex w-[272px] shrink-0 flex-col gap-3 overflow-y-auto border-l border-line bg-main p-4 text-[12px]">
       {/* Velký náhled — celý obrázek / snímek / strana, ne ořez na čtverec. */}
       <div className="flex justify-center pt-2">
-        <EntryIcon entry={entry} size={previewSize} thumbnail contain />
+        {isVideo && playing ? (
+          <InfoVideoPlayer
+            path={entry.path}
+            ratio={videoRatio}
+            cover={<EntryIcon entry={entry} size={previewSize} thumbnail contain />}
+          />
+        ) : isVideo ? (
+          <button
+            type="button"
+            aria-label={t("info.play")}
+            data-tooltip={t("info.play")}
+            onClick={() => setPlaying(true)}
+            className="fw-info-play relative grid place-items-center"
+            // Box podle poměru stran videa (jinak čtverec s pruhy) — přehrávač
+            // pak po kliku zabere stejné místo a nic neposkočí.
+            style={{ "--info-ratio": videoRatio } as React.CSSProperties}
+          >
+            <EntryIcon entry={entry} size={previewSize} thumbnail contain />
+            <span aria-hidden className="fw-info-play-badge">
+              <Play size={18} strokeWidth={0} fill="currentColor" />
+            </span>
+          </button>
+        ) : isAudio && playing ? (
+          <InfoVideoPlayer
+            path={entry.path}
+            ratio="1 / 1"
+            audio
+            cover={<EntryIcon entry={entry} size={128} thumbnail contain />}
+          />
+        ) : isAudio ? (
+          <button
+            type="button"
+            aria-label={t("info.play")}
+            data-tooltip={t("info.play")}
+            onClick={() => setPlaying(true)}
+            className="fw-info-audio relative grid place-items-center"
+          >
+            <EntryIcon entry={entry} size={128} thumbnail contain />
+            <span aria-hidden className="fw-info-play-badge">
+              <Play size={18} strokeWidth={0} fill="currentColor" />
+            </span>
+          </button>
+        ) : onPreview && isImage ? (
+          <button
+            type="button"
+            aria-label={t("menu.quickLook")}
+            data-tooltip={t("menu.quickLook")}
+            onClick={onPreview}
+            className="fw-info-zoom"
+          >
+            <EntryIcon entry={entry} size={previewSize} thumbnail contain />
+          </button>
+        ) : (
+          <EntryIcon entry={entry} size={previewSize} thumbnail contain />
+        )}
       </div>
 
       <p className="text-center text-[13px] font-semibold break-words text-primary">{names.entry(entry)}</p>
@@ -423,8 +524,15 @@ function InfoPanel({ entry, onOpen, tags }: InfoPanelProps) {
       <div className="flex flex-col border-t border-line pt-2">
         <InfoRow label={t("info.kind")}>{kindLabel(entry)}</InfoRow>
         <InfoRow label={t("info.size")}>
-          {formatSize(properties?.size ?? entry.size, entry.is_dir)}
+          {entry.is_dir
+            ? stats
+              ? atLeast(formatSize(stats.bytes, false)) + pending
+              : t("props.calculating")
+            : formatSize(properties?.size ?? entry.size, entry.is_dir)}
         </InfoRow>
+        {entry.is_dir && stats ? (
+          <InfoRow label={t("info.items")}>{atLeast(formatItemCount(stats.files + stats.folders)) + pending}</InfoRow>
+        ) : null}
         <InfoRow label={t("info.created")}>{formatModified(properties?.created ?? entry.created)}</InfoRow>
         <InfoRow label={t("info.modified")}>{formatModified(properties?.modified ?? entry.modified)}</InfoRow>
         {info?.duration_ms ? <InfoRow label={t("info.duration")}>{formatDuration(info.duration_ms)}</InfoRow> : null}
@@ -433,6 +541,50 @@ function InfoPanel({ entry, onOpen, tags }: InfoPanelProps) {
         ) : null}
         {size && isImage ? <InfoRow label={t("info.dimensions")}>{t("info.dimensionsValue", size)}</InfoRow> : null}
         {info?.pages ? <InfoRow label={t("info.pages")}>{info.pages}</InfoRow> : null}
+        {/* MI-FORK: hudba, video a fotka — co soubor nemá, nezobrazí se. */}
+        {info?.title && (isAudio || isVideo) ? <InfoRow label={t("info.title")}>{info.title}</InfoRow> : null}
+        {info?.artist ? <InfoRow label={t("info.artist")}>{info.artist}</InfoRow> : null}
+        {info?.album ? <InfoRow label={t("info.album")}>{info.album}</InfoRow> : null}
+        {info?.year ? <InfoRow label={t("info.year")}>{info.year}</InfoRow> : null}
+        {info?.genre ? <InfoRow label={t("info.genre")}>{info.genre}</InfoRow> : null}
+        {info?.frame_rate ? (
+          <InfoRow label={t("info.frameRate")}>
+            {t("info.fps", { value: formatNumber(Math.round(info.frame_rate / 10) / 100) })}
+          </InfoRow>
+        ) : null}
+        {info?.bitrate && (isAudio || isVideo) ? (
+          <InfoRow label={t("info.bitrate")}>{formatBitrate(info.bitrate)}</InfoRow>
+        ) : null}
+        {info?.sample_rate ? (
+          <InfoRow label={t("info.audio")}>
+            {[
+              `${formatNumber(info.sample_rate / 1000)} kHz`,
+              info.channels === 1
+                ? t("info.mono")
+                : info.channels === 2
+                  ? t("info.stereo")
+                  : info.channels
+                    ? t("info.channels", { count: info.channels })
+                    : null,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </InfoRow>
+        ) : null}
+        {info?.camera ? <InfoRow label={t("info.camera")}>{info.camera}</InfoRow> : null}
+        {info?.taken ? <InfoRow label={t("info.taken")}>{formatModified(info.taken / 1000)}</InfoRow> : null}
+        {info?.f_number || info?.exposure || info?.iso || info?.focal_length ? (
+          <InfoRow label={t("info.exposure")}>
+            {[
+              info.f_number ? `ƒ/${Math.round(info.f_number * 10) / 10}` : null,
+              info.exposure ? formatExposure(info.exposure) : null,
+              info.iso ? `ISO ${info.iso}` : null,
+              info.focal_length ? `${Math.round(info.focal_length)} mm` : null,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </InfoRow>
+        ) : null}
         <InfoRow label={t("info.tags")}>
           {colors.length > 0 && (
             <span className="inline-flex flex-wrap justify-end gap-x-2">

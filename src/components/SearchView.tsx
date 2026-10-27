@@ -5,6 +5,7 @@ import { SearchX } from "lucide-react";
 import { ResultsView } from "./ResultsView";
 import { cancelSearch, searchRecursive } from "../fileops";
 import { failure, useT } from "../i18n";
+import { compileCriteria, type CriterionRow } from "../lib/searchCriteria";
 import type { FileEntry } from "../types";
 
 /** Identita hledání pro backend — napříč všemi SearchView, proto modulová. */
@@ -17,6 +18,8 @@ type SearchViewProps = {
   /** Složka, od které se prohledává dolů. */
   root: string;
   query: string;
+  /** Kritéria rozšířeného hledání; bez nich se hledá jen podle `query`. */
+  criteria?: CriterionRow[];
   windowFocused: boolean;
   selectedPath: string | null;
   onSelectionChange: (entry: FileEntry | null) => void;
@@ -34,6 +37,7 @@ type SearchViewProps = {
 export function SearchView({
   root,
   query,
+  criteria,
   windowFocused,
   selectedPath,
   onSelectionChange,
@@ -60,14 +64,22 @@ export function SearchView({
 
     // Nový dotaz začíná načítací obrazovkou. Přenačtení po operaci (smazání,
     // přejmenování) nechá staré výsledky viset, dokud nedorazí nové.
-    const key = `${root}\0${query}`;
+    const rules = criteria === undefined ? null : compileCriteria(criteria);
+    const key = `${root}\0${query}\0${JSON.stringify(rules)}`;
     if (lastSearch.current !== key) {
       lastSearch.current = key;
       setEntries([]);
       setLoading(true);
     }
 
-    searchRecursive(root, query, MAX_RESULTS, showHidden, searchId)
+    // Lišta bez jediného platného kritéria — není co hledat.
+    if (rules !== null && rules.length === 0) {
+      setEntries([]);
+      setLoading(false);
+      return;
+    }
+
+    searchRecursive(root, query, MAX_RESULTS, showHidden, searchId, rules)
       .then((found) => {
         if (requestId.current !== id) return;
 
@@ -85,7 +97,7 @@ export function SearchView({
     // Nový dotaz, zavření výsledků (Escape, vymazání pole) i odchod jinam
     // zastaví průchod disku — jinak by na C:\ běžel dál naprázdno.
     return () => void cancelSearch(searchId).catch(() => undefined);
-  }, [root, query, refreshToken, showHidden]);
+  }, [root, query, criteria, refreshToken, showHidden]);
 
   return (
     <ResultsView
@@ -95,8 +107,13 @@ export function SearchView({
       error={error}
       empty={{
         Icon: SearchX,
-        title: t("empty.noMatches", { query }),
-        hint: t("search.hint"),
+        title:
+          criteria === undefined
+            ? t("empty.noMatches", { query })
+            : compileCriteria(criteria).length === 0
+              ? t("criteria.empty")
+              : t("criteria.noMatches"),
+        hint: criteria === undefined ? t("search.hint") : t("criteria.hint"),
       }}
       root={root}
       footer={

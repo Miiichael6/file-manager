@@ -1,0 +1,195 @@
+/* MI-FORK: tmavé téma ve stylu referenčního snímku – grafitové plochy
+   (#1e1e1e výpis a lišty, o stupeň světlejší sidebar), plný modrý výběr
+   s bílým textem, tmavá matná menu s modrým zvýrazněním a jemné pruhy.
+   Protějšek light-style.css; vše pod :root.dark, světlé téma se nemění.
+
+   Importuje se v main.tsx za light-style.css. Tokeny skla z index.css mají
+   selektor :root.dark[data-glass="on"] (0,3,0) – bloky tokenů proto mají
+   i variantu s [data-glass="on"], která při stejné specificitě vyhrává
+   pořadím. Plochy se přepisují jen bez průhlednosti (:not([data-transparency]))
+   – s ní platí krytí (--see-*) z index.css. Liquid Glass (:root[data-liquid])
+   si geometrii menu a linku pod lištou kreslí sám.
+
+   Kontrast (WCAG):
+   - bílá na výběru #0a64d6 = 5,63 : 1;
+   - sekundární text #a1a1a6 na #1e1e1e = 6,93, na pruhu 6,4;
+   - text na menu #2a2a2c: primární 13,9, sekundární 6,2. */
+
+/* ------------------------------- tokeny ---------------------------------- */
+
+:root.dark,
+:root.dark[data-glass="on"] {
+  --mi-select: #0a64d6;
+  --mi-on-select: #ffffff;
+  --row-selected-inactive: rgba(255, 255, 255, 0.1);
+  --scroll-thumb: rgba(255, 255, 255, 0.22);
+  --border: rgba(255, 255, 255, 0.1);
+  --shadow-popover: 0 12px 36px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.3);
+  /* Sidebar: výběr plnou modří, neaktivní jemně světlejší šedá. */
+  --glass-sidebar-selected: var(--mi-select);
+  --glass-sidebar-selected-inactive: rgba(255, 255, 255, 0.1);
+  /* Menu: tmavě grafitové, poloprůhledné a rozmazané jako na snímku
+     (bez Liquid Glass). */
+  --glass-menu: rgba(40, 40, 42, 0.62);
+  --glass-menu-blur: blur(14px) saturate(170%);
+  --glass-highlight: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+/* Plochy jen bez průhlednosti – s ní je přepisuje :root[data-transparency]. */
+:root.dark:not([data-transparency]),
+:root.dark[data-glass="on"]:not([data-transparency]) {
+  --bg-window: #1e1e1e;
+  /* Pruh každého druhého řádku ≈ #252525 na #1e1e1e. */
+  --row-stripe: rgba(255, 255, 255, 0.03);
+  --text-secondary: #a1a1a6;
+  --text-section: #8e8e93;
+  --bg-main: #1e1e1e;
+  --bg-toolbar: #1e1e1e;
+  --glass-bar: rgba(30, 30, 30, 0.9);
+  --glass-text-secondary: #a1a1a6;
+  /* Sidebar: o stupeň světlejší grafit. */
+  --glass-sidebar: linear-gradient(180deg, #2a2a2a 0%, #252525 100%);
+  --bg-sidebar: rgba(40, 40, 40, 0.94);
+}
+
+/* ------------------------------ lišty ------------------------------------ */
+
+:root.dark:not([data-liquid]) .fw-main::before {
+  border-bottom-color: var(--border);
+}
+
+:root.dark:not([data-transparency]) .fw-statusbar {
+  background: #1e1e1e;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+/* Pole hledání: tmavě šedá pilulka (≈ #2f2f31). */
+:root.dark .fw-search-bg {
+  background-color: rgb(118 118 128 / 0.24);
+}
+
+:root.dark .fw-list-header.grid > :nth-child(n + 3) {
+  margin-left: -6px;
+  padding-left: 6px;
+  background: linear-gradient(var(--border), var(--border)) left center / 1px 12px no-repeat;
+}
+
+/* --------------------------- výpis: seznam ------------------------------- */
+
+:root.dark .fw-list-row {
+  left: 6px;
+  right: 6px;
+  padding-inline: 6px;
+  border-radius: 5px;
+}
+
+:root.dark .fw-list-row.is-selected,
+:root.dark .fw-col-row.bg-selected,
+:root.dark .fw-result-row.bg-selected {
+  background-color: var(--mi-select);
+  color: var(--mi-on-select);
+  text-shadow: none;
+}
+
+:root.dark :is(.fw-list-row.is-selected, .fw-col-row.bg-selected, .fw-result-row.bg-selected)
+  :is(.text-secondary, .text-primary, .fw-chevron) {
+  color: var(--mi-on-select);
+}
+
+:root.dark :is(.fw-list-row.is-selected, .fw-col-row.bg-selected, .fw-result-row.bg-selected)
+  [style*="color: var(--git"] {
+  color: var(--mi-on-select) !important;
+}
+
+:root.dark :is(.fw-list-row.is-selected, .fw-col-row.bg-selected, .fw-result-row.bg-selected)
+  [style*="background-color: var(--git"] {
+  background-color: var(--mi-on-select) !important;
+}
+
+:root.dark :is(.fw-list-row.is-selected, .fw-col-row.bg-selected, .fw-result-row.bg-selected):focus-visible {
+  box-shadow: inset 0 0 0 2px var(--mi-select), inset 0 0 0 3px var(--mi-on-select);
+}
+
+/* --------------------------- výpis: sloupce ------------------------------ */
+
+:root.dark .fw-col-row {
+  left: 4px;
+  right: 4px;
+  padding-inline: 6px;
+  border-radius: 5px;
+}
+
+/* ---------------------------- výpis: ikony ------------------------------- */
+
+/* Dlaždice jemně světlejší s modrým lemem, název v modré pilulce. */
+:root.dark .fw-icon-cell.is-selected {
+  background-color: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgb(10 100 214 / 0.6);
+}
+
+:root.dark .fw-icon-cell.is-selected .fw-icon-name {
+  border-radius: 4px;
+  background-color: var(--mi-select);
+  color: var(--mi-on-select);
+  text-shadow: none;
+}
+
+/* ------------------------------- sidebar --------------------------------- */
+
+:root.dark .fw-sidebar-row.is-active {
+  color: var(--mi-on-select);
+  text-shadow: none;
+}
+
+:root.dark .fw-sidebar-row.is-active :is(.text-primary, .text-secondary, .fw-sidebar-value) {
+  color: var(--mi-on-select);
+}
+
+:root.dark .fw-sidebar-row.is-active svg {
+  color: var(--mi-on-select);
+  stroke: var(--mi-on-select);
+}
+
+:root.dark .fw-sidebar-row.is-active svg[fill]:not([fill="none"]) {
+  fill: var(--mi-on-select);
+}
+
+/* ------------------------------ menu ------------------------------------- */
+
+:root.dark .fw-popover {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Bez skla (data-glass) kreslí menu sám prvek – stejná poloprůhledná výplň. */
+:root.dark:not([data-glass="on"]) .fw-popover {
+  background: var(--glass-menu);
+  backdrop-filter: var(--glass-menu-blur);
+}
+
+:root.dark .fw-menu-item:not(.is-danger):hover:not(:disabled),
+:root.dark .fw-menu-item.is-highlighted:not(.is-danger) {
+  background-color: var(--mi-select);
+  color: var(--mi-on-select);
+}
+
+:root.dark:not([data-liquid]) .fw-menu,
+:root.dark:not([data-liquid]) .fw-menu .fw-popover.p-1 {
+  border-radius: 10px;
+  padding: 5px;
+}
+
+:root.dark:not([data-liquid]) .fw-menu-item {
+  height: 22px;
+  border-radius: 5px;
+}
+
+:root.dark .fw-menu-separator {
+  margin: 5px 10px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+:root.dark:not([data-transparency]) .fw-quickbar {
+  background: #1e1e1e;
+  backdrop-filter: none;
+}

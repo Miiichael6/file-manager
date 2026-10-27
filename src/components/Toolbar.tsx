@@ -4,6 +4,7 @@ import {
   ChevronRight,
   Columns2,
   Columns3,
+  CornerLeftUp,
   LayoutGrid,
   List,
   MoreHorizontal,
@@ -17,6 +18,9 @@ import {
 
 import { ContextMenu, type MenuItem } from "./ContextMenu";
 import { ShareWindows } from "./icons/ShareWindows";
+import { FolderIcon } from "./icons";
+import { FOLDER_COLORS, folderColorVars, setFolderColor, useFolderColor } from "../mi-fork/folderColor"; // MI-FORK
+import "../mi-fork/nav-capsule.css"; // MI-FORK
 import type { CommandId, Command, Commands } from "../commands";
 import { useT, type MessageKey } from "../i18n";
 import type { ViewMode } from "../types";
@@ -158,6 +162,8 @@ type ToolbarProps = {
   onNotice: (message: string) => void;
   /** MI-FORK: botón «Abrir carpeta con» (src/mi-fork/FolderOpenButton.tsx). */
   openWith?: React.ReactNode;
+  /** MI-FORK: botones de Git (src/mi-fork/GitToolbarButtons.tsx); solo en un repositorio. */
+  gitTools?: React.ReactNode;
 };
 
 /** Položka menu z příkazu registru — název, zkratka a stav z jednoho místa. */
@@ -194,6 +200,7 @@ export function Toolbar({
   onMenuOpenChange,
   onNotice,
   openWith, // MI-FORK
+  gitTools, // MI-FORK
 }: ToolbarProps) {
   const t = useT();
   // Otevřené může být jen jedno menu. Pozice se bere z rámečku tlačítka.
@@ -229,6 +236,7 @@ export function Toolbar({
   }
 
   const item = (id: CommandId, label?: string) => commandMenuItem(commands[id], label);
+  const folderColor = useFolderColor(); // MI-FORK
 
   const moreItems: MenuItem[] = [
     item("undo"),
@@ -267,6 +275,22 @@ export function Toolbar({
         // MI-FORK: Liquid Glass (material de barras y menús).
         { type: "separator" },
         { ...item("toggleLiquidGlass", t("liquidGlass.menu")), tooltip: t("liquidGlass.hint") },
+        // MI-FORK: color de carpetas; cada opción lleva su carpeta de muestra.
+        {
+          type: "submenu",
+          label: t("folderColor.menu"),
+          items: FOLDER_COLORS.map((color) => ({
+            type: "item",
+            label: t(`folderColor.${color}`),
+            checked: folderColor === color,
+            icon: (
+              <span className="flex" style={folderColorVars(color) as React.CSSProperties}>
+                <FolderIcon size={16} />
+              </span>
+            ),
+            onSelect: () => void setFolderColor(color),
+          })),
+        },
         // Průhlednost (vypnuto / rozmazaná) a síla jen tam, kde Windows
         // Acrylic umí (enabled = Windows 11 22H2+); jinde se nenabízí vůbec.
         ...(commands.transparencyBlur.enabled
@@ -322,7 +346,8 @@ export function Toolbar({
     // [sdílet, štítky] [rozdělit, více] [hledání]. Nová záložka je + v liště
     // záložek, vzhled v menu Více.
     <header className="fw-toolbar flex h-10 shrink-0 items-center gap-3 px-3">
-      <div className="flex shrink-0 items-center gap-0.5">
+      {/* MI-FORK: atrás / adelante / superior en una cápsula con borde (mi-fork/nav-capsule.css). */}
+      <div className="mi-nav-capsule flex shrink-0 items-center gap-0.5">
         <IconButton
           Icon={ChevronLeft}
           label={t("toolbar.back")}
@@ -334,6 +359,13 @@ export function Toolbar({
           label={t("toolbar.forward")}
           disabled={!commands.goForward.enabled}
           onClick={commands.goForward.run}
+        />
+        {/* MI-FORK: carpeta superior junto a atrás/adelante. */}
+        <IconButton
+          Icon={CornerLeftUp}
+          label={`${t("toolbar.parentFolder")} (${commands.goParent.shortcut})`}
+          disabled={!commands.goParent.enabled}
+          onClick={commands.goParent.run}
         />
       </div>
 
@@ -386,6 +418,8 @@ export function Toolbar({
         </div>
 
         {openWith /* MI-FORK */}
+
+        {gitTools /* MI-FORK */}
 
         <div className="fw-tool-group">
           <IconButton
@@ -507,6 +541,7 @@ export function Toolbar({
           }
           onClose={() => setMenu(null)}
           triggerSelector="[data-fw-menu-trigger]"
+          dropdown
         />
       )}
     </header>

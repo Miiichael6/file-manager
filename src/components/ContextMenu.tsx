@@ -5,6 +5,7 @@ import { Check, ChevronRight } from "lucide-react";
 import { useT } from "../i18n";
 import { TAG_COLORS, TAG_HEX, tagLabel } from "../lib/tags";
 import type { TagColor } from "../types";
+import { withMenuIcons } from "../mi-fork/menuIcons"; // MI-FORK
 
 type ActionItem = {
   type: "item";
@@ -45,7 +46,7 @@ export type MenuItem =
       onToggle: (color: TagColor) => void;
     }
   /** Řádek, který po najetí rozbalí další seznam (Zobrazit ▸, Seřadit podle ▸). */
-  | { type: "submenu"; label: string; disabled?: boolean; items: SubmenuEntry[] };
+  | { type: "submenu"; label: string; disabled?: boolean; items: SubmenuEntry[]; icon?: React.ReactNode };
 
 type ContextMenuProps = {
   x: number;
@@ -55,6 +56,9 @@ type ContextMenuProps = {
   /** Prvky, které menu otevírají a zavírají samy (tlačítka toolbaru). Klik
    *  na ně menu nezavře — jinak by ho posluchač zavřel a klik hned otevřel. */
   triggerSelector?: string;
+  /** Rozbalovací menu pod tlačítkem (toolbar): při otevření se rozvine svisle
+   *  od tlačítka, ne zvětšením z místa kliknutí. */
+  dropdown?: boolean;
 };
 
 const MARGIN = 8;
@@ -75,55 +79,33 @@ type TagRowProps = {
   onHover: () => void;
 };
 
-function TagRow({ label, active, onToggle, flip, open, onHover }: TagRowProps) {
+// MI-FORK: puntíky barev přímo v menu jako kroužky (jako na referenčním
+// snímku), ne v podmenu – flip a open se nepoužívají. Barva štítku, který
+// položka má, je plná.
+function TagRow({ label, active, onToggle, onHover }: TagRowProps) {
   const t = useT();
   return (
-    <div className="relative" onMouseEnter={onHover}>
-      <div className={`fw-menu-item ${open ? "is-highlighted" : ""}`}>
-        <span className="min-w-0 flex-1 truncate">{label}</span>
-        <ChevronRight size={13} strokeWidth={2} className="fw-menu-shortcut shrink-0" />
-      </div>
+    <div role="group" aria-label={label} className="fw-menu-tags" onMouseEnter={onHover}>
+      {TAG_COLORS.map((color) => {
+        const isActive = active.includes(color);
 
-      {open && (
-        <div
-          className="fw-popover absolute z-10 flex items-center gap-2 rounded-[8px] px-2.5 py-2"
-          style={{
-            top: -5,
-            [flip ? "right" : "left"]: "100%",
-            width: PALETTE_WIDTH,
-          }}
-        >
-          {TAG_COLORS.map((color) => {
-            const isActive = active.includes(color);
-
-            return (
-              <button
-                key={color}
-                type="button"
-                data-tooltip={tagLabel(color)}
-                aria-pressed={isActive}
-                aria-label={t("menu.tagButton", { tag: tagLabel(color) })}
-                // Menu po kliknutí schválně zůstává — tagů jde přidat víc najednou.
-                onClick={() => onToggle(color)}
-                className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full fw-t-transform hover:scale-110"
-                style={{
-                  border: isActive ? "2px solid var(--text-primary)" : "2px solid transparent",
-                }}
-              >
-                <span
-                  className="rounded-full"
-                  style={{
-                    width: 14,
-                    height: 14,
-                    backgroundColor: TAG_HEX[color],
-                    boxShadow: "var(--swatch-edge)",
-                  }}
-                />
-              </button>
-            );
-          })}
-        </div>
-      )}
+        return (
+          <button
+            key={color}
+            type="button"
+            data-tooltip={tagLabel(color)}
+            aria-pressed={isActive}
+            aria-label={t("menu.tagButton", { tag: tagLabel(color) })}
+            // Menu po kliknutí schválně zůstává — tagů jde přidat víc najednou.
+            onClick={() => onToggle(color)}
+            className="fw-menu-tag fw-t-transform hover:scale-110"
+            style={{
+              borderColor: TAG_HEX[color],
+              backgroundColor: isActive ? TAG_HEX[color] : `color-mix(in srgb, ${TAG_HEX[color]} 22%, transparent)`,
+            }}
+          />
+        );
+      })}
     </div>
   );
 }
@@ -196,6 +178,7 @@ function ActionRow({
 
 type SubmenuRowProps = {
   label: string;
+  icon?: React.ReactNode; // MI-FORK
   disabled?: boolean;
   items: SubmenuEntry[];
   flip: boolean;
@@ -207,6 +190,7 @@ type SubmenuRowProps = {
 
 function SubmenuRow({
   label,
+  icon,
   disabled,
   items,
   flip,
@@ -225,17 +209,21 @@ function SubmenuRow({
   }, [open]);
   // Druhá úroveň se vyklápí podle vlastního místa: u pravého okraje doleva.
   const [childFlip, setChildFlip] = useState(flip);
+  // Rozměry přes offset*: podmenu v rozbalovacím menu se otevírá animací
+  // scale() a getBoundingClientRect by vrátil zmenšený obdélník.
   useLayoutEffect(() => {
     if (!open || !panelRef.current) return;
-    const rect = panelRef.current.getBoundingClientRect();
-    setChildFlip(flip || rect.right + SUBMENU_WIDTH + MARGIN > window.innerWidth);
+    const panel = panelRef.current;
+    const right = panel.getBoundingClientRect().left + panel.offsetWidth;
+    setChildFlip(flip || right + SUBMENU_WIDTH + MARGIN > window.innerWidth);
   }, [open, flip]);
 
   // U spodního okraje okna by podmenu přeteklo — posune se nahoru dovnitř.
   useLayoutEffect(() => {
     if (!open || !panelRef.current) return;
-    const rect = panelRef.current.getBoundingClientRect();
-    const overflow = rect.bottom + shiftUp - (window.innerHeight - MARGIN);
+    const panel = panelRef.current;
+    const bottom = panel.getBoundingClientRect().top + panel.offsetHeight;
+    const overflow = bottom + shiftUp - (window.innerHeight - MARGIN);
     setShiftUp(overflow > 0 ? overflow : 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -247,6 +235,11 @@ function SubmenuRow({
           disabled ? "opacity-40" : ""
         }`}
       >
+        {icon && (
+          <span aria-hidden className="fw-menu-icon">
+            {icon}
+          </span>
+        )}
         <span className="min-w-0 flex-1 truncate">{label}</span>
         <ChevronRight size={13} strokeWidth={2} className="fw-menu-shortcut shrink-0" />
       </div>
@@ -254,11 +247,13 @@ function SubmenuRow({
       {open && !disabled && (
         <div
           ref={panelRef}
-          className="fw-popover absolute z-10 rounded-[8px] p-1"
+          className="fw-popover fw-submenu absolute z-10 rounded-[8px] p-1"
           style={{
             top: -5 - shiftUp,
             [flip ? "right" : "left"]: "100%",
             width: SUBMENU_WIDTH,
+            // Rozvine se od řádku, který ho otevřel (strana podle vyklopení).
+            transformOrigin: `${flip ? "100%" : "0"} ${5 + shiftUp + 12}px`,
           }}
         >
           {items.map((entry, index) =>
@@ -286,18 +281,19 @@ function SubmenuRow({
 
 /* -------------------------------- menu ------------------------------------ */
 
-export function ContextMenu({ x, y, items: given, onClose, triggerSelector }: ContextMenuProps) {
+export function ContextMenu({ x, y, items: given, onClose, triggerSelector, dropdown }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   /** Položka rozbalená Shift+klikem na podmenu ze svých `shiftItems`. */
   const [expanded, setExpanded] = useState<number | null>(null);
+  const t = useT(); // MI-FORK
   const items = useMemo(
     () =>
-      given.map((item, index): MenuItem =>
+      withMenuIcons(given, t).map((item, index): MenuItem =>
         index === expanded && item.type === "item" && item.shiftItems
-          ? { type: "submenu", label: item.label, items: item.shiftItems }
+          ? { type: "submenu", label: item.label, items: item.shiftItems, icon: item.icon }
           : item,
       ),
-    [given, expanded],
+    [given, expanded, t],
   );
   const [position, setPosition] = useState({ left: x, top: y });
   const [flip, setFlip] = useState(false);
@@ -442,7 +438,7 @@ export function ContextMenu({ x, y, items: given, onClose, triggerSelector }: Co
       // Podle atributu tooltipy poznají, že je otevřené menu, a neukážou se.
       data-fw-menu=""
       role="menu"
-      className="fw-popover fw-menu fixed z-[60] rounded-[8px] p-1 text-[13px]"
+      className={`fw-popover fw-menu fixed z-[60] rounded-[8px] p-1 text-[13px] ${dropdown ? "fw-menu-dropdown" : ""}`}
       style={{
         left: position.left,
         top: position.top,
@@ -490,6 +486,7 @@ export function ContextMenu({ x, y, items: given, onClose, triggerSelector }: Co
             <SubmenuRow
               key={item.label}
               label={item.label}
+              icon={item.icon}
               disabled={item.disabled}
               items={item.items}
               flip={flip}

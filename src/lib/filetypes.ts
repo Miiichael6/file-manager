@@ -125,6 +125,11 @@ for (const extension of SOURCE) {
   TYPES[extension] ??= type(["kind.sourceCode", extension.toUpperCase()], "code", "text");
 }
 
+/** Všechny známé přípony daných skupin — druh v rozšířeném hledání. */
+export function extensionsOfGroups(groups: readonly FileGroup[]): string[] {
+  return Object.keys(TYPES).filter((extension) => groups.includes(TYPES[extension].group));
+}
+
 /** Typ podle přípony (bez tečky, malými písmeny), null pro neznámou. */
 export function fileType(extension: string | null): FileType | null {
   return extension ? (TYPES[extension] ?? null) : null;

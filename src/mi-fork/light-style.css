@@ -10,7 +10,8 @@
    sám – geometrie menu a linka pod lištou se proto při něm nemění.
 
    Kontrast (WCAG):
-   - bílá na výběru #0f6be0 = 5,00 : 1 (výpis, sloupce, ikony, sidebar, menu);
+   - bílá na výběru #00afe6 = 2,54 : 1 (výpis, sloupce, ikony, sidebar, menu) –
+     barva na přání uživatele, pod WCAG AA (dřív #0f6be0 = 5,00);
    - sekundární text lišt #5b5b60 na liště 0,86 bílé: nad bílou 6,75, nejhorší
      případ nad černým obsahem 4,89, nad modrým řádkem 5,51;
    - zkratky v menu #4a4a4e na menu 0,78 bílé nad černou 5,21 (nad bílou 8,82);
@@ -21,8 +22,8 @@
 /* ------------------------------- tokeny ---------------------------------- */
 
 :root:not(.dark) {
-  /* Plný výběr pod bílým textem (5,00 : 1). */
-  --mi-select: #0f6be0;
+  /* Plný výběr pod bílým textem (2,54 : 1 – barva na přání uživatele). */
+  --mi-select: #00afe6;
   --mi-on-select: #ffffff;
   /* Výběr v neaktivním okně: světle šedý s tmavým textem (jako Průzkumník). */
   --row-selected-inactive: rgba(0, 0, 0, 0.08);
@@ -62,6 +63,14 @@
 /* Tenká linka pod horní deskou vždy, ne až při posunu. */
 :root:not(.dark):not([data-liquid]) .fw-main::before {
   border-bottom-color: var(--border);
+}
+
+/* Status bar plný: řádky pod ním neprosvítají (rozmazaný řádek nad hranou
+   působil jako useknutý). Výpis za ním dál pokračuje, jen ho nevidět. */
+:root:not(.dark):not([data-transparency]) .fw-statusbar {
+  background: #ffffff;
+  backdrop-filter: none;
+  box-shadow: none;
 }
 
 /* Pole hledání: světle šedá pilulka (≈ #f0f0f2). */
@@ -192,4 +201,10 @@
 :root:not(.dark) .fw-menu-separator {
   margin: 5px 10px;
   background: rgba(0, 0, 0, 0.1);
+}
+
+/* Lišta rychlých přepínačů plná jako status bar. */
+:root:not(.dark):not([data-transparency]) .fw-quickbar {
+  background: #ffffff;
+  backdrop-filter: none;
 }

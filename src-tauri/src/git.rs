@@ -144,6 +144,31 @@ pub fn git_pull(root: String) -> CmdResult<()> {
     git(Path::new(&root), &["pull", "--no-edit"]).map(|_| ())
 }
 
+/// Místní větve pro přepínač v toolbaru, naposledy použité první.
+#[tauri::command(async)]
+pub fn git_branches(root: String) -> CmdResult<Vec<String>> {
+    let out = git(
+        Path::new(&root),
+        &["for-each-ref", "--sort=-committerdate", "--format=%(refname:short)", "refs/heads"],
+    )?;
+    Ok(out.lines().map(str::trim).filter(|line| !line.is_empty()).map(String::from).collect())
+}
+
+/// Přepnutí větve; s neuloženými změnami, které by se přepsaly, git odmítne.
+#[tauri::command(async)]
+pub fn git_checkout(root: String, branch: String) -> CmdResult<()> {
+    // Název začínající „-“ by git vzal jako volbu (platná větev to být nemůže).
+    if branch.starts_with('-') {
+        return Err(AppError::new("error.gitFailed").arg("detail", branch));
+    }
+    git(Path::new(&root), &["switch", &branch]).map(|_| ())
+}
+
+#[tauri::command(async)]
+pub fn git_fetch(root: String) -> CmdResult<()> {
+    git(Path::new(&root), &["fetch", "--prune"]).map(|_| ())
+}
+
 #[derive(Debug, Serialize)]
 pub struct GitDiff {
     text: String,

@@ -1,7 +1,7 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Plus, X } from "lucide-react";
 
-import { FolderIcon, folderDisplayName } from "./icons";
+import { folderDisplayName } from "./icons";
 import type { Command } from "../commands";
 import { useT } from "../i18n";
 import { canDropInto, droppedPaths, endDrag, getDrag, isExternalFileDrag } from "../lib/dnd";
@@ -33,13 +33,6 @@ type TabBarProps = {
 /** Typ dat taženého ouška — odliší ho od tažení souborů. */
 const TAB_MIME = "application/x-finder-win-tab";
 
-/** Rozměry z index.css (.fw-tab, .fw-tab-new, .fw-tabbar) — pro zjištění, kdy se ouška nevejdou. */
-const TAB_MIN_WIDTH = 120;
-const TAB_GAP = 4;
-/** Tlačítko + včetně mezery flexu. */
-const NEW_BUTTON_WIDTH = 28 + TAB_GAP;
-const BAR_PADDING = 16;
-
 /** Popisek záložky: přeložený název složky jako v záhlaví toolbaru. */
 function tabTitle(path: string | null): string {
   if (path === null) return "File Manager"; // MI-FORK
@@ -49,137 +42,164 @@ function tabTitle(path: string | null): string {
 }
 
 /**
- * Lišta záložek pod toolbarem, vždy vidět — zaoblené čipy (ouška) zarovnané
- * doleva, šířka podle obsahu (120–240 px). Ouška jdou přerovnat
- * tažením a dá se na ně pustit soubor (přesun do složky záložky, s Ctrl
- * kopie). Když se nevejdou, zúží se rovnoměrně.
+ * Lišta záložek pod toolbarem, vždy vidět. MI-FORK: segmentovaný ovladač —
+ * šedá dráha přes celou šířku, záložky stejně široké s názvem uprostřed,
+ * aktivní vystouplá (bílá se stínem), × vlevo při najetí, + vpravo za dráhou.
+ * Ouška jdou přerovnat tažením a dá se na ně pustit soubor (přesun do složky
+ * záložky, s Ctrl kopie).
  */
-export function TabBar({ tabs, activeId, windowFocused, onSelect, onClose, onReorder, onDropInto, newTab }: TabBarProps) {
+export function TabBar({
+  tabs,
+  activeId,
+  windowFocused,
+  onSelect,
+  onClose,
+  onReorder,
+  onDropInto,
+  newTab,
+}: TabBarProps) {
   const t = useT();
-  const barRef = useRef<HTMLDivElement>(null);
   /** Ouško, které se právě táhne (přerovnání). */
   const dragging = useRef<number | null>(null);
   /** Záložka, nad kterou visí tažený soubor. */
   const [dropId, setDropId] = useState<number | null>(null);
-  /** Ouška v minimální šířce by přetekla lištu — zúží se rovnoměrně. */
-  const [crowded, setCrowded] = useState(false);
-
   const open = tabs.filter((tab) => !tab.closing).length;
 
+  /**
+   * Výplň aktivní záložky je jediný prvek, který mezi záložkami klouže.
+   * Poloha se měří z DOM; sleduje i změny šířky (otevření, zavření, okno).
+   */
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [pill, setPill] = useState<{ left: number; width: number } | null>(null);
+  /** První umístění bez animace — jinak by výplň vyjela z levého okraje. */
+  const [pillReady, setPillReady] = useState(false);
+
   useLayoutEffect(() => {
-    const bar = barRef.current;
-    if (!bar) return;
+    const track = trackRef.current;
+    if (!track) return;
     const measure = () => {
-      const available = bar.clientWidth - BAR_PADDING - NEW_BUTTON_WIDTH;
-      setCrowded(open * TAB_MIN_WIDTH + (open - 1) * TAB_GAP > available);
+      const active = track.querySelector<HTMLElement>(".fw-tab.is-active");
+      setPill(active ? { left: active.offsetLeft, width: active.offsetWidth } : null);
     };
     measure();
     const observer = new ResizeObserver(measure);
-    observer.observe(bar);
+    observer.observe(track);
+    for (const child of track.querySelectorAll(".fw-tab")) observer.observe(child);
     return () => observer.disconnect();
-  }, [open]);
+  }, [tabs, activeId]);
+
+  useEffect(() => {
+    if (pill === null || pillReady) return;
+    const frame = requestAnimationFrame(() => setPillReady(true));
+    return () => cancelAnimationFrame(frame);
+  }, [pill, pillReady]);
 
   return (
-    <div
-      ref={barRef}
-      className={`fw-tabbar ${open <= 1 ? "is-single" : ""} ${crowded ? "is-crowded" : ""}`}
-      role="tablist"
-      aria-label={t("tabs.label")}
-    >
-      {tabs.map((tab, index) => {
-        const isActive = tab.id === activeId;
-        const title = tabTitle(tab.path);
+    <div className={`fw-tabbar ${open <= 1 ? "is-single" : ""}`}>
+      <div ref={trackRef} className="fw-tab-track" role="tablist" aria-label={t("tabs.label")}>
+        {pill !== null && (
+          <span
+            aria-hidden
+            className={`fw-tab-pill ${pillReady ? "is-ready" : ""}`}
+            style={{ transform: `translateX(${pill.left}px)`, width: pill.width }}
+          />
+        )}
+        {tabs.map((tab, index) => {
+          const isActive = tab.id === activeId;
+          const title = tabTitle(tab.path);
 
-        const acceptsDrop = (event: React.DragEvent) =>
-          tab.path !== null && (isExternalFileDrag(event) || canDropInto(tab.path, getDrag()));
+          const acceptsDrop = (event: React.DragEvent) =>
+            tab.path !== null && (isExternalFileDrag(event) || canDropInto(tab.path, getDrag()));
 
-        return (
-          <div
-            key={tab.id}
-            role="tab"
-            aria-selected={isActive}
-            data-tooltip={tab.path ?? undefined}
-            draggable={!tab.closing}
-            className={`fw-tab ${isActive ? "is-active" : ""} ${windowFocused ? "" : "is-blurred"} ${
-              tab.fresh ? "fw-tab-in" : ""
-            } ${tab.closing ? "fw-tab-out" : ""} ${dropId === tab.id ? "fw-drop-target" : ""}`}
-            onMouseDown={(event) => {
-              // Prostřední tlačítko zavírá (a nesmí spustit automatické posouvání).
-              if (event.button === 1) event.preventDefault();
-            }}
-            onClick={() => onSelect(tab.id)}
-            onAuxClick={(event) => {
-              if (event.button === 1) onClose(tab.id);
-            }}
-            onDragStart={(event) => {
-              dragging.current = tab.id;
-              event.dataTransfer.effectAllowed = "move";
-              event.dataTransfer.setData(TAB_MIME, String(tab.id));
-            }}
-            onDragEnd={() => {
-              dragging.current = null;
-            }}
-            onDragOver={(event) => {
-              const moving = dragging.current;
-              if (moving !== null) {
-                // Přerovnání naživo, jako v prohlížeči: ouško uhne hned.
+          return (
+            <div
+              key={tab.id}
+              role="tab"
+              aria-selected={isActive}
+              data-tooltip={tab.path ?? undefined}
+              draggable={!tab.closing}
+              className={`fw-tab ${isActive ? "is-active" : ""} ${windowFocused ? "" : "is-blurred"} ${
+                tab.fresh ? "fw-tab-in" : ""
+              } ${tab.closing ? "fw-tab-out" : ""} ${dropId === tab.id ? "fw-drop-target" : ""}`}
+              onMouseDown={(event) => {
+                // Prostřední tlačítko zavírá (a nesmí spustit automatické posouvání).
+                if (event.button === 1) event.preventDefault();
+              }}
+              onClick={() => onSelect(tab.id)}
+              onAuxClick={(event) => {
+                if (event.button === 1) onClose(tab.id);
+              }}
+              onDragStart={(event) => {
+                dragging.current = tab.id;
+                event.dataTransfer.effectAllowed = "move";
+                event.dataTransfer.setData(TAB_MIME, String(tab.id));
+              }}
+              onDragEnd={() => {
+                dragging.current = null;
+              }}
+              onDragOver={(event) => {
+                const moving = dragging.current;
+                if (moving !== null) {
+                  // Přerovnání naživo, jako v prohlížeči: ouško uhne hned.
+                  event.preventDefault();
+                  event.dataTransfer.dropEffect = "move";
+                  if (moving !== tab.id) onReorder(moving, index);
+                  return;
+                }
+                if (!acceptsDrop(event)) return;
                 event.preventDefault();
-                event.dataTransfer.dropEffect = "move";
-                if (moving !== tab.id) onReorder(moving, index);
-                return;
-              }
-              if (!acceptsDrop(event)) return;
-              event.preventDefault();
-              event.dataTransfer.dropEffect = event.ctrlKey ? "copy" : "move";
-              setDropId(tab.id);
-            }}
-            onDragLeave={(event) => {
-              if (event.currentTarget.contains(event.relatedTarget as Node | null)) return;
-              setDropId((current) => (current === tab.id ? null : current));
-            }}
-            onDrop={(event) => {
-              setDropId(null);
-              if (dragging.current !== null || tab.path === null) {
+                event.dataTransfer.dropEffect = event.ctrlKey ? "copy" : "move";
+                setDropId(tab.id);
+              }}
+              onDragLeave={(event) => {
+                if (event.currentTarget.contains(event.relatedTarget as Node | null)) return;
+                setDropId((current) => (current === tab.id ? null : current));
+              }}
+              onDrop={(event) => {
+                setDropId(null);
+                if (dragging.current !== null || tab.path === null) {
+                  event.preventDefault();
+                  return;
+                }
+                const folder = tab.path;
+                const copy = event.ctrlKey;
+                if (isExternalFileDrag(event)) {
+                  event.preventDefault();
+                  void droppedPaths(event.dataTransfer).then((paths) => {
+                    if (paths.length > 0) onDropInto(folder, paths, copy);
+                  });
+                  return;
+                }
+                const payload = getDrag();
+                if (payload?.kind !== "entry" || !canDropInto(folder, payload)) return;
                 event.preventDefault();
-                return;
-              }
-              const folder = tab.path;
-              const copy = event.ctrlKey;
-              if (isExternalFileDrag(event)) {
-                event.preventDefault();
-                void droppedPaths(event.dataTransfer).then((paths) => {
-                  if (paths.length > 0) onDropInto(folder, paths, copy);
-                });
-                return;
-              }
-              const payload = getDrag();
-              if (payload?.kind !== "entry" || !canDropInto(folder, payload)) return;
-              event.preventDefault();
-              endDrag();
-              onDropInto(folder, payload.items.map((item) => item.path), copy);
-            }}
-          >
-            <span className="fw-tab-icon">
-              <FolderIcon size={14} />
-            </span>
-            <span className="fw-tab-title min-w-0 flex-1 truncate">{title}</span>
-            <button
-              type="button"
-              className="fw-tab-close"
-              aria-label={t("tabs.close")}
-              data-tooltip={t("tabs.close")}
-              tabIndex={-1}
-              onMouseDown={(event) => event.preventDefault()}
-              onClick={(event) => {
-                event.stopPropagation();
-                onClose(tab.id);
+                endDrag();
+                onDropInto(
+                  folder,
+                  payload.items.map((item) => item.path),
+                  copy,
+                );
               }}
             >
-              <X size={12} strokeWidth={2.5} />
-            </button>
-          </div>
-        );
-      })}
+              <span className="fw-tab-title truncate">{title}</span>
+              <button
+                type="button"
+                className="fw-tab-close"
+                aria-label={t("tabs.close")}
+                data-tooltip={t("tabs.close")}
+                tabIndex={-1}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onClose(tab.id);
+                }}
+              >
+                <X size={12} strokeWidth={2.5} />
+              </button>
+            </div>
+          );
+        })}
+      </div>
 
       <button
         type="button"

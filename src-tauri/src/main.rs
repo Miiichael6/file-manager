@@ -2185,8 +2185,68 @@ fn stat_paths(paths: Vec<String>) -> Vec<StatResult> {
         .collect()
 }
 
+/// Jedno pravidlo rozšířeného hledání. Platit musí všechna (AND); relativní
+/// data („za poslední 3 týdny") převádí na unix sekundy už frontend.
+#[derive(serde::Deserialize)]
+#[serde(tag = "type", rename_all = "camelCase")]
+enum SearchRule {
+    /// `op`: contains / begins / ends / is; hodnota se porovnává malými písmeny.
+    Name { op: String, value: String },
+    /// Složka (`folder`), nebo soubor s jednou z přípon (bez tečky, malými).
+    Kind { folder: bool, extensions: Vec<String> },
+    Modified { after: Option<i64>, before: Option<i64> },
+    Created { after: Option<i64>, before: Option<i64> },
+    /// Bajty; složky velikost nemají, takže pravidlu nevyhoví.
+    Size { min: Option<u64>, max: Option<u64> },
+}
+
+fn in_range(value: i64, after: Option<i64>, before: Option<i64>) -> bool {
+    after.is_none_or(|after| value >= after) && before.is_none_or(|before| value < before)
+}
+
+impl SearchRule {
+    fn matches(&self, name: &str, meta: &fs::Metadata) -> bool {
+        match self {
+            SearchRule::Name { op, value } => {
+                let name = name.to_lowercase();
+                let value = value.trim().to_lowercase();
+                match op.as_str() {
+                    "begins" => name.starts_with(&value),
+                    "ends" => name.ends_with(&value),
+                    "is" => name == value,
+                    _ => name.contains(&value),
+                }
+            }
+            SearchRule::Kind { folder, extensions } => {
+                if *folder {
+                    return meta.is_dir();
+                }
+                if meta.is_dir() {
+                    return false;
+                }
+                let extension = Path::new(name)
+                    .extension()
+                    .map(|ext| ext.to_string_lossy().to_lowercase());
+                extension.is_some_and(|ext| extensions.contains(&ext))
+            }
+            SearchRule::Modified { after, before } => {
+                in_range(to_unix_seconds(meta.modified()), *after, *before)
+            }
+            SearchRule::Created { after, before } => {
+                in_range(to_unix_seconds(meta.created()), *after, *before)
+            }
+            SearchRule::Size { min, max } => {
+                !meta.is_dir()
+                    && min.is_none_or(|min| meta.len() >= min)
+                    && max.is_none_or(|max| meta.len() <= max)
+            }
+        }
+    }
+}
+
 /// Projde strom pod `root` a vrátí prvních `max_results` položek, jejichž název
-/// obsahuje `query` (case-insensitive).
+/// obsahuje `query` (case-insensitive) — nebo, když přijdou `criteria`,
+/// které vyhoví všem pravidlům rozšířeného hledání (`query` se pak nepoužije).
 ///
 /// Prořezává se **při sestupu** (`filter_entry`), takže se do `node_modules`
 /// a spol. vůbec nevkročí, místo aby se jejich obsah zahazoval až po projití.
@@ -2198,13 +2258,15 @@ fn search_recursive(
     max_results: usize,
     show_hidden: Option<bool>,
     search_id: u64,
+    criteria: Option<Vec<SearchRule>>,
 ) -> CmdResult<Vec<FileEntry>> {
     use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::Arc;
 
     let show_hidden = show_hidden.unwrap_or(false);
     let needle = query.trim().to_lowercase();
-    if needle.is_empty() {
+    let criteria = criteria.filter(|rules| !rules.is_empty());
+    if needle.is_empty() && criteria.is_none() {
         return Ok(Vec::new());
     }
 
@@ -2255,18 +2317,20 @@ fn search_recursive(
             continue;
         }
 
-        if !item
-            .file_name()
-            .to_string_lossy()
-            .to_lowercase()
-            .contains(&needle)
-        {
+        let name = item.file_name().to_string_lossy();
+        if criteria.is_none() && !name.to_lowercase().contains(&needle) {
             continue;
         }
 
         let Ok(metadata) = item.metadata() else {
             continue;
         };
+
+        if let Some(rules) = &criteria {
+            if !rules.iter().all(|rule| rule.matches(&name, &metadata)) {
+                continue;
+            }
+        }
 
         entries.push(make_entry(item.path(), &metadata));
 
@@ -2626,6 +2690,27 @@ struct MediaInfo {
     width: Option<u32>,
     height: Option<u32>,
     pages: Option<u32>,
+    // MI-FORK: hudba (ID3 přes property system), video a fotka (EXIF).
+    title: Option<String>,
+    artist: Option<String>,
+    album: Option<String>,
+    year: Option<u32>,
+    genre: Option<String>,
+    /// bit/s (audio u hudby, celkový u videa).
+    bitrate: Option<u32>,
+    sample_rate: Option<u32>,
+    channels: Option<u32>,
+    /// Snímky za 1000 s (System.Video.FrameRate) — 29 970 = 29,97 fps.
+    frame_rate: Option<u32>,
+    camera: Option<String>,
+    /// Datum pořízení, unix ms.
+    taken: Option<i64>,
+    iso: Option<u32>,
+    f_number: Option<f64>,
+    /// Expozice v sekundách.
+    exposure: Option<f64>,
+    /// Ohnisková vzdálenost v mm.
+    focal_length: Option<f64>,
 }
 
 /// Vlastnosti z Windows property systemu (System.Media.Duration,
@@ -2636,11 +2721,18 @@ fn read_media_info(path: &str) -> CmdResult<MediaInfo> {
     use windows::core::HSTRING;
     use windows::Win32::Foundation::PROPERTYKEY;
     use windows::Win32::Storage::EnhancedStorage::{
-        PKEY_Document_PageCount, PKEY_Image_HorizontalSize, PKEY_Image_VerticalSize, PKEY_Media_Duration,
-        PKEY_Video_FrameHeight, PKEY_Video_FrameWidth,
+        PKEY_Audio_ChannelCount, PKEY_Audio_EncodingBitrate, PKEY_Audio_SampleRate, PKEY_Document_PageCount,
+        PKEY_Image_HorizontalSize, PKEY_Image_VerticalSize, PKEY_Media_Duration, PKEY_Media_Year, PKEY_Music_AlbumTitle,
+        PKEY_Music_Artist, PKEY_Music_Genre, PKEY_Photo_CameraManufacturer, PKEY_Photo_CameraModel, PKEY_Photo_DateTaken,
+        PKEY_Photo_ExposureTime, PKEY_Photo_FNumber, PKEY_Photo_FocalLength, PKEY_Photo_ISOSpeed, PKEY_Title,
+        PKEY_Video_FrameHeight, PKEY_Video_FrameRate, PKEY_Video_FrameWidth, PKEY_Video_TotalBitrate,
     };
-    use windows::Win32::System::Com::StructuredStorage::{PropVariantClear, PropVariantToUInt32, PropVariantToUInt64};
-    use windows::Win32::System::Com::IBindCtx;
+    use windows::Win32::System::Com::StructuredStorage::{
+        PropVariantClear, PropVariantToDouble, PropVariantToFileTime, PropVariantToStringAlloc, PropVariantToUInt32,
+        PropVariantToUInt64,
+    };
+    use windows::Win32::System::Com::{CoTaskMemFree, IBindCtx};
+    use windows::Win32::System::Variant::PSTF_UTC;
     use windows::Win32::UI::Shell::PropertiesSystem::{IPropertyStore, SHGetPropertyStoreFromParsingName, GPS_BESTEFFORT};
 
     unsafe {
@@ -2659,6 +2751,36 @@ fn read_media_info(path: &str) -> CmdResult<MediaInfo> {
             number.filter(|&number| number > 0)
         };
         let small = |key: &PROPERTYKEY| read(key, false).and_then(|number| u32::try_from(number).ok());
+        // Text; vektor (víc interpretů, žánrů) spojí systém přes „; “.
+        let text = |key: &PROPERTYKEY| -> Option<String> {
+            let mut value = store.GetValue(key).ok()?;
+            let raw = PropVariantToStringAlloc(&value).ok();
+            let _ = PropVariantClear(&mut value);
+            let raw = raw?;
+            let result = raw.to_string().ok();
+            CoTaskMemFree(Some(raw.0 as *const _));
+            result.map(|text| text.trim().to_string()).filter(|text| !text.is_empty())
+        };
+        let real = |key: &PROPERTYKEY| -> Option<f64> {
+            let mut value = store.GetValue(key).ok()?;
+            let number = PropVariantToDouble(&value).ok();
+            let _ = PropVariantClear(&mut value);
+            number.filter(|number| number.is_finite() && *number > 0.0)
+        };
+        let taken = || -> Option<i64> {
+            let mut value = store.GetValue(&PKEY_Photo_DateTaken).ok()?;
+            let time = PropVariantToFileTime(&value, PSTF_UTC).ok();
+            let _ = PropVariantClear(&mut value);
+            let ticks = (u64::from(time?.dwHighDateTime) << 32) | u64::from(time?.dwLowDateTime);
+            // FILETIME = 100 ns od 1601; rozdíl k 1970 je 11 644 473 600 s.
+            (ticks > 0).then(|| (ticks / 10_000) as i64 - 11_644_473_600_000)
+        };
+        // „Canon Canon EOS R6“ → výrobce jen když v modelu chybí.
+        let camera = match (text(&PKEY_Photo_CameraManufacturer), text(&PKEY_Photo_CameraModel)) {
+            (Some(make), Some(model)) if model.to_lowercase().contains(&make.to_lowercase()) => Some(model),
+            (Some(make), Some(model)) => Some(format!("{make} {model}")),
+            (make, model) => model.or(make),
+        };
 
         Ok(MediaInfo {
             // System.Media.Duration je ve 100ns jednotkách.
@@ -2666,6 +2788,22 @@ fn read_media_info(path: &str) -> CmdResult<MediaInfo> {
             width: small(&PKEY_Video_FrameWidth).or_else(|| small(&PKEY_Image_HorizontalSize)),
             height: small(&PKEY_Video_FrameHeight).or_else(|| small(&PKEY_Image_VerticalSize)),
             pages: small(&PKEY_Document_PageCount),
+            title: text(&PKEY_Title),
+            artist: text(&PKEY_Music_Artist),
+            album: text(&PKEY_Music_AlbumTitle),
+            year: small(&PKEY_Media_Year),
+            genre: text(&PKEY_Music_Genre),
+            // U videa celkový, jinak by se ukázal jen bitrate zvukové stopy.
+            bitrate: small(&PKEY_Video_TotalBitrate).or_else(|| small(&PKEY_Audio_EncodingBitrate)),
+            sample_rate: small(&PKEY_Audio_SampleRate),
+            channels: small(&PKEY_Audio_ChannelCount),
+            frame_rate: small(&PKEY_Video_FrameRate),
+            camera,
+            taken: taken(),
+            iso: small(&PKEY_Photo_ISOSpeed),
+            f_number: real(&PKEY_Photo_FNumber),
+            exposure: real(&PKEY_Photo_ExposureTime),
+            focal_length: real(&PKEY_Photo_FocalLength),
         })
     }
 }
@@ -3041,6 +3179,9 @@ fn main() {
             git::git_push,
             git::git_pull,
             git::git_diff,
+            git::git_branches,
+            git::git_checkout,
+            git::git_fetch,
             fileop::transfer_elevated,
             fileop::rename_elevated,
             fileop::create_folder_elevated,

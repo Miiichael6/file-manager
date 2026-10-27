@@ -1,0 +1,237 @@
+/* MI-FORK: reproductor del panel de información (InfoVideoPlayer.tsx).
+   Controles sobre el video con degradado oscuro; se ocultan mientras se
+   reproduce y aparecen al mover el ratón o pulsar una tecla (2 s). */
+
+.mi-player {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #000000;
+  outline: none;
+  /* Texto blanco sobre el video en ambos temas, sin el halo de transparencia. */
+  color: #ffffff;
+  text-shadow: none;
+}
+
+.mi-player:focus-visible {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.mi-player video {
+  display: block;
+  width: 100%;
+  cursor: pointer;
+}
+
+.mi-player.is-fullscreen {
+  display: flex;
+  align-items: center;
+  border-radius: 0;
+}
+
+.mi-player.is-fullscreen video {
+  height: 100%;
+  object-fit: contain;
+}
+
+.mi-player-controls {
+  position: absolute;
+  inset: auto 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 18px 6px 4px;
+  background: linear-gradient(to top, rgb(0 0 0 / 0.78), rgb(0 0 0 / 0.45) 60%, transparent);
+  transition: opacity var(--dur-quick) var(--ease-out);
+}
+
+.mi-player.is-playing:not(.is-awake, .is-audio) .mi-player-controls:not(:hover) {
+  opacity: 0;
+}
+
+.mi-player.is-playing:not(.is-awake) {
+  cursor: none;
+}
+
+.mi-player-timeline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mi-player-time {
+  min-width: 30px;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  opacity: 0.9;
+}
+
+/* Barra de tiempo: reproducido (blanco), cargado (gris), resto (oscuro). */
+.mi-player-range {
+  flex: 1;
+  min-width: 0;
+  height: 14px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  appearance: none;
+}
+
+.mi-player-range::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    to right,
+    #ffffff var(--progress),
+    rgb(255 255 255 / 0.4) var(--progress) var(--loaded),
+    rgb(255 255 255 / 0.18) var(--loaded)
+  );
+  transition: height var(--dur-quick) var(--ease-out);
+}
+
+.mi-player-range:hover::-webkit-slider-runnable-track {
+  height: 5px;
+}
+
+.mi-player-range::-webkit-slider-thumb {
+  width: 11px;
+  height: 11px;
+  margin-top: -4px;
+  border-radius: 9999px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.5);
+  appearance: none;
+  transform: scale(0);
+  transition: transform var(--dur-quick) var(--ease-out);
+}
+
+.mi-player-range:hover::-webkit-slider-thumb {
+  margin-top: -3px;
+}
+
+.mi-player:hover .mi-player-range::-webkit-slider-thumb,
+.mi-player-range:focus-visible::-webkit-slider-thumb {
+  transform: scale(1);
+}
+
+.mi-player-buttons {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+}
+
+.mi-player-button,
+.mi-player-speed {
+  display: grid;
+  place-items: center;
+  height: 24px;
+  border-radius: 6px;
+  color: #ffffff;
+  transition:
+    background-color var(--dur-quick) var(--ease-out),
+    color var(--dur-quick) var(--ease-out);
+}
+
+.mi-player-button {
+  width: 24px;
+}
+
+.mi-player-speed {
+  min-width: 32px;
+  padding: 0 4px;
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.mi-player-button:hover,
+.mi-player-speed:hover {
+  background-color: rgb(255 255 255 / 0.16);
+}
+
+.mi-player-button.is-on {
+  color: #00afe6;
+}
+
+/* Aviso breve en el centro: volumen, velocidad, salto. */
+.mi-player-flash {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  background: rgb(0 0 0 / 0.6);
+  font-size: 12px;
+  font-weight: 600;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  animation: mi-player-flash 700ms var(--ease-out) forwards;
+}
+
+@keyframes mi-player-flash {
+  0%,
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Caja con la proporción del video (aspect-ratio inline); el video la llena. */
+.mi-player:not(.is-fullscreen) video {
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Hasta el primer fotograma: miniatura encima y sin controles (0:00 / 0:00). */
+.mi-player-cover {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.mi-player-cover > span:first-child {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.mi-player-cover img {
+  border-radius: 0;
+}
+
+.mi-player.is-loading .mi-player-controls {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Audio: carátula arriba (ocupa el sitio del botón ▶), controles fijos debajo. */
+.mi-player.is-audio video {
+  display: none;
+}
+
+.mi-player.is-audio .mi-player-cover {
+  position: relative;
+  aspect-ratio: 1;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 35%, #000), #111);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.mi-player.is-audio .mi-player-cover > span:first-child {
+  width: auto !important;
+  height: auto !important;
+}
+
+.mi-player.is-audio .mi-player-controls {
+  position: absolute;
+  opacity: 1;
+}
+
+.mi-player.is-audio.is-playing:not(.is-awake) {
+  cursor: auto;
+}

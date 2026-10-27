@@ -96,6 +96,7 @@ export function FolderOpenButton({ path, run }: Props) {
           })()}
           onClose={() => setMenu(null)}
           triggerSelector="[data-mi-open-trigger]"
+          dropdown
         />
       )}
     </div>

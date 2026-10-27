@@ -102,11 +102,12 @@ export function applyWindowBackdrop(next: WindowBackdrop, strength: Transparency
 /**
  * Výšky lišt přes obsah (stejné hodnoty drží --glass-top / --glass-bottom
  * v index.css): titulek 32 + toolbar 40 + záložky 37; status bar 22 a lišta
- * nové verze 26.
+ * nové verze 26; MI-FORK: lišta rychlých přepínačů 24 (jen v hlavní ploše).
  */
 export const GLASS_TOP = 109;
 export const GLASS_STATUS = 22;
 export const GLASS_UPDATE_BAR = 26;
+export const GLASS_QUICK = 24;
 
 /** O kolik posouvaný obsah začíná pod lištou nahoře a končí nad status barem. */
 export type GlassInsets = { top: number; bottom: number };
