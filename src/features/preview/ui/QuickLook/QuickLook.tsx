@@ -1,0 +1,524 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { convertFileSrc } from "@tauri-apps/api/core";
+import DOMPurify from "dompurify";
+import { marked } from "marked";
+import { Music, X } from "lucide-react";
+
+import { SmallEntryIcon, fileVisual } from "../../../../shared/ui/icons";
+import { invoke } from "../../../../shared/infrastructure/fileops";
+import { formatSize, kindLabel, previewKind, type PreviewKind } from "../../../../shared/domain/format";
+import { errorText, useT } from "../../../../shared/i18n/index";
+import { motionMs } from "../../../../shared/lib/motion";
+import type { FileEntry } from "../../../../shared/domain/types";
+import { useDisplayNames } from "../../../file-list/application/extensions";
+// MI-FORK: Git integrado.
+import { gitFileFor, useGitVersion } from "../../../git/application/gitStore";
+import { GitDiffView } from "../../../git/ui/GitDiffView";
+import { GIT_ICONS } from "../../../git/ui/gitIcons";
+
+const MAX_PREVIEW_BYTES = 1_048_576;
+
+/** Zoom z ikony (260 ms — karta letí přes půl okna). Zavření je o kus
+ *  rychlejší, ať to neubíjí. Doby jsou tokeny z index.css. */
+const OPEN = "--dur-zoom";
+const CLOSE = "--dur-slow";
+/** Když se ikona nenajde, jede se jen jemný zoom uprostřed. */
+const FALLBACK = "--dur-enter";
+const OVERLAY_IN = "--dur-slow";
+
+type Origin = { x: number; y: number };
+
+/**
+ * Posun ze středu okna na střed ikony dané položky. Řádky ve všech views
+ * nesou data-path, takže stačí jeden dotaz do DOMu; modal je sice portál,
+ * ale zdrojový řádek je v tu chvíli pořád vykreslený.
+ *
+ * Vrací null, když položka není v DOMu (otevřeno klávesnicí nad odscrollovaným
+ * řádkem) — volající pak spadne na zoom uprostřed okna.
+ */
+function originFor(path: string): Origin | null {
+  const element = document.querySelector(`[data-path="${CSS.escape(path)}"]`);
+  if (element === null) return null;
+
+  const rect = element.getBoundingClientRect();
+  if (rect.width === 0 || rect.height === 0) return null;
+
+  return {
+    x: rect.left + rect.width / 2 - window.innerWidth / 2,
+    y: rect.top + rect.height / 2 - window.innerHeight / 2,
+  };
+}
+
+/* ------------------------------ textový obsah ------------------------------ */
+
+/** `truncated` = soubor je delší a ukazuje se jen začátek (poznámka se
+ *  připisuje až při vykreslení, v aktuálním jazyce). */
+type TextState = {
+  loading: boolean;
+  content: string | null;
+  truncated: boolean;
+  error: string | null;
+};
+
+const NO_TEXT: TextState = { loading: false, content: null, truncated: false, error: null };
+
+function useTextContent(entry: FileEntry, kind: PreviewKind): TextState {
+  const [state, setState] = useState<TextState>(NO_TEXT);
+  const needsText = kind === "text" || kind === "markdown";
+
+  useEffect(() => {
+    if (!needsText) {
+      setState(NO_TEXT);
+      return;
+    }
+
+    let cancelled = false;
+    setState({ ...NO_TEXT, loading: true });
+
+    invoke<{ text: string; truncated: boolean }>("read_text_file", {
+      path: entry.path,
+      maxBytes: MAX_PREVIEW_BYTES,
+    })
+      .then(({ text, truncated }) => {
+        if (!cancelled) setState({ loading: false, content: text, truncated, error: null });
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setState({ ...NO_TEXT, error: errorText(err) });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [entry.path, needsText]);
+
+  return state;
+}
+
+/* -------------------------------- náhledy --------------------------------- */
+
+function Centered({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex h-full w-full flex-col items-center justify-center gap-3 p-8 text-center">
+      {children}
+    </div>
+  );
+}
+
+/** Fallback pro typy bez náhledu i pro soubory, které se nepodařilo přečíst. */
+function Unsupported({ entry, message }: { entry: FileEntry; message: string }) {
+  const names = useDisplayNames();
+  const { Icon, tint } = fileVisual(entry);
+
+  return (
+    <Centered>
+      <Icon size={128} color={tint} strokeWidth={1} />
+      <p className="text-[15px] font-semibold break-all text-primary">{names.entry(entry)}</p>
+      <p className="text-[12px] text-secondary">
+        {formatSize(entry.size, entry.is_dir)} · {kindLabel(entry)}
+      </p>
+      <p className="max-w-[420px] text-[12px] text-secondary">{message}</p>
+    </Centered>
+  );
+}
+
+function TextPreview({ entry, state }: { entry: FileEntry; state: TextState }) {
+  const t = useT();
+  if (state.loading) {
+    return <Centered><p className="text-[13px] text-secondary">{t("common.loading")}</p></Centered>;
+  }
+  if (state.error !== null || state.content === null) {
+    return <Unsupported entry={entry} message={t("quicklook.cannotLoad")} />;
+  }
+
+  return (
+    <pre
+      className="fw-scroll h-full w-full overflow-auto p-5 text-primary"
+      style={{
+        fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+        fontSize: "12px",
+        lineHeight: 1.5,
+        whiteSpace: "pre-wrap",
+        wordBreak: "break-word",
+        userSelect: "text",
+      }}
+    >
+      {state.content}
+      {state.truncated && `\n\n${t("quicklook.truncated")}`}
+    </pre>
+  );
+}
+
+function MarkdownPreview({ entry, state }: { entry: FileEntry; state: TextState }) {
+  const t = useT();
+  // Markdown ze souboru je nedůvěryhodný vstup a webview má přístup k Tauri IPC,
+  // takže výstup marked musí projít sanitizací, než se vloží jako HTML.
+  const html = useMemo(() => {
+    if (state.content === null) return "";
+    const source = state.truncated
+      ? `${state.content}\n\n${t("quicklook.truncated")}`
+      : state.content;
+    return DOMPurify.sanitize(marked.parse(source, { async: false }) as string, {
+      // Obrázek z webu by při pouhém náhledu prozradil, že si uživatel soubor
+      // otevřel (sledovací pixel). Média a formuláře v náhledu nemají co dělat.
+      FORBID_TAGS: ["img", "picture", "source", "video", "audio", "iframe", "form", "input"],
+    });
+  }, [state.content, state.truncated, t]);
+
+  /**
+   * Klik na odkaz by navigoval celé okno aplikace na web — bez cesty zpět.
+   * Webové odkazy se proto otevřou ve výchozím prohlížeči, kotvy (#nadpis)
+   * doscrollují uvnitř náhledu a zbytek (relativní cesty) se ignoruje.
+   */
+  function handleClick(event: React.MouseEvent<HTMLDivElement>) {
+    const link = (event.target as Element).closest("a");
+    if (!link) return;
+    event.preventDefault();
+
+    const href = link.getAttribute("href") ?? "";
+    if (href.startsWith("#")) {
+      const id = decodeURIComponent(href.slice(1));
+      event.currentTarget.querySelector(`[id="${CSS.escape(id)}"]`)?.scrollIntoView();
+      return;
+    }
+    if (/^(https?:|mailto:)/i.test(href)) {
+      invoke("open_file", { path: href }).catch(() => undefined);
+    }
+  }
+
+  if (state.loading) {
+    return <Centered><p className="text-[13px] text-secondary">{t("common.loading")}</p></Centered>;
+  }
+  if (state.error !== null || state.content === null) {
+    return <Unsupported entry={entry} message={t("quicklook.cannotLoad")} />;
+  }
+
+  return (
+    <div
+      onClick={handleClick}
+      className="ql-markdown fw-scroll h-full w-full overflow-auto p-6 text-primary"
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
+}
+
+function PreviewBody({ entry, state }: { entry: FileEntry; state: TextState }) {
+  const names = useDisplayNames();
+  const t = useT();
+  const kind = previewKind(entry);
+  const source = convertFileSrc(entry.path);
+
+  switch (kind) {
+    case "image":
+      return (
+        <div className="flex h-full w-full items-center justify-center p-4">
+          <img
+            src={source}
+            alt={entry.name}
+            className="max-h-full max-w-full"
+            style={{ objectFit: "contain" }}
+          />
+        </div>
+      );
+
+    case "pdf":
+      return <iframe src={source} title={entry.name} width="100%" height="100%" style={{ border: 0 }} />;
+
+    case "video":
+      return (
+        <div className="flex h-full w-full items-center justify-center bg-black/90">
+          <video
+            src={source}
+            controls
+            autoPlay
+            muted
+            style={{ maxWidth: "100%", maxHeight: "100%" }}
+          />
+        </div>
+      );
+
+    case "audio":
+      return (
+        <Centered>
+          <Music size={96} strokeWidth={1.25} style={{ color: "var(--accent)" }} />
+          <p className="text-[15px] font-semibold break-all text-primary">{names.entry(entry)}</p>
+          <audio src={source} controls autoPlay style={{ width: "80%" }} />
+        </Centered>
+      );
+
+    case "markdown":
+      return <MarkdownPreview entry={entry} state={state} />;
+
+    case "text":
+      return <TextPreview entry={entry} state={state} />;
+
+    default:
+      return <Unsupported entry={entry} message={t("quicklook.unavailable")} />;
+  }
+}
+
+/* ------------------------------- Quick Look ------------------------------- */
+
+type QuickLookProps = {
+  /** Seznam v pořadí zdrojového view; složky se přeskakují. */
+  entries: FileEntry[];
+  entry: FileEntry;
+  onClose: () => void;
+  onOpenFile: (entry: FileEntry) => void;
+  /** Pravý klik na kartu — menu pro právě zobrazený soubor. */
+  onContextMenu: (entry: FileEntry, x: number, y: number) => void;
+  /** Šipky přepnuly soubor — výběr ve výpisu se má posunout s ním, jinak
+   *  by po zavření zůstal vybraný ten, kterým se začínalo. */
+  onCurrentChange?: (entry: FileEntry) => void;
+};
+
+export function QuickLook({
+  entries,
+  entry,
+  onClose,
+  onOpenFile,
+  onContextMenu,
+  onCurrentChange,
+}: QuickLookProps) {
+  const names = useDisplayNames();
+  const t = useT();
+  const files = useMemo(() => entries.filter((item) => !item.is_dir), [entries]);
+
+  const [currentPath, setCurrentPath] = useState(entry.path);
+  const [visible, setVisible] = useState(false);
+  // Spočítá se jednou při otevření, ještě než modal cokoli překryje.
+  const [origin, setOrigin] = useState<Origin | null>(() => originFor(entry.path));
+
+  const cardRef = useRef<HTMLDivElement>(null);
+  const closeTimer = useRef<number | null>(null);
+
+  const index = files.findIndex((file) => file.path === currentPath);
+  const current = index >= 0 ? files[index] : entry;
+
+  const textState = useTextContent(current, previewKind(current));
+
+  // MI-FORK: diff místo náhledu — jen u souborů se změnou v gitu (ne ignorovaných).
+  useGitVersion();
+  const [showDiff, setShowDiff] = useState(false);
+  const git = gitFileFor(current.path);
+  const diffable = git !== null && git.file.index !== "!";
+
+  const requestClose = useCallback(() => {
+    if (closeTimer.current !== null) return;
+
+    // Šipkami se mohl soubor přepnout — zavírá se tedy do ikony toho, který je
+    // vidět teď, ne toho, kterým se začínalo.
+    const target = originFor(currentPath);
+    if (target !== null) setOrigin(target);
+
+    setVisible(false);
+    const zooming = (target ?? origin) !== null;
+    closeTimer.current = window.setTimeout(onClose, motionMs(zooming ? CLOSE : FALLBACK));
+  }, [onClose, currentPath, origin]);
+
+  const step = useCallback(
+    (delta: number) => {
+      if (index < 0 || files.length === 0) return;
+      const next = index + delta;
+      if (next < 0 || next >= files.length) return;
+      setCurrentPath(files[next].path);
+      onCurrentChange?.(files[next]);
+    },
+    [index, files, onCurrentChange],
+  );
+
+  // Fade + scale in po připojení; zavření běží zrcadlově přes requestClose.
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (closeTimer.current !== null) window.clearTimeout(closeTimer.current);
+    },
+    [],
+  );
+
+  // Fokus přebírá karta, aby klávesy nechodily do column view pod modalem.
+  useEffect(() => {
+    const previous = document.activeElement as HTMLElement | null;
+    cardRef.current?.focus();
+    return () => previous?.focus?.();
+  }, []);
+
+  useEffect(() => {
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, []);
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      switch (event.key) {
+        case "Escape":
+        case " ":
+          event.preventDefault();
+          requestClose();
+          break;
+        case "ArrowRight":
+          event.preventDefault();
+          step(1);
+          break;
+        case "ArrowLeft":
+          event.preventDefault();
+          step(-1);
+          break;
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [requestClose, step]);
+
+  // Boční tlačítka myši listují soubory stejně jako šipky. Capture fáze je
+  // nutná — karta níž si v onMouseDown volá stopPropagation, což by událost
+  // v bubble fázi do window nepustilo.
+  useEffect(() => {
+    function onMouseDown(event: MouseEvent) {
+      if (event.button !== 3 && event.button !== 4) return;
+
+      event.preventDefault();
+      step(event.button === 3 ? -1 : 1);
+    }
+
+    window.addEventListener("mousedown", onMouseDown, true);
+    return () => window.removeEventListener("mousedown", onMouseDown, true);
+  }, [step]);
+
+  function handleOpen() {
+    onOpenFile(current);
+    requestClose();
+  }
+
+  /* ---------------------------- animace karty ----------------------------- */
+
+  // Zavřený stav = zmenšeno na střed ikony. Pořadí funkcí je podstatné:
+  // scale proběhne kolem středu karty, translate ji teprve posadí na ikonu.
+  // Bez známé ikony zbývá jemný zoom uprostřed okna.
+  const closedTransform =
+    origin === null
+      ? "translate(0px, 0px) scale(0.9)"
+      : `translate(${origin.x}px, ${origin.y}px) scale(0.1)`;
+
+  const duration = `var(${origin === null ? FALLBACK : visible ? OPEN : CLOSE})`;
+  const closeDuration = `var(${origin === null ? FALLBACK : CLOSE})`;
+  const curve = "var(--ease-out)";
+
+  return createPortal(
+    <div
+      // Jen primární tlačítko zavírá. Boční tlačítka listují soubory a prostřední
+      // by modal zavřelo taky, což u obojího nikdo nečeká.
+      onMouseDown={(event) => {
+        if (event.button === 0) requestClose();
+      }}
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{
+        background: "var(--overlay-strong)",
+        backdropFilter: "blur(10px)",
+        opacity: visible ? 1 : 0,
+        // Pozadí stmívá vlastním tempem, ale při zavírání nesmí zmizet dřív
+        // než karta — jinak by karta chvíli visela nad nezastřeným oknem.
+        transition: `opacity ${visible ? `var(${OVERLAY_IN})` : closeDuration} var(--ease-out)`,
+      }}
+    >
+      <div
+        ref={cardRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("quicklook.label", { name: names.entry(current) })}
+        onMouseDown={(event) => event.stopPropagation()}
+        onContextMenu={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          onContextMenu(current, event.clientX, event.clientY);
+        }}
+        className="fw-ql-card flex flex-col overflow-hidden rounded-xl outline-none"
+        style={{
+          background: "var(--bg-main)",
+          width: "85%",
+          height: "85%",
+          maxWidth: "85%",
+          maxHeight: "85%",
+          opacity: visible ? 1 : 0,
+          transform: visible ? "translate(0px, 0px) scale(1)" : closedTransform,
+          transition: `opacity ${duration} ${curve}, transform ${duration} ${curve}`,
+          willChange: "transform, opacity",
+          boxShadow: "var(--shadow-dialog)",
+        }}
+      >
+        <header
+          className="fw-ql-header flex h-11 shrink-0 items-center gap-2 border-b border-line px-4"
+          style={{ background: "var(--bg-toolbar)" }}
+        >
+          <SmallEntryIcon entry={current} />
+          <span className="min-w-0 flex-1 truncate text-[14px] font-semibold text-primary">
+            {names.entry(current)}
+          </span>
+
+          {/* MI-FORK: přepínač Diff. */}
+          {diffable && (
+            <button
+              type="button"
+              aria-pressed={showDiff}
+              onClick={() => setShowDiff((value) => !value)}
+              className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-medium text-primary ${showDiff ? "bg-[color:var(--row-selected-inactive)]" : "hover:bg-hover"}`}
+            >
+              <GIT_ICONS.diff size={13} strokeWidth={2} aria-hidden />
+              {t("git.diff")}
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={handleOpen}
+            className="fw-ql-open shrink-0 rounded-full bg-[color:var(--accent-fill)] px-3 py-1 text-[12px] font-medium text-[color:var(--on-accent)] fw-t-opacity hover:opacity-90"
+          >
+            {t("common.open")}
+          </button>
+
+          <button
+            type="button"
+            aria-label={t("common.close")}
+            onClick={requestClose}
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-primary hover:bg-hover"
+          >
+            <X size={14} strokeWidth={2} />
+          </button>
+        </header>
+
+        <div className="min-h-0 flex-1 overflow-hidden" style={{ background: "var(--bg-main)" }}>
+          {/* key vynutí remount, čímž se přehraje 100ms cross-fade při přepnutí souboru. */}
+          <div key={current.path} className="ql-fade h-full w-full">
+            {/* MI-FORK: diff v gitu. */}
+            {showDiff && diffable ? (
+              <GitDiffView root={git.root} path={current.path} untracked={git.file.index === "?"} />
+            ) : (
+              <PreviewBody entry={current} state={textState} />
+            )}
+          </div>
+        </div>
+
+        <footer
+          className="flex h-8 shrink-0 items-center gap-3 border-t border-line px-4 text-[11px] text-secondary"
+          style={{ background: "var(--bg-toolbar)" }}
+        >
+          <span>
+            {t("quicklook.position", { index: index >= 0 ? index + 1 : 1, count: files.length || 1 })}
+          </span>
+          <span>{formatSize(current.size, current.is_dir)}</span>
+          <span className="truncate">{kindLabel(current)}</span>
+        </footer>
+      </div>
+    </div>,
+    document.body,
+  );
+}

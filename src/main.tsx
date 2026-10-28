@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import App from "./App";
-import { applyTheme, readThemeMirror, resolveTheme } from "./theme";
+import App from "./app/App";
+import { applyTheme, readThemeMirror, resolveTheme } from "./features/theme/application/theme";
 // Inter přibalený v aplikaci místo Google Fonts: funguje offline a CSP
 // nemusí povolovat cizí domény.
 import "@fontsource/inter/400.css";
@@ -9,15 +9,15 @@ import "@fontsource/inter/500.css";
 import "@fontsource/inter/600.css";
 import "./index.css";
 // MI-FORK: světlé téma fork (po index.css – vyhrává pořadím).
-import "./mi-fork/light-style.css";
+import "./features/theme/ui/light-style.css";
 // MI-FORK: tmavé téma fork.
-import "./mi-fork/dark-style.css";
+import "./features/theme/ui/dark-style.css";
 // MI-FORK: kontextové menu s ikonami.
-import "./mi-fork/menu-style.css";
+import "./shared/ui/ContextMenu/menu-style.css";
 // MI-FORK: sidebar plano como TablePlus.
-import "./mi-fork/sidebar-flat.css";
+import "./features/sidebar/ui/Sidebar/sidebar-flat.css";
 // MI-FORK: umbrales del toolbar con los botones del fork.
-import "./mi-fork/toolbar-fit.css";
+import "./features/toolbar/ui/Toolbar/toolbar-fit.css";
 
 // Nastavit třídu ještě před prvním renderem, ať dark uživatel nevidí bílý záblesk.
 applyTheme(resolveTheme(readThemeMirror()));

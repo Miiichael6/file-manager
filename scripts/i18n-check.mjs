@@ -1,6 +1,6 @@
 // Hlídá překlady UI. Běží před každým buildem (npm run build).
 //
-//  (a) Ve zdrojácích mimo src/i18n/ nesmí zůstat text pro uživatele napsaný
+//  (a) Ve zdrojácích mimo src/shared/i18n/ nesmí zůstat text pro uživatele napsaný
 //      natvrdo: řetězec s českými znaky kdekoli v kódu, a jakýkoli text v JSX,
 //      v atributech title / aria-label / placeholder / alt / data-tooltip
 //      a ve vlastnostech i props label / title / message / hint / confirmLabel.
@@ -18,7 +18,7 @@ import ts from "typescript";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const SRC = join(ROOT, "src");
-const I18N = join(SRC, "i18n");
+const I18N = join(SRC, "shared", "i18n");
 
 const CZECH = /[áéěíóúůýčďňřšťžÁÉĚÍÓÚŮÝČĎŇŘŠŤŽ]/;
 /** Aspoň dvě písmena za sebou — "×", "›", "+3" ani "%" text nejsou. */
@@ -190,17 +190,17 @@ function readDictionary(file, exportName) {
       if (!ts.isObjectLiteralExpression(object)) continue;
       for (const property of object.properties) {
         if (!ts.isPropertyAssignment(property)) {
-          problems.push(`src/i18n/${exportName}.ts: nečekaný zápis ${property.getText(source).slice(0, 40)}`);
+          problems.push(`src/shared/i18n/${exportName}.ts: nečekaný zápis ${property.getText(source).slice(0, 40)}`);
           continue;
         }
         const key = propertyName(property);
-        if (entries.has(key)) problems.push(`src/i18n/${exportName}.ts: duplicitní klíč "${key}"`);
+        if (entries.has(key)) problems.push(`src/shared/i18n/${exportName}.ts: duplicitní klíč "${key}"`);
         entries.set(key, value(property.initializer));
       }
     }
   }
 
-  if (entries.size === 0) problems.push(`src/i18n/${exportName}.ts: slovník "${exportName}" nenalezen`);
+  if (entries.size === 0) problems.push(`src/shared/i18n/${exportName}.ts: slovník "${exportName}" nenalezen`);
   return entries;
 }
 
@@ -214,10 +214,10 @@ function checkDictionaries() {
   const enEntries = readDictionary(join(I18N, "en.ts"), "en");
 
   for (const key of csEntries.keys()) {
-    if (!enEntries.has(key)) problems.push(`src/i18n/en.ts: chybí klíč "${key}"`);
+    if (!enEntries.has(key)) problems.push(`src/shared/i18n/en.ts: chybí klíč "${key}"`);
   }
   for (const key of enEntries.keys()) {
-    if (!csEntries.has(key)) problems.push(`src/i18n/cs.ts: chybí klíč "${key}" (je jen v en.ts)`);
+    if (!csEntries.has(key)) problems.push(`src/shared/i18n/cs.ts: chybí klíč "${key}" (je jen v en.ts)`);
   }
 
   for (const [key, csValue] of csEntries) {
@@ -231,10 +231,10 @@ function checkDictionaries() {
       continue;
     }
     if (csPlural && !["one", "few", "other"].every((form) => typeof csValue[form] === "string")) {
-      problems.push(`src/i18n/cs.ts "${key}": plurál potřebuje one / few / other`);
+      problems.push(`src/shared/i18n/cs.ts "${key}": plurál potřebuje one / few / other`);
     }
     if (enPlural && !["one", "other"].every((form) => typeof enValue[form] === "string")) {
-      problems.push(`src/i18n/en.ts "${key}": plurál potřebuje one / other`);
+      problems.push(`src/shared/i18n/en.ts "${key}": plurál potřebuje one / other`);
     }
     if (placeholders(csValue) !== placeholders(enValue)) {
       problems.push(`"${key}": jiné parametry — cs {${placeholders(csValue)}}, en {${placeholders(enValue)}}`);

@@ -640,7 +640,7 @@ const RECS = {
     async after(a) {
       await a.go(`${DEMO}\\Videos`);
       fs.rmSync(TRIP, { recursive: true, force: true });
-      await a.c.evaluate(`import("/src/lib/storage.ts").then((s) => s.removeRecent(${JSON.stringify(TRIP)}))`);
+      await a.c.evaluate(`import("/src/shared/infrastructure/storage.ts").then((s) => s.removeRecent(${JSON.stringify(TRIP)}))`);
     },
   },
   // Pod CSS zoomem aplikace umístí kontextové menu na 1,5násobek souřadnic kliku – pravý klik jen vlevo nahoře.
@@ -674,7 +674,7 @@ const RECS = {
     },
     async after(a) {
       await a.go(SUMMER);
-      for (const p of this.tagged) await a.c.evaluate(`import("/src/lib/storage.ts").then((s) => s.clearTags(${JSON.stringify(p)}))`);
+      for (const p of this.tagged) await a.c.evaluate(`import("/src/shared/infrastructure/storage.ts").then((s) => s.clearTags(${JSON.stringify(p)}))`);
       await a.c.sleep(300);
     },
   },
@@ -683,7 +683,7 @@ const RECS = {
     screen: true,
     before: async (a) => {
       await a.reset(SUMMER, "Icons");
-      await a.c.evaluate(`import("/src/lib/storage.ts").then((s) => s.setWindowTransparency(false))`);
+      await a.c.evaluate(`import("/src/shared/infrastructure/storage.ts").then((s) => s.setWindowTransparency(false))`);
       await a.c.sleep(600);
     },
     async run(a) {
@@ -708,7 +708,7 @@ const RECS = {
       await a.c.sleep(3400);
     },
     after: async (a) => {
-      await a.c.evaluate(`import("/src/lib/storage.ts").then(async (s) => { await s.setWindowTransparency(false); await s.setTransparencyStrength("medium"); })`);
+      await a.c.evaluate(`import("/src/shared/infrastructure/storage.ts").then(async (s) => { await s.setWindowTransparency(false); await s.setTransparencyStrength("medium"); })`);
     },
   },
 };
@@ -821,7 +821,7 @@ async function recordFormat(name) {
     console.log(`${name}/look: ${meta.dur.toFixed(1)} s`);
   } finally {
     try { await RECS.look.after(a); } catch (err) { console.error("úklid look selhal:", err.message); }
-    await c2.evaluate(`import("/src/lib/storage.ts").then((s) => s.setTheme("dark"))`).catch(() => {});
+    await c2.evaluate(`import("/src/shared/infrastructure/storage.ts").then((s) => s.setTheme("dark"))`).catch(() => {});
     c2.close();
     try { unstage?.(); } catch {}
   }

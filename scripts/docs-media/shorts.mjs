@@ -679,7 +679,7 @@ const SCENES = {
       removePdfs();
       // Nedávné: dočasná složka a PDF by zůstaly v sidebaru dalších scén.
       for (const p of [TRIP, `${DEMO}\\Videos\\city-drive.mp4`, ...PDFS.map(([f]) => f)]) {
-        await a.c.evaluate(`import("/src/lib/storage.ts").then((s) => s.removeRecent(${JSON.stringify(p)}))`);
+        await a.c.evaluate(`import("/src/shared/infrastructure/storage.ts").then((s) => s.removeRecent(${JSON.stringify(p)}))`);
       }
     },
   },
@@ -731,7 +731,7 @@ const SCENES = {
       // Nejdřív pryč ze zobrazení štítku (jinak si aplikace štítky uloží znovu), pak smazat.
       await a.go(SUMMER);
       await a.c.sleep(500);
-      for (const p of this.tagged) await a.c.evaluate(`import("/src/lib/storage.ts").then((s) => s.clearTags(${JSON.stringify(p)}))`);
+      for (const p of this.tagged) await a.c.evaluate(`import("/src/shared/infrastructure/storage.ts").then((s) => s.clearTags(${JSON.stringify(p)}))`);
       await a.c.sleep(500);
     },
   },
@@ -757,11 +757,11 @@ const SCENES = {
     },
     before: async (a) => {
       await a.reset(SUMMER, "Icons");
-      await a.c.evaluate(`import("/src/lib/storage.ts").then((s) => s.setWindowTransparency(false))`);
+      await a.c.evaluate(`import("/src/shared/infrastructure/storage.ts").then((s) => s.setWindowTransparency(false))`);
       await a.c.sleep(600);
     },
     after: async (a) => {
-      await a.c.evaluate(`import("/src/lib/storage.ts").then(async (s) => { await s.setWindowTransparency(false); await s.setTransparencyStrength("medium"); })`);
+      await a.c.evaluate(`import("/src/shared/infrastructure/storage.ts").then(async (s) => { await s.setWindowTransparency(false); await s.setTransparencyStrength("medium"); })`);
     },
   },
 };
@@ -822,7 +822,7 @@ for (const n of names) {
   } finally {
     try { await scene.after?.(a); } catch (err) { console.error(`úklid scény ${n} selhal:`, err.message); }
     // Zpět tmavé téma a výchozí okno (scény palette a appearance přepínají na světlé).
-    await a.c.evaluate(`import("/src/lib/storage.ts").then((s) => s.setTheme("dark"))`).catch(() => {});
+    await a.c.evaluate(`import("/src/shared/infrastructure/storage.ts").then((s) => s.setTheme("dark"))`).catch(() => {});
     await a.c.evaluate(`document.documentElement.style.zoom = ""`).catch(() => {});
     await a.c.send("Emulation.clearDeviceMetricsOverride").catch(() => {});
     a.c.close();

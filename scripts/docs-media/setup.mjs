@@ -53,7 +53,7 @@ export async function setup(width = 1280, height = 800, { theme = "dark", langua
   const c = await connect();
   await c.send("Page.enable");
   // Výchozí stav (záložky, téma, jazyk, průhlednost) přes modul storage z vite dev serveru.
-  await c.evaluate(`import("/src/lib/storage.ts").then(async (s) => {
+  await c.evaluate(`import("/src/shared/infrastructure/storage.ts").then(async (s) => {
     await s.setSavedTabs(${JSON.stringify(tabs)});
     await s.setTheme(${JSON.stringify(theme)});
     await s.setLanguage(${JSON.stringify(language)});

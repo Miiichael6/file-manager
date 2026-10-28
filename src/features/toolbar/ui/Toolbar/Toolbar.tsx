@@ -1,0 +1,551 @@
+import { useEffect, useRef, useState } from "react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Columns2,
+  Columns3,
+  CornerLeftUp,
+  LayoutGrid,
+  List,
+  MoreHorizontal,
+  Plus,
+  Search,
+  SlidersHorizontal,
+  Tag,
+  XCircle,
+  type LucideIcon,
+} from "lucide-react";
+
+import { ContextMenu, type MenuItem } from "../../../../shared/ui/ContextMenu";
+import { ShareWindows } from "../../../../shared/ui/icons/ShareWindows";
+import { FolderIcon } from "../../../../shared/ui/icons";
+import { FOLDER_COLORS, folderColorVars, setFolderColor, useFolderColor } from "../../../sidebar/application/folderColor"; // MI-FORK
+import { useShellIntegration } from "../../application/shellIntegration"; // MI-FORK
+import "./nav-capsule.css"; // MI-FORK
+import type { CommandId, Command, Commands } from "../../../command-palette/domain/commands";
+import { useT, type MessageKey } from "../../../../shared/i18n/index";
+import type { ViewMode } from "../../../../shared/domain/types";
+
+/** Všechny ikony toolbaru stejně velké a stejně silné (i v přepínači zobrazení a u Nový). */
+const TOOL_ICON_SIZE = 16;
+const TOOL_ICON_STROKE = 1.75;
+
+type IconButtonProps = {
+  Icon: LucideIcon;
+  label: string;
+  active?: boolean;
+  disabled?: boolean;
+  onClick?: () => void;
+  /** Tlačítka otevírající menu potřebují mousedown — viz komentář u "Více". */
+  onMouseDown?: (event: React.MouseEvent<HTMLButtonElement>) => void;
+  /** Třída na samotnou ikonu, kvůli animaci uvnitř nehybného tlačítka. */
+  iconClassName?: string;
+  /** Nedostupná akce s vysvětlením ("Vyberte soubor") v tooltipu a po kliknutí
+   *  v hlášce (onUnavailable). Vzhled zůstává plný jako u ostatních nástrojů;
+   *  obyčejné `disabled` by tooltip nedovolilo — vypnutý button nedostává myš. */
+  unavailable?: string;
+  onUnavailable?: (message: string) => void;
+  /** Otevírá menu — kontextové menu ho při kliknutí mimo sebe nechá být. */
+  menuTrigger?: boolean;
+};
+
+function IconButton({
+  Icon,
+  label,
+  active = false,
+  disabled = false,
+  onClick,
+  onMouseDown,
+  iconClassName,
+  unavailable,
+  onUnavailable,
+  menuTrigger = false,
+}: IconButtonProps) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      aria-disabled={unavailable !== undefined || undefined}
+      data-tooltip={unavailable ?? label}
+      data-fw-menu-trigger={menuTrigger || undefined}
+      disabled={disabled}
+      onClick={(event) => {
+        if (unavailable === undefined) onClick?.();
+        // Enter / mezerník (detail 0) — myš hlášku ukázala už na mousedown.
+        else if (event.detail === 0) onUnavailable?.(unavailable);
+      }}
+      onMouseDown={(event) => {
+        // Tlačítko si fokus nebere — jinak by po kliku přestaly fungovat
+        // šipky ve výpisu (column view drží klávesnici na svém kontejneru).
+        event.preventDefault();
+        if (unavailable === undefined) onMouseDown?.(event);
+        else if (event.button === 0) onUnavailable?.(unavailable);
+      }}
+      className={`fw-tool-btn flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-primary ${
+        active ? "bg-selected" : "hover:bg-hover"
+      } disabled:pointer-events-none disabled:opacity-35`}
+    >
+      <Icon size={TOOL_ICON_SIZE} strokeWidth={TOOL_ICON_STROKE} className={iconClassName} />
+    </button>
+  );
+}
+
+/** Pořadí segmentů přepínače zobrazení. */
+const VIEW_SEGMENTS: { mode: ViewMode; label: MessageKey; Icon: LucideIcon }[] = [
+  { mode: "icon", label: "toolbar.viewAsIcons", Icon: LayoutGrid },
+  { mode: "list", label: "toolbar.viewAsList", Icon: List },
+  { mode: "column", label: "toolbar.viewAsColumns", Icon: Columns3 },
+];
+
+/** Jeden segmented control místo tří samostatných tlačítek, jako ve Finderu.
+ *  Vyzdvižený segment se mezi pozicemi posouvá transformací. */
+function ViewSwitcher({ mode, onChange }: { mode: ViewMode; onChange: (mode: ViewMode) => void }) {
+  const t = useT();
+  const index = VIEW_SEGMENTS.findIndex((segment) => segment.mode === mode);
+
+  return (
+    <div className="fw-segmented shrink-0" role="radiogroup" aria-label={t("toolbar.view")}>
+      <span
+        aria-hidden
+        className="fw-segment-thumb"
+        style={{ width: 30, transform: `translateX(${index * 30}px)` }}
+      />
+      {VIEW_SEGMENTS.map(({ mode: segment, label, Icon }) => (
+        <button
+          key={segment}
+          type="button"
+          role="radio"
+          aria-checked={segment === mode}
+          aria-label={t(label)}
+          data-tooltip={t(label)}
+          // Jako ostatní tlačítka toolbaru si fokus nebere (šipky ve výpisu).
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => onChange(segment)}
+          className="fw-segment"
+        >
+          <Icon size={TOOL_ICON_SIZE} strokeWidth={TOOL_ICON_STROKE} />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+type ToolbarProps = {
+  folderName: string;
+  /** Skutečná cesta pro tooltip záhlaví; null v tag view a výsledcích hledání. */
+  folderPath: string | null;
+  /** Malá ikona před názvem — stejná jako u složky v sidebaru. */
+  folderIcon: React.ReactNode;
+  viewMode: ViewMode;
+  onViewModeChange: (mode: ViewMode) => void;
+  query: string;
+  onQueryChange: (query: string) => void;
+  /** Enter v poli — filtr aktuální složky se povýší na rekurzivní hledání. */
+  onSearchSubmit: () => void;
+  /** ↓ v poli hledání — přesun do výsledků. */
+  onSearchArrowDown: () => void;
+  searchRef: React.RefObject<HTMLInputElement | null>;
+  /** Položky menu Seřadit / Sdílet / Štítky — sestavuje je App, zná výběr. */
+  sortItems: MenuItem[];
+  shareItems: MenuItem[];
+  /** null = nic není vybrané, tlačítko Štítky je vypnuté. */
+  tagItems: MenuItem[] | null;
+  /** Menu tlačítka Nový (Složka, Textový dokument, typy z registru); null = nejde (tag view, hledání). */
+  newItems: MenuItem[] | null;
+  /** Zvýšení čísla otevře menu Nový — příkaz newItem z palety a klávesnice. */
+  newMenuRequest: number;
+  /** Registr příkazů (commands.ts) — tlačítka i menu Více z něj berou akce,
+   *  stav i zkratky, takže se s klávesnicí a paletou nerozejdou. */
+  commands: Commands;
+  /** Otevřené menu musí App znát kvůli globálním zkratkám (modalOpen). */
+  onMenuOpenChange: (open: boolean) => void;
+  /** Krátká hláška nad status barem (klik na nedostupné Štítky). */
+  onNotice: (message: string) => void;
+  /** MI-FORK: botón «Abrir carpeta con» (src/mi-fork/FolderOpenButton.tsx). */
+  openWith?: React.ReactNode;
+  /** MI-FORK: botones de Git (src/mi-fork/GitToolbarButtons.tsx); solo en un repositorio. */
+  gitTools?: React.ReactNode;
+};
+
+/** Položka menu z příkazu registru — název, zkratka a stav z jednoho místa. */
+export function commandMenuItem(command: Command, label?: string): MenuItem & { type: "item" } {
+  return {
+    type: "item",
+    label: label ?? command.title,
+    shortcut: command.shortcut,
+    disabled: !command.enabled,
+    checked: command.checked,
+    onSelect: command.run,
+  };
+}
+
+type ToolbarMenu = "new" | "sort" | "share" | "tags" | "more";
+
+export function Toolbar({
+  folderName,
+  folderPath,
+  folderIcon,
+  viewMode,
+  onViewModeChange,
+  query,
+  onQueryChange,
+  onSearchSubmit,
+  onSearchArrowDown,
+  searchRef,
+  sortItems,
+  shareItems,
+  tagItems,
+  newItems,
+  newMenuRequest,
+  commands,
+  onMenuOpenChange,
+  onNotice,
+  openWith, // MI-FORK
+  gitTools, // MI-FORK
+}: ToolbarProps) {
+  const t = useT();
+  // Otevřené může být jen jedno menu. Pozice se bere z rámečku tlačítka.
+  const [menu, setMenu] = useState<{ kind: ToolbarMenu; x: number; y: number } | null>(null);
+  const newButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Příkaz newItem (paleta) otevře menu Nový pod tlačítkem. Pamatuje si
+  // zpracovanou hodnotu, ať se menu po remountu neotevře samo.
+  const handledNewRequest = useRef(newMenuRequest);
+  useEffect(() => {
+    const button = newButtonRef.current;
+    if (newMenuRequest === handledNewRequest.current || !button) return;
+    handledNewRequest.current = newMenuRequest;
+    const rect = button.getBoundingClientRect();
+    setMenu({ kind: "new", x: rect.left, y: rect.bottom + 4 });
+  }, [newMenuRequest]);
+
+  useEffect(() => onMenuOpenChange(menu !== null), [menu, onMenuOpenChange]);
+
+  /**
+   * Přepínání musí běžet na mousedown se stopPropagation: ContextMenu se
+   * zavírá posluchačem mousedown na window, takže by se na click otevřelo
+   * znovu hned po zavření a tlačítko by menu nikdy nezavřelo.
+   */
+  function toggleMenu(kind: ToolbarMenu) {
+    return (event: React.MouseEvent<HTMLButtonElement>) => {
+      event.stopPropagation();
+      const rect = event.currentTarget.getBoundingClientRect();
+      setMenu((current) =>
+        current?.kind === kind ? null : { kind, x: rect.left, y: rect.bottom + 4 },
+      );
+    };
+  }
+
+  const item = (id: CommandId, label?: string) => commandMenuItem(commands[id], label);
+  const folderColor = useFolderColor(); // MI-FORK
+  const shellIntegration = useShellIntegration(); // MI-FORK
+
+  const moreItems: MenuItem[] = [
+    item("undo"),
+    item("redo"),
+    { type: "separator" },
+    item("newTab"),
+    item("toggleSplit"),
+    item("separateTabs"), // MI-FORK
+    item("palette"),
+    item("refresh"),
+    item("goParent"),
+    // Zobrazit ▸ jako v Průzkumníku: skryté soubory a přípony.
+    {
+      type: "submenu",
+      label: t("view.menu"),
+      items: [
+        item("toggleHidden", t("view.hiddenFiles")),
+        { type: "separator" },
+        {
+          type: "submenu",
+          label: t("extensions.menu"),
+          items: [
+            item("extensionsWindows", t("extensions.windowsShort")),
+            item("extensionsAlways", t("extensions.alwaysShort")),
+            item("extensionsNever", t("extensions.neverShort")),
+          ],
+        },
+      ],
+    },
+    {
+      type: "submenu",
+      label: t("appearance.menu"),
+      items: [
+        item("themeLight", t("appearance.light")),
+        item("themeDark", t("appearance.dark")),
+        item("themeSystem", t("appearance.system")),
+        { type: "separator" },
+        // MI-FORK: color de carpetas; cada opción lleva su carpeta de muestra.
+        {
+          type: "submenu",
+          label: t("folderColor.menu"),
+          items: FOLDER_COLORS.map((color) => ({
+            type: "item",
+            label: t(`folderColor.${color}`),
+            checked: folderColor === color,
+            icon: (
+              <span className="flex" style={folderColorVars(color) as React.CSSProperties}>
+                <FolderIcon size={16} />
+              </span>
+            ),
+            onSelect: () => void setFolderColor(color),
+          })),
+        },
+        // Průhlednost (vypnuto / rozmazaná) a síla jen tam, kde Windows
+        // Acrylic umí (enabled = Windows 11 22H2+); jinde se nenabízí vůbec.
+        ...(commands.transparencyBlur.enabled
+          ? ([
+              { type: "separator" },
+              item("transparencyOff"),
+              { ...item("transparencyBlur"), tooltip: t("transparency.blurHint") },
+              { type: "separator" },
+              item("transparencySubtle"),
+              item("transparencyMedium"),
+              item("transparencyStrong"),
+            ] satisfies MenuItem[])
+          : []),
+      ],
+    },
+    {
+      type: "submenu",
+      label: t("toolbar.animations"),
+      items: [
+        item("motionSystem", t("motion.system")),
+        item("motionOn", t("motion.on")),
+        item("motionOff", t("motion.off")),
+      ],
+    },
+    {
+      type: "submenu",
+      label: t("terminal.menu"),
+      items: [
+        item("terminalAuto", t("terminal.auto")),
+        item("terminalWindows", t("terminal.windowsTerminal")),
+        item("terminalPwsh", t("terminal.pwsh")),
+        item("terminalPowerShell", t("terminal.powershell")),
+        item("terminalCmd", t("terminal.cmd")),
+      ],
+    },
+    shellIntegration, // MI-FORK: PATH y menú del Explorador.
+    {
+      type: "submenu",
+      label: t("language.menu"),
+      items: [
+        item("languageSystem", t("language.system")),
+        item("languageEnglish", t("language.english")),
+        item("languageCzech", t("language.czech")),
+        item("languageSpanish", t("language.spanish")),
+      ],
+    },
+    { type: "separator" },
+    ...(__STORE__ ? [] : [item("checkUpdates")]),
+    item("about"),
+  ];
+
+  return (
+    // Skupiny s mezerou 12 px: [zpět/vpřed] [název] … [nový] [zobrazení, seřadit]
+    // [sdílet, štítky] [rozdělit, více] [hledání]. Nová záložka je + v liště
+    // záložek, vzhled v menu Více.
+    <header className="fw-toolbar flex h-10 shrink-0 items-center gap-3 px-3">
+      {/* MI-FORK: atrás / adelante / superior en una cápsula con borde (mi-fork/nav-capsule.css). */}
+      <div className="mi-nav-capsule flex shrink-0 items-center gap-0.5">
+        <IconButton
+          Icon={ChevronLeft}
+          label={t("toolbar.back")}
+          disabled={!commands.goBack.enabled}
+          onClick={commands.goBack.run}
+        />
+        <IconButton
+          Icon={ChevronRight}
+          label={t("toolbar.forward")}
+          disabled={!commands.goForward.enabled}
+          onClick={commands.goForward.run}
+        />
+        {/* MI-FORK: carpeta superior junto a atrás/adelante. */}
+        <IconButton
+          Icon={CornerLeftUp}
+          label={`${t("toolbar.parentFolder")} (${commands.goParent.shortcut})`}
+          disabled={!commands.goParent.enabled}
+          onClick={commands.goParent.run}
+        />
+      </div>
+
+      <div className="flex min-w-0 items-center gap-1.5">
+        <span className="flex shrink-0 items-center" aria-hidden>
+          {folderIcon}
+        </span>
+        <h1
+          className="truncate text-[15px] font-semibold text-primary"
+          data-tooltip={folderPath ?? undefined}
+        >
+          {folderName}
+        </h1>
+      </div>
+
+      <div className="flex-1" />
+
+      {/* Nástroje mezi názvem a hledáním. Obal nemá vlastní box (contents) —
+          na úzkém toolbaru se schová, když se hledání rozbalí (index.css). */}
+      <div className="fw-toolbar-tools contents">
+        {/* + Nový jako v Průzkumníku; na úzkém toolbaru jen ikona (index.css). */}
+        <button
+          ref={newButtonRef}
+          type="button"
+          aria-label={t("menu.new")}
+          data-tooltip={t("menu.new")}
+          data-fw-menu-trigger
+          disabled={newItems === null}
+          onMouseDown={(event) => {
+            event.preventDefault();
+            toggleMenu("new")(event);
+          }}
+          className={`fw-tool-btn fw-new-btn ${menu?.kind === "new" ? "bg-selected" : "hover:bg-hover"} disabled:pointer-events-none disabled:opacity-35`}
+        >
+          <Plus size={TOOL_ICON_SIZE} strokeWidth={TOOL_ICON_STROKE} />
+          <span className="fw-new-label">{t("menu.new")}</span>
+        </button>
+
+        {/* Skupiny: [zobrazení + seřadit] [sdílet, štítky] [rozdělit, více] —
+            uvnitř skupiny 4 px (fw-tool-group), mezi skupinami gap toolbaru 12 px. */}
+        <div className="fw-tool-group">
+          <ViewSwitcher mode={viewMode} onChange={onViewModeChange} />
+          <IconButton
+            Icon={SlidersHorizontal}
+            label={t("toolbar.sort")}
+            active={menu?.kind === "sort"}
+            menuTrigger
+            onMouseDown={toggleMenu("sort")}
+          />
+        </div>
+
+        {openWith /* MI-FORK */}
+
+        {gitTools /* MI-FORK */}
+
+        <div className="fw-tool-group">
+          <IconButton
+            Icon={ShareWindows}
+            label={t("toolbar.share")}
+            active={menu?.kind === "share"}
+            menuTrigger
+            onMouseDown={toggleMenu("share")}
+          />
+          <IconButton
+            Icon={Tag}
+            label={t("toolbar.tags")}
+            active={menu?.kind === "tags"}
+            unavailable={tagItems === null ? t("toolbar.tagsUnavailable") : undefined}
+            onUnavailable={onNotice}
+            menuTrigger
+            onMouseDown={toggleMenu("tags")}
+          />
+        </div>
+
+        <div className="fw-tool-group">
+          <IconButton
+            Icon={Columns2}
+            label={t("split.toggleWithShortcut")}
+            active={commands.toggleSplit.checked}
+            onClick={commands.toggleSplit.run}
+          />
+          <IconButton
+            Icon={MoreHorizontal}
+            label={t("toolbar.more")}
+            active={menu?.kind === "more"}
+            menuTrigger
+            onMouseDown={toggleMenu("more")}
+          />
+        </div>
+      </div>
+
+      <div
+        className="fw-search shrink-0"
+        // Klik kamkoli do pole (i na lupu, když je na úzkém toolbaru jen
+        // ikona) zaostří vstup.
+        onMouseDown={(event) => {
+          if (event.target === searchRef.current) return;
+          if ((event.target as HTMLElement).closest("button")) return;
+          event.preventDefault();
+          searchRef.current?.focus();
+        }}
+      >
+        <div className="fw-search-bg" aria-hidden />
+        <div className="fw-search-content">
+          <Search size={14} strokeWidth={2} className="shrink-0 text-secondary" />
+          <input
+            ref={searchRef}
+            type="text"
+            value={query}
+            onChange={(event) => onQueryChange(event.target.value)}
+            onKeyDown={(event) => {
+              // Ctrl+zkratky (nová záložka, paleta…) propustí dál — handler aplikace
+              // v textovém poli pustí jen ty globální, Ctrl+A apod. patří poli.
+              if (!event.ctrlKey && !event.metaKey) event.stopPropagation();
+              if (event.key === "Escape") {
+                event.preventDefault();
+                onQueryChange("");
+                event.currentTarget.blur();
+              }
+              if (event.key === "Enter") {
+                event.preventDefault();
+                onSearchSubmit();
+              }
+              if (event.key === "ArrowDown") {
+                event.preventDefault();
+                onSearchArrowDown();
+              }
+              // Úzký toolbar: rozbalené hledání schovává nástroje před sebou
+              // (index.css) — Shift+Tab by je přeskočil. Fokus na Více ho sbalí.
+              const tools = event.currentTarget.closest(".fw-toolbar")?.querySelector(".fw-toolbar-tools");
+              if (event.key === "Tab" && event.shiftKey && tools && getComputedStyle(tools).display === "none") {
+                event.preventDefault();
+                // Napřed opustit pole — dokud má fokus, jsou nástroje schované.
+                event.currentTarget.blur();
+                tools.querySelector<HTMLElement>(`[aria-label="${t("toolbar.more")}"]`)?.focus();
+              }
+            }}
+            placeholder={t("toolbar.search")}
+            className="min-w-0 flex-1 bg-transparent text-[13px] text-primary outline-none placeholder:text-secondary"
+            style={{ userSelect: "text" }}
+          />
+        </div>
+
+        {query.length > 0 && (
+          <button
+            type="button"
+            aria-label={t("toolbar.clearSearch")}
+            onClick={() => {
+              onQueryChange("");
+              searchRef.current?.focus();
+            }}
+            className="fw-search-clear text-secondary hover:text-primary"
+          >
+            <XCircle size={14} strokeWidth={2} />
+          </button>
+        )}
+      </div>
+
+      {menu && (
+        <ContextMenu
+          x={menu.x}
+          y={menu.y}
+          items={
+            menu.kind === "new"
+              ? (newItems ?? [])
+              : menu.kind === "sort"
+              ? sortItems
+              : menu.kind === "share"
+                ? shareItems
+                : menu.kind === "tags"
+                  ? (tagItems ?? [])
+                  : moreItems
+          }
+          onClose={() => setMenu(null)}
+          triggerSelector="[data-fw-menu-trigger]"
+          dropdown
+        />
+      )}
+    </header>
+  );
+}
