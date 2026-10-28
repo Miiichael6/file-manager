@@ -22,6 +22,9 @@ export type TreeRow = { entry: FileEntry; depth: number };
 /** `*` expande como mucho tantas carpetas — node_modules no debe colgar la app. */
 const EXPAND_ALL_LIMIT = 400;
 
+/** Árbol del sidebar desactivado: las raíces quedan como filas normales. */
+export const TREE_ENABLED = false;
+
 const KEY = "miTree";
 const STORE_FILE = "settings.json";
 

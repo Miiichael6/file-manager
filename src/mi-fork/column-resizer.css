@@ -1,0 +1,96 @@
+/* MI-FORK: tirador de ancho de columna en la cabecera de la vista Lista (ColumnResizer.tsx). */
+
+/* Centrado en el hueco de 12 px (gap-3) a la izquierda o derecha de la celda. */
+.mi-col-resizer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: col-resize;
+  z-index: 1;
+  touch-action: none;
+}
+
+/* dark-style.css / light-style.css meten la celda 6 px en el hueco para pintar
+   el divisor: el tirador se centra sobre él. */
+.mi-col-resizer-left {
+  left: -10px;
+}
+
+.mi-col-resizer-right {
+  right: -10px;
+}
+
+.fw-list-header.grid > :nth-child(n + 3) > .mi-col-resizer-left {
+  left: -4px;
+}
+
+/* Línea marcada sobre el divisor al pasar por el tirador o mientras se arrastra. */
+.mi-col-resizer::after {
+  content: "";
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  left: 3.5px;
+  width: 1px;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.mi-col-resizer:hover::after,
+.mi-col-resizing .mi-col-resizer::after {
+  opacity: 0.8;
+}
+
+/* Durante el arrastre: cursor de redimensionar en todas partes, sin seleccionar texto. */
+.mi-col-resizing,
+.mi-col-resizing * {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+/* Barra horizontal propia de la vista Lista (HorizontalScrollbar.tsx): fija en
+   el borde visible del scroller, siempre a la vista mientras hay desborde. */
+.mi-hscroll {
+  position: sticky;
+  left: 0;
+  bottom: 0;
+  flex-shrink: 0;
+  margin-top: auto;
+  z-index: 10;
+  height: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  /* Plný podklad výpisu: řádky pod lištou neprosvítají a lišta sedí jako
+     pruh těsně nad spodní lištou (na konci seznamu končí poslední řádek na
+     její horní hraně). */
+  background-color: var(--bg-main);
+}
+
+.mi-hscroll::-webkit-scrollbar-thumb {
+  background-color: var(--scroll-thumb);
+}
+
+.mi-hscroll::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in srgb, var(--scroll-thumb), currentColor 30%);
+}
+
+/* Lista corta: el obal de ViewTransition no tiene alto, así que min-h-full
+   de la lista no resolvía y la barra quedaba pegada bajo la última fila. El
+   obal se estira a todo el scroller y la lista lo llena; margin-top: auto
+   lleva la barra abajo, encima de la barra rápida. */
+.fw-scroll[data-view="list"] > :has(> .mi-list-root) {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.mi-list-root {
+  flex: 1 0 auto;
+}
+
+/* La nativa del scroller no se ve (queda bajo la barra de estado): fuera. */
+.fw-scroll[data-view="list"]::-webkit-scrollbar:horizontal {
+  height: 0;
+}

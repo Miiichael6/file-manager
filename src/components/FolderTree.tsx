@@ -29,8 +29,8 @@ import type { FileEntry } from "../types";
  * pintan las que caen en la parte visible del <aside> (más un margen).
  */
 
-/** Igual que ROW_HEIGHT del sidebar (h-[28px]). */
-const ROW = 28;
+/** Igual que ROW_HEIGHT del sidebar (h-[24px]). */
+const ROW = 24;
 const OVERSCAN = 12;
 /** Sangría por nivel; el primero queda bajo el icono de la raíz. */
 const INDENT = 14;
@@ -306,7 +306,7 @@ export function FolderTree({
           key={`ghost:${entry.path}`}
           aria-hidden
           className={`${rowClass(false, false)} fw-tree-leave absolute inset-x-0`}
-          style={{ top: index * ROW, gap: 6, paddingLeft: 4 + (depth - 1) * INDENT }}
+          style={{ top: index * ROW, gap: 6, paddingLeft: 8 + (depth - 1) * INDENT }}
         >
           <span className="inline-block w-3 shrink-0" />
           <SmallEntryIcon entry={entry} />
@@ -379,7 +379,7 @@ export function FolderTree({
             style={{
               top: index * ROW,
               gap: 6,
-              paddingLeft: 4 + (depth - 1) * INDENT,
+              paddingLeft: 8 + (depth - 1) * INDENT,
               ...(enter && { animationDelay: `${delay}ms` }),
             }}
           >

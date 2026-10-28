@@ -199,7 +199,7 @@ function sanitizeFavorites(value: unknown): CustomFavorite[] {
   return value.flatMap((item): CustomFavorite[] => {
     if (typeof item !== "object" || item === null) return [];
 
-    const { label, path, icon, type } = item as Record<string, unknown>;
+    const { label, path, icon, type, group } = item as Record<string, unknown>;
     if (typeof path !== "string" || path === "") return [];
 
     return [
@@ -209,6 +209,8 @@ function sanitizeFavorites(value: unknown): CustomFavorite[] {
         icon: typeof icon === "string" && icon !== "" ? icon : "Folder",
         // Chybějící pole = zápis od starší verze, kdy sem směly jen složky.
         type: type === "file" ? "file" : "folder",
+        // MI-FORK: sección propia del sidebar (mi-fork/sidebarGroups.ts).
+        ...(typeof group === "string" && group !== "" ? { group } : {}),
       },
     ];
   });

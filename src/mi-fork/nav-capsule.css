@@ -14,3 +14,18 @@
   height: 26px;
   border-radius: 13px;
 }
+
+/* Resto del toolbar igual de redondo: botones de icono en círculo («Nuevo»
+   con texto queda en píldora) y el selector de vista en píldora. :root sube
+   la especificidad por encima de la clase rounded-md de Tailwind. */
+:root .fw-toolbar .fw-tool-btn {
+  border-radius: 999px;
+}
+
+:root .fw-toolbar .fw-segmented {
+  border-radius: 14px;
+}
+
+:root .fw-toolbar .fw-segment-thumb {
+  border-radius: 12px;
+}

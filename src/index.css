@@ -1424,6 +1424,131 @@ body {
   background-color: var(--accent);
 }
 
+/* MI-FORK: zóny rozdělení při tažení ouška nad plochu panelů. Celá plocha
+   se jemně ztlumí; náhled cílové strany (sklo s okrajem v barvě zvýraznění)
+   klouže mezi polovinami a nese štítek s názvem záložky. */
+.mi-split-drop {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  background-color: color-mix(in srgb, var(--text-primary) 5%, transparent);
+  animation: mi-split-drop-in var(--dur-nav) ease-out both;
+}
+
+@keyframes mi-split-drop-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.mi-split-drop-zone {
+  min-width: 0;
+}
+
+.mi-split-drop-preview {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    left var(--dur-nav) cubic-bezier(0.2, 0.8, 0.2, 1),
+    width var(--dur-nav) cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity var(--dur-nav) ease;
+}
+
+.mi-split-drop-preview::before {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border: 1.5px solid color-mix(in srgb, var(--accent) 70%, transparent);
+  border-radius: 12px;
+  background-color: color-mix(in srgb, var(--accent) 10%, transparent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, white 25%, transparent),
+    0 8px 28px -12px color-mix(in srgb, var(--accent) 55%, transparent);
+  backdrop-filter: blur(6px) saturate(1.2);
+  transform: scale(0.985);
+  transition: transform var(--dur-nav) cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.mi-split-drop.is-armed .mi-split-drop-preview {
+  opacity: 1;
+}
+
+.mi-split-drop.is-armed .mi-split-drop-preview::before {
+  transform: none;
+}
+
+.mi-split-drop-chip {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100% - 48px);
+  padding: 7px 14px;
+  border-radius: 999px;
+  background-color: var(--accent);
+  color: white;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-shadow: none;
+  box-shadow: 0 6px 18px -6px color-mix(in srgb, var(--accent) 80%, black);
+  transform: translateY(4px);
+  transition: transform var(--dur-nav) cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.mi-split-drop.is-armed .mi-split-drop-chip {
+  transform: none;
+}
+
+/* MI-FORK: duch taženého ouška u kurzoru (mimo lištu záložek). Obal jen
+   posouvá (bez přechodu, aby nezaostával), karta se vynoří a lehce nakloní. */
+.mi-tab-ghost {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.mi-tab-ghost-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 240px;
+  padding: 5px 14px 5px 7px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background-color: color-mix(in srgb, var(--bg-main) 88%, transparent);
+  backdrop-filter: blur(14px) saturate(1.4);
+  color: var(--text-primary);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-shadow: none;
+  box-shadow:
+    0 12px 32px -10px rgb(0 0 0 / 0.35),
+    0 2px 6px rgb(0 0 0 / 0.12);
+  opacity: 0;
+  transform: scale(0.85) rotate(0deg);
+  transform-origin: 0 0;
+  transition:
+    opacity var(--dur-nav) ease,
+    transform var(--dur-nav) cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.mi-tab-ghost.is-shown .mi-tab-ghost-card {
+  opacity: 1;
+  transform: scale(1) rotate(-2deg);
+}
+
 /* Nenápadný proužek nad status barem: je k dispozici nová verze. */
 .fw-update-bar {
   display: flex;
@@ -1496,7 +1621,9 @@ body {
   z-index: 1;
   transition:
     background-color var(--dur-quick) var(--ease-out),
-    color var(--dur-quick) var(--ease-out);
+    color var(--dur-quick) var(--ease-out),
+    box-shadow var(--dur-quick) var(--ease-out),
+    transform var(--dur-nav) cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 /* Výplň aktivní záložky — jeden prvek, který mezi záložkami klouže
@@ -1552,6 +1679,35 @@ body {
   font-weight: 500;
 }
 
+/* MI-FORK: tažené (zvednuté) ouško jede nad ostatními s vlastní výplní —
+   aktivní místo klouzající .fw-tab-pill, která se mezitím schová. */
+.fw-tab.is-lifted {
+  z-index: 3;
+  background-color: var(--tab-active);
+  color: var(--text-primary);
+  box-shadow:
+    0 0 0 0.5px var(--tab-active-ring),
+    0 4px 12px -2px rgb(0 0 0 / 0.18);
+}
+
+.fw-tab.is-lifted:not(.is-active) {
+  background-color: color-mix(in srgb, var(--tab-active) 92%, var(--text-primary));
+}
+
+.fw-tab.is-lifted::before,
+.fw-tab.is-lifted + .fw-tab::before {
+  opacity: 0;
+}
+
+.fw-tab-pill.is-hidden {
+  opacity: 0;
+  transition: none;
+}
+
+.fw-tab.is-dragging .fw-tab-close {
+  opacity: 0;
+}
+
 .fw-tab.is-active.is-blurred {
   color: var(--text-secondary);
 }
@@ -1584,6 +1740,50 @@ body {
 .fw-tab-close:hover {
   background-color: var(--hover);
   color: var(--text-primary);
+}
+
+/* MI-FORK: rozdělená záložka — ikona a oba názvy oddělené čárkou; název
+   aktivního panelu je výraznější, oba se při nedostatku místa zkracují. */
+.mi-tab-split {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+}
+
+.mi-tab-split-icon {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.mi-tab-split-name {
+  flex: 0 1 auto;
+  min-width: 0;
+  opacity: 0.62;
+  transition: opacity var(--dur-quick) var(--ease-out);
+}
+
+.mi-tab-split-name.is-current {
+  opacity: 1;
+}
+
+.fw-tab.is-active .mi-tab-split-name.is-current {
+  font-weight: 600;
+}
+
+.mi-tab-split-sep {
+  flex-shrink: 0;
+  width: 1px;
+  height: 11px;
+  background-color: currentColor;
+  opacity: 0.25;
+}
+
+/* Úzká záložka: ikona rozdělení zmizí dřív než názvy. */
+@container (max-width: 120px) {
+  .mi-tab-split-icon {
+    display: none;
+  }
 }
 
 /* Úzká záložka: místo pro × se nechá jen při najetí. */

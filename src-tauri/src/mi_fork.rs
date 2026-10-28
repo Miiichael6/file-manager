@@ -113,38 +113,11 @@ fn pick_exe(owner: isize, title: &str, filter: &str) -> windows::core::Result<Op
 
 // ---------------------------------------------------------------------------
 // Lista de saltos (clic derecho en el icono de la barra de tareas): categoría
-// «Recientes» con las últimas carpetas abiertas. Cada entrada lanza
-// `dirwise.exe "<carpeta>"`; si la app ya está abierta, tauri-plugin-single-
-// instance pasa los argumentos a la ventana existente (`second_instance`) y la
-// carpeta se abre ahí como pestaña nueva (src/mi-fork/jumpList.ts).
+// «Acceso rápido» con las carpetas ancladas. Cada entrada lanza
+// `file-manager.exe "<carpeta>"`; la ruta la interpreta mi_cli.rs (al arrancar
+// o, con la app ya abierta, en `second_instance`) y se abre como pestaña nueva
+// (src/mi-fork/jumpList.ts).
 // ---------------------------------------------------------------------------
-
-/// Primera carpeta entre los argumentos (sin el .exe).
-fn folder_arg<I: IntoIterator<Item = String>>(args: I) -> Option<String> {
-    args.into_iter().skip(1).find(|arg| Path::new(arg).is_dir())
-}
-
-/// Carpeta pasada al arrancar; se entrega una sola vez (un reload no la repite).
-#[tauri::command(async)]
-pub fn startup_folder() -> Option<String> {
-    static TAKEN: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
-    if TAKEN.swap(true, std::sync::atomic::Ordering::SeqCst) {
-        return None;
-    }
-    folder_arg(std::env::args())
-}
-
-/// Callback de tauri-plugin-single-instance: otra instancia arrancó con `argv`.
-pub fn second_instance(app: &tauri::AppHandle, argv: Vec<String>) {
-    use tauri::{Emitter, Manager};
-    let Some(window) = app.get_webview_window("main") else { return };
-    if let Some(path) = folder_arg(argv) {
-        let _ = window.emit("mi-open-folder", path);
-    }
-    let _ = window.unminimize();
-    let _ = window.show();
-    let _ = window.set_focus();
-}
 
 #[tauri::command(async)]
 pub fn set_jump_list(category: String, paths: Vec<String>) -> CmdResult<()> {

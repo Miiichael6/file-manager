@@ -35,6 +35,8 @@ png = "0.18"
 base64 = "0.23"
 encoding_rs = "0.8"
 tauri-plugin-single-instance = "2"
+# MI-FORK: comprimir / descomprimir ZIP (mi_extras.rs). Rust puro, sin dependencias nativas.
+zip = { version = "2", default-features = false, features = ["deflate"] }
 
 [target."cfg(windows)".dependencies]
 # Cesty souborů přetažených z Průzkumníku (postMessageWithAdditionalObjects).

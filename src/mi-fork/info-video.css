@@ -151,8 +151,10 @@
   background-color: rgb(255 255 255 / 0.16);
 }
 
+/* Activo (bucle, silencio…): el acento de la app; #0a84ff sobre el
+   degradado negro da ≈ 5,8 : 1. */
 .mi-player-button.is-on {
-  color: #00afe6;
+  color: var(--accent);
 }
 
 /* Aviso breve en el centro: volumen, velocidad, salto. */

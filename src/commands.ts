@@ -20,6 +20,7 @@ export type CommandId =
   | "nextTab"
   | "previousTab"
   | "toggleSplit"
+  | "separateTabs"
   | "switchPanel"
   | "copyToOther"
   | "moveToOther"
@@ -47,8 +48,6 @@ export type CommandId =
   | "transparencyMedium"
   | "transparencyStrong"
   | "transparencyBlur"
-  // MI-FORK: Liquid Glass (src/mi-fork/liquidGlass.ts).
-  | "toggleLiquidGlass"
   | "terminalAuto"
   | "terminalWindows"
   | "terminalPwsh"
@@ -73,6 +72,7 @@ export type CommandId =
   | "delete"
   | "deletePermanently"
   | "openTrash"
+  | "openComputer" // MI-FORK
   | "emptyTrash"
   | "copyPath"
   | "openTerminal"
@@ -83,7 +83,12 @@ export type CommandId =
   | "gitStage"
   | "gitUnstage"
   | "gitPull"
-  | "gitPush";
+  | "gitPush"
+  // MI-FORK: extras (mi-fork/useExtras.tsx).
+  | "batchRename"
+  | "compareFiles"
+  | "compressZip"
+  | "extractZip";
 
 /**
  * Kde smí zkratka běžet:
@@ -127,6 +132,8 @@ const DEFINITIONS: Record<CommandId, CommandDefinition> = {
     palette: false,
   },
   toggleSplit: { title: "split.toggle", shortcut: "Ctrl+Shift+D", keys: [{ code: "KeyD", ctrl: true, shift: true }], scope: "global" },
+  // MI-FORK: rozdělená záložka → dvě záložky (opak tažení ouška do panelů).
+  separateTabs: { title: "split.separate", shortcut: "Ctrl+Shift+E", keys: [{ code: "KeyE", ctrl: true, shift: true }], scope: "global" },
   switchPanel: {
     title: "command.switchPanel",
     shortcut: "Tab",
@@ -174,8 +181,6 @@ const DEFINITIONS: Record<CommandId, CommandDefinition> = {
   transparencyStrong: { title: "transparency.strong" },
   // Styl průhlednosti jen s rozmazanou (zatím vypnutá, lib/storage.ts).
   transparencyBlur: { title: "transparency.blur" },
-  // MI-FORK: Liquid Glass.
-  toggleLiquidGlass: { title: "liquidGlass.toggle" },
   terminalAuto: { title: "command.terminalAuto" },
   terminalWindows: { title: "command.terminalWindows" },
   terminalPwsh: { title: "command.terminalPwsh" },
@@ -217,6 +222,7 @@ const DEFINITIONS: Record<CommandId, CommandDefinition> = {
   deletePermanently: { title: "menu.deletePermanently", shortcut: "Shift+Delete", keys: [{ key: "Delete", shift: true }] },
   copyPath: { title: "menu.copyPath", scope: "overlay" },
   openTrash: { title: "menu.openTrash", scope: "global" },
+  openComputer: { title: "menu.openComputer", shortcut: "Ctrl+Shift+M", keys: [{ code: "KeyM", ctrl: true, shift: true }], scope: "global" }, // MI-FORK
   emptyTrash: { title: "menu.emptyTrash", scope: "global" },
   openTerminal: { title: "menu.openInTerminal", scope: "overlay" },
   // Ve Store buildu se nenabízí (ani v menu Více, viz Toolbar).
@@ -228,6 +234,11 @@ const DEFINITIONS: Record<CommandId, CommandDefinition> = {
   gitUnstage: { title: "git.unstageSelection" },
   gitPull: { title: "git.pull" },
   gitPush: { title: "git.push" },
+  // MI-FORK: extras (mi-fork/useExtras.tsx) — dependen de la selección.
+  batchRename: { title: "extras.rename.menu", shortcut: "Ctrl+Shift+F2", keys: [{ key: "F2", ctrl: true, shift: true }] },
+  compareFiles: { title: "extras.compare.menu" },
+  compressZip: { title: "extras.zip.compress" },
+  extractZip: { title: "extras.zip.extract" },
 };
 
 export const COMMAND_IDS = Object.keys(DEFINITIONS) as CommandId[];

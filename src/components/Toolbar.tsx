@@ -20,6 +20,7 @@ import { ContextMenu, type MenuItem } from "./ContextMenu";
 import { ShareWindows } from "./icons/ShareWindows";
 import { FolderIcon } from "./icons";
 import { FOLDER_COLORS, folderColorVars, setFolderColor, useFolderColor } from "../mi-fork/folderColor"; // MI-FORK
+import { useShellIntegration } from "../mi-fork/shellIntegration"; // MI-FORK
 import "../mi-fork/nav-capsule.css"; // MI-FORK
 import type { CommandId, Command, Commands } from "../commands";
 import { useT, type MessageKey } from "../i18n";
@@ -237,6 +238,7 @@ export function Toolbar({
 
   const item = (id: CommandId, label?: string) => commandMenuItem(commands[id], label);
   const folderColor = useFolderColor(); // MI-FORK
+  const shellIntegration = useShellIntegration(); // MI-FORK
 
   const moreItems: MenuItem[] = [
     item("undo"),
@@ -244,6 +246,7 @@ export function Toolbar({
     { type: "separator" },
     item("newTab"),
     item("toggleSplit"),
+    item("separateTabs"), // MI-FORK
     item("palette"),
     item("refresh"),
     item("goParent"),
@@ -272,9 +275,7 @@ export function Toolbar({
         item("themeLight", t("appearance.light")),
         item("themeDark", t("appearance.dark")),
         item("themeSystem", t("appearance.system")),
-        // MI-FORK: Liquid Glass (material de barras y menús).
         { type: "separator" },
-        { ...item("toggleLiquidGlass", t("liquidGlass.menu")), tooltip: t("liquidGlass.hint") },
         // MI-FORK: color de carpetas; cada opción lleva su carpeta de muestra.
         {
           type: "submenu",
@@ -326,6 +327,7 @@ export function Toolbar({
         item("terminalCmd", t("terminal.cmd")),
       ],
     },
+    shellIntegration, // MI-FORK: PATH y menú del Explorador.
     {
       type: "submenu",
       label: t("language.menu"),

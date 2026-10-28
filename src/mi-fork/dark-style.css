@@ -7,11 +7,11 @@
    selektor :root.dark[data-glass="on"] (0,3,0) – bloky tokenů proto mají
    i variantu s [data-glass="on"], která při stejné specificitě vyhrává
    pořadím. Plochy se přepisují jen bez průhlednosti (:not([data-transparency]))
-   – s ní platí krytí (--see-*) z index.css. Liquid Glass (:root[data-liquid])
-   si geometrii menu a linku pod lištou kreslí sám.
+   – s ní platí krytí (--see-*) z index.css. :root:root = specificita jako dřív
+   s :not([data-liquid]) (Liquid Glass byl odstraněn).
 
    Kontrast (WCAG):
-   - bílá na výběru #0a64d6 = 5,63 : 1;
+   - bílá na výběru #003b5e = 11,9 : 1, na zvýraznění menu #0a64d6 = 5,63 : 1;
    - sekundární text #a1a1a6 na #1e1e1e = 6,93, na pruhu 6,4;
    - text na menu #2a2a2c: primární 13,9, sekundární 6,2. */
 
@@ -19,20 +19,23 @@
 
 :root.dark,
 :root.dark[data-glass="on"] {
-  --mi-select: #0a64d6;
+  /* MI-FORK: výběr tmavá námořnická modř (přání uživatele); zvýraznění v menu
+     zůstává jasně modré. */
+  --mi-select: #003b5e;
+  --mi-menu-highlight: #0a64d6;
   --mi-on-select: #ffffff;
   --row-selected-inactive: rgba(255, 255, 255, 0.1);
   --scroll-thumb: rgba(255, 255, 255, 0.22);
   --border: rgba(255, 255, 255, 0.1);
-  --shadow-popover: 0 12px 36px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.3);
-  /* Sidebar: výběr plnou modří, neaktivní jemně světlejší šedá. */
-  --glass-sidebar-selected: var(--mi-select);
+  --shadow-popover: 0 6px 18px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.3);
+  /* Sidebar: výběr průsvitným modrým nádechem, neaktivní jemně světlejší šedá. */
+  /* MI-FORK: en el sidebar la selección es un tinte translúcido del mismo azul, no relleno sólido. */
+  --glass-sidebar-selected: rgba(0, 59, 94, 0.9);
   --glass-sidebar-selected-inactive: rgba(255, 255, 255, 0.1);
-  /* Menu: tmavě grafitové, poloprůhledné a rozmazané jako na snímku
-     (bez Liquid Glass). */
-  --glass-menu: rgba(40, 40, 42, 0.62);
-  --glass-menu-blur: blur(14px) saturate(170%);
-  --glass-highlight: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  /* MI-FORK: menús planos y opacos como TablePlus (sin desenfoque ni brillo). */
+  --glass-menu: #2b2b2d;
+  --glass-menu-blur: none;
+  --glass-highlight: none;
 }
 
 /* Plochy jen bez průhlednosti – s ní je přepisuje :root[data-transparency]. */
@@ -54,7 +57,7 @@
 
 /* ------------------------------ lišty ------------------------------------ */
 
-:root.dark:not([data-liquid]) .fw-main::before {
+:root:root.dark .fw-main::before {
   border-bottom-color: var(--border);
 }
 
@@ -62,6 +65,8 @@
   background: #1e1e1e;
   backdrop-filter: none;
   box-shadow: none;
+  /* MI-FORK: bez dělicí čáry nad status barem (přání uživatele). */
+  border-top: 0;
 }
 
 /* Pole hledání: tmavě šedá pilulka (≈ #2f2f31). */
@@ -125,7 +130,7 @@
 /* Dlaždice jemně světlejší s modrým lemem, název v modré pilulce. */
 :root.dark .fw-icon-cell.is-selected {
   background-color: rgba(255, 255, 255, 0.08);
-  box-shadow: inset 0 0 0 1px rgb(10 100 214 / 0.6);
+  box-shadow: inset 0 0 0 1px #1f6f9c; /* světlejší odstín #003b5e, aby lem byl vidět */
 }
 
 :root.dark .fw-icon-cell.is-selected .fw-icon-name {
@@ -169,23 +174,23 @@
 
 :root.dark .fw-menu-item:not(.is-danger):hover:not(:disabled),
 :root.dark .fw-menu-item.is-highlighted:not(.is-danger) {
-  background-color: var(--mi-select);
+  background-color: var(--mi-menu-highlight);
   color: var(--mi-on-select);
 }
 
-:root.dark:not([data-liquid]) .fw-menu,
-:root.dark:not([data-liquid]) .fw-menu .fw-popover.p-1 {
-  border-radius: 10px;
-  padding: 5px;
+:root:root.dark .fw-menu,
+:root:root.dark .fw-menu .fw-popover.p-1 {
+  border-radius: 6px;
+  padding: 4px;
 }
 
-:root.dark:not([data-liquid]) .fw-menu-item {
-  height: 22px;
-  border-radius: 5px;
+:root:root.dark .fw-menu-item {
+  height: 24px;
+  border-radius: 4px;
 }
 
 :root.dark .fw-menu-separator {
-  margin: 5px 10px;
+  margin: 4px 0;
   background: rgba(255, 255, 255, 0.12);
 }
 

@@ -20,7 +20,25 @@ export type DragPayload =
   /** Položky z hlavního panelu — celý výběr, když se táhne za vybraný řádek. */
   | { kind: "entry"; items: DragItem[] }
   /** Existující vlastní oblíbená — přerovnání v rámci sekce. */
-  | { kind: "favorite"; path: string; index: number };
+  | { kind: "favorite"; path: string; index: number; isDir?: boolean }
+  /** MI-FORK: složka ze sidebaru (Tento počítač, jednotky, nedávné, strom) —
+   *  nad plochou panelů se pustí vlevo, vpravo nebo do nové záložky. */
+  | { kind: "place"; path: string; name: string };
+
+/** MI-FORK: složka, kterou jde pustit do panelu (vlevo / vpravo / nová záložka). */
+export function draggedFolder(payload: DragPayload | null): string | null {
+  if (payload === null) return null;
+  if (payload.kind === "place") return payload.path;
+  if (payload.kind === "favorite" && payload.isDir === true) return payload.path;
+  return null;
+}
+
+/**
+ * MI-FORK: prázdný obrázek tažení. Ouško i složka ze sidebaru mají místo
+ * nativního obrázku vlastního „ducha“ u kurzoru (.mi-tab-ghost).
+ */
+export const EMPTY_DRAG_IMAGE = new Image();
+EMPTY_DRAG_IMAGE.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 
 /** MIME typ je jen zástupný; skutečná data jsou v modulu. */
 export const DRAG_MIME = "application/x-finder-win";

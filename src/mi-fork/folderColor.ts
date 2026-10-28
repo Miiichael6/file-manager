@@ -12,7 +12,7 @@ import * as storage from "../lib/storage";
  *
  * El valor se guarda en settings.json (clave propia `miFolderColor`) sin tocar
  * lib/storage.ts; en localStorage hay una copia solo para el primer render,
- * igual que liquidGlass.ts.
+ * igual que el tema.
  */
 
 export type FolderColor =

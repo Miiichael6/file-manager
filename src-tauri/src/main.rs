@@ -21,6 +21,8 @@ mod recycle;
 mod shellnew;
 mod snap;
 mod mi_fork; // MI-FORK
+mod mi_extras; // MI-FORK: ZIP y tamaño de carpetas.
+mod mi_cli; // MI-FORK: línea de comandos, PATH y menú del Explorador.
 
 /* --------------------------------- chyby ----------------------------------- */
 
@@ -3120,9 +3122,18 @@ fn main() {
     #[cfg(feature = "store")]
     import_nsis_settings();
 
-    tauri::Builder::default()
-        // MI-FORK: una sola instancia — la lista de saltos abre carpetas en la ventana abierta.
-        .plugin(tauri_plugin_single_instance::init(|app, argv, _| mi_fork::second_instance(app, argv)))
+    // MI-FORK: el desinstalador limpia PATH y menú del Explorador y la app no arranca.
+    if mi_cli::unregister_if_requested() {
+        return;
+    }
+
+    let mut builder = tauri::Builder::default();
+    // MI-FORK: una sola instancia — la terminal y la lista de saltos abren carpetas
+    // en la ventana abierta; --new-window arranca un proceso aparte.
+    if !mi_cli::wants_new_window() {
+        builder = builder.plugin(tauri_plugin_single_instance::init(mi_cli::second_instance));
+    }
+    builder
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_store::Builder::default().build())
         .setup(|app| {
@@ -3203,8 +3214,15 @@ fn main() {
             mi_fork::folder_apps, // MI-FORK
             mi_fork::open_folder_with, // MI-FORK
             mi_fork::pick_folder_app, // MI-FORK
-            mi_fork::startup_folder, // MI-FORK
+            mi_cli::startup_launch, // MI-FORK
+            mi_cli::shell_integration, // MI-FORK
+            mi_cli::set_shell_integration, // MI-FORK
             mi_fork::set_jump_list, // MI-FORK
+            mi_extras::zip_create, // MI-FORK
+            mi_extras::zip_extract, // MI-FORK
+            mi_extras::folder_sizes, // MI-FORK
+            mi_extras::cancel_folder_sizes, // MI-FORK
+            mi_extras::drive_usage, // MI-FORK
             available_terminals,
             shellnew::list_shell_new,
             shellnew::create_shell_new,

@@ -30,6 +30,14 @@ import {
 import { useLocale, useT, type MessageKey } from "../i18n";
 import type { FileEntry, SelectMods, TagColor, TagMap } from "../types";
 import { useDisplayNames } from "../lib/extensions";
+// MI-FORK: agrupar por y tamaño de carpetas.
+import { useExtrasSettings } from "../mi-fork/extrasSettings";
+import { groupedRows } from "../mi-fork/grouping";
+import { FolderSizeCell, GroupHeaderRow } from "../mi-fork/ListExtras";
+import { useComputeFolderSizes } from "../mi-fork/folderSizes";
+import { DEFAULT_WIDTHS, useColumnWidths, type ColumnWidths, type Pane, type ResizableColumn } from "../mi-fork/columnWidths";
+import { ColumnResizer } from "../mi-fork/ColumnResizer";
+import { HorizontalScrollbar } from "../mi-fork/HorizontalScrollbar";
 
 const COLUMNS: { key: SortKey; label: MessageKey; width: string; align: "left" | "right" }[] = [
   { key: "name", label: "sort.name", width: "minmax(0, 1fr)", align: "left" },
@@ -42,7 +50,25 @@ const COLUMNS: { key: SortKey; label: MessageKey; width: string; align: "left" |
 /** Sloupec s puntíky tagů stojí před Názvem a nemá hlavičku, jen prázdné místo. */
 const TAG_COLUMN = "24px";
 
-const GRID_TEMPLATE = [TAG_COLUMN, ...COLUMNS.map((column) => column.width)].join(" ");
+// MI-FORK: anchos ajustables. Con Nombre fijo, una pista de relleno al final
+// se queda con el sobrante.
+function gridTemplate(widths: ColumnWidths): string {
+  return [
+    TAG_COLUMN,
+    ...COLUMNS.map((column) => {
+      const key = column.key as ResizableColumn;
+      const width = widths[key] ?? DEFAULT_WIDTHS[key];
+      return width === null || !Number.isFinite(width) ? column.width : `${width}px`;
+    }),
+    ...(widths.name === null ? [] : ["minmax(0, 1fr)"]),
+  ].join(" ");
+}
+
+/** MI-FORK: ancho mínimo del contenido con todas las columnas fijas (px-3 + tags + huecos gap-3). */
+function minListWidth(widths: ColumnWidths): number | undefined {
+  if (widths.name === null) return undefined;
+  return 24 + 24 + widths.name + widths.modified + widths.size + widths.kind + 5 * 12;
+}
 
 /** Výška řádku i lepkavé hlavičky — virtualizace s ní počítá. */
 const ROW_HEIGHT = 24;
@@ -58,6 +84,8 @@ type RowHandlers = {
   renameSubmit: (entry: FileEntry, name: string) => void;
   renameCancel: () => void;
   drop: FolderDropHandlers;
+  folderSizes: boolean; // MI-FORK
+  gridTemplate: string; // MI-FORK: anchos de columna
 };
 
 type RowProps = {
@@ -126,7 +154,7 @@ const ListRow = memo(
         style={{
           top: 0,
           transform: `translateY(${top}px)`,
-          gridTemplateColumns: GRID_TEMPLATE,
+          gridTemplateColumns: handlers.gridTemplate,
           opacity: entryOpacity(entry, cut),
         }}
       >
@@ -152,9 +180,14 @@ const ListRow = memo(
         <span className="truncate text-right text-secondary tabular-nums">
           {formatModified(entry.modified)}
         </span>
-        <span className="truncate text-right text-secondary tabular-nums">
-          {formatSize(entry.size, entry.is_dir)}
-        </span>
+        {/* MI-FORK: tamaño de carpetas calculado en segundo plano. */}
+        {entry.is_dir && handlers.folderSizes ? (
+          <FolderSizeCell path={entry.path} />
+        ) : (
+          <span className="truncate text-right text-secondary tabular-nums">
+            {formatSize(entry.size, entry.is_dir)}
+          </span>
+        )}
         <span className="truncate text-secondary">{kindLabel(entry)}</span>
       </div>
     );
@@ -175,6 +208,8 @@ const ListRow = memo(
 /* ---------------------------------- výpis ---------------------------------- */
 
 type ListViewProps = {
+  /** MI-FORK: panel de la ventana dividida (anchos de columna propios). */
+  pane: Pane;
   entries: FileEntry[];
   selectedPaths: Set<string>;
   cutPaths: Set<string>;
@@ -218,6 +253,7 @@ export function ListView({
   scrollRef,
   handleRef,
   initialOffset = 0,
+  pane,
 }: ListViewProps) {
   const t = useT();
   const SortArrow = sortDirection === "asc" ? ChevronUp : ChevronDown;
@@ -225,6 +261,12 @@ export function ListView({
   // Sklo: výpis začíná pod lištou (padding scrolleru) a končí nad status barem.
   const glass = useGlassInsets();
   const rowsTop = HEADER_HEIGHT + glass.top;
+  // MI-FORK: con «Agrupar por» hay filas de cabecera entre las entradas.
+  const extras = useExtrasSettings();
+  useComputeFolderSizes(entries, extras.folderSizes);
+  const rows = useMemo(() => groupedRows(entries, extras.groupBy), [entries, extras.groupBy]);
+  const columnWidths = useColumnWidths(pane);
+  const template = gridTemplate(columnWidths);
 
   // Jen viditelné řádky + 10 navíc. Řádky začínají pod lepkavou hlavičkou,
   // proto scrollMargin; scrollPaddingStart drží vybraný řádek pod ní.
@@ -232,7 +274,7 @@ export function ListView({
     // Bez flushSync v obsluze scrollu: React 19 posun nových řádků slije do
     // jednoho vykreslení a hlavní vlákno nebrzdí začátek scrollovacího gesta.
     useFlushSync: false,
-    count: entries.length,
+    count: rows.length, // MI-FORK: filas (entradas + cabeceras de grupo)
     getScrollElement: () => scrollRef.current,
     initialOffset,
     estimateSize: () => ROW_HEIGHT,
@@ -258,15 +300,25 @@ export function ListView({
   const renameCancel = useStableCallback(onRenameCancel);
   // Všechny položky jsou stabilní, takže i objekt vznikne jen jednou.
   const handlers = useMemo<RowHandlers>(
-    () => ({ select, open, contextMenu, dragItems, renameSubmit, renameCancel, drop }),
-    [select, open, contextMenu, dragItems, renameSubmit, renameCancel, drop],
+    () => ({
+      select,
+      open,
+      contextMenu,
+      dragItems,
+      renameSubmit,
+      renameCancel,
+      drop,
+      folderSizes: extras.folderSizes,
+      gridTemplate: template,
+    }),
+    [select, open, contextMenu, dragItems, renameSubmit, renameCancel, drop, extras.folderSizes, template],
   );
 
   useImperativeHandle(
     handleRef,
     () => ({
       scrollToPath: (path, behavior = "auto") => {
-        const index = entries.findIndex((entry) => entry.path === path);
+        const index = rows.findIndex((row) => row.type === "entry" && row.entry.path === path); // MI-FORK
         if (index >= 0) virtualizer.scrollToIndex(index, { align: "auto", behavior });
       },
       hitTest: (box) => {
@@ -278,8 +330,9 @@ export function ListView({
         const top = box.top - rect.top + element.scrollTop - rowsTop;
         const bottom = box.bottom - rect.top + element.scrollTop - rowsTop;
         const first = Math.max(0, Math.floor(top / ROW_HEIGHT));
-        const last = Math.min(entries.length - 1, Math.floor(bottom / ROW_HEIGHT));
-        return entries.slice(first, last + 1).map((entry) => entry.path);
+        const last = Math.min(rows.length - 1, Math.floor(bottom / ROW_HEIGHT));
+        // MI-FORK: las cabeceras de grupo no se seleccionan.
+        return rows.slice(first, last + 1).flatMap((row) => (row.type === "entry" ? [row.entry.path] : []));
       },
       metrics: () => ({
         columns: 1,
@@ -289,7 +342,7 @@ export function ListView({
         ),
       }),
     }),
-    [entries, virtualizer, scrollRef, rowsTop, glass.bottom],
+    [rows, virtualizer, scrollRef, rowsTop, glass.bottom],
   );
 
   // Kontejner se mění s view mode — virtualizace ho musí přeměřit.
@@ -298,36 +351,46 @@ export function ListView({
   }, [virtualizer]);
 
   return (
-    <div className="min-w-0">
+    <div className="mi-list-root flex min-h-full min-w-0 flex-col" style={{ minWidth: minListWidth(columnWidths) }}>
       <div
-        className="fw-list-header sticky top-0 z-10 grid h-6 items-center gap-3 border-b border-line bg-toolbar px-3 text-[11px] font-medium text-secondary"
-        style={{ gridTemplateColumns: GRID_TEMPLATE, backdropFilter: "blur(20px)" }}
+        className="fw-list-header sticky top-0 z-10 grid h-6 shrink-0 items-center gap-3 border-b border-line bg-toolbar px-3 text-[11px] font-medium text-secondary"
+        style={{ gridTemplateColumns: template, backdropFilter: "blur(20px)" }}
       >
         <span aria-hidden />
 
-        {COLUMNS.map((column) => (
-          <button
-            key={column.key}
-            type="button"
-            onClick={() => onSort(column.key)}
-            className={`flex items-center gap-0.5 truncate hover:text-primary ${
-              column.align === "right" ? "justify-end" : "justify-start"
-            }`}
-          >
-            <span className="truncate">{t(column.label)}</span>
-            {sortKey === column.key && <SortArrow size={11} strokeWidth={2.5} />}
-          </button>
+        {COLUMNS.map((column, index) => (
+          <div key={column.key} className="relative flex h-full min-w-0 items-center">
+            {/* MI-FORK: el divisor izquierdo de cada celda cambia el ancho de la
+                columna anterior; la última lleva también el suyo a la derecha. */}
+            {index > 0 && <ColumnResizer pane={pane} column={COLUMNS[index - 1].key as ResizableColumn} edge="left" />}
+            {index === COLUMNS.length - 1 && <ColumnResizer pane={pane} column={column.key as ResizableColumn} edge="right" />}
+            <button
+              type="button"
+              onClick={() => onSort(column.key)}
+              className={`flex h-full w-full min-w-0 items-center gap-0.5 truncate hover:text-primary ${
+                column.align === "right" ? "justify-end" : "justify-start"
+              }`}
+            >
+              <span className="truncate">{t(column.label)}</span>
+              {sortKey === column.key && <SortArrow size={11} strokeWidth={2.5} />}
+            </button>
+          </div>
         ))}
       </div>
 
-      <div className="relative" style={{ height: virtualizer.getTotalSize() }}>
+      <div className="relative shrink-0" style={{ height: virtualizer.getTotalSize() }}>
         {virtualizer.getVirtualItems().map((item) => {
-          const entry = entries[item.index];
+          // MI-FORK: cabecera de grupo.
+          const row = rows[item.index];
+          if (row.type === "header") {
+            return <GroupHeaderRow key={`group:${row.key}`} label={row.label} count={row.count} top={item.start - rowsTop} />;
+          }
+          const { entry } = row;
           return (
             <ListRow
               key={entry.path}
               entry={entry}
-              index={item.index}
+              index={row.index}
               top={item.start - rowsTop}
               selected={selectedPaths.has(entry.path)}
               cut={cutPaths.has(entry.path)}
@@ -340,6 +403,8 @@ export function ListView({
           );
         })}
       </div>
+
+      <HorizontalScrollbar scrollRef={scrollRef} contentWidth={minListWidth(columnWidths)} />
     </div>
   );
 }

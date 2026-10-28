@@ -13,6 +13,7 @@ import {
 import { t } from "./i18n";
 import * as storage from "./lib/storage";
 import type { TagColor } from "./types";
+import { renameAll } from "./mi-fork/batchRename"; // MI-FORK: renombrado por lotes.
 
 /**
  * Zpět / Znovu. Zásobník drží App (jen v paměti, posledních 50 operací);
@@ -35,7 +36,9 @@ export type UndoOp =
   | { kind: "create"; path: string; folder: boolean; shellNew?: string }
   /** `since` = unix sekundy těsně před smazáním — podle nich se hledá v Koši. */
   | { kind: "trash"; paths: string[]; since: number }
-  | { kind: "tags"; before: Record<string, TagColor[]>; after: Record<string, TagColor[]> };
+  | { kind: "tags"; before: Record<string, TagColor[]>; after: Record<string, TagColor[]> }
+  // MI-FORK: renombrado por lotes (mi-fork/batchRename.ts).
+  | { kind: "renameMany"; items: Moved[] };
 
 const name = storage.lastSegment;
 
@@ -68,6 +71,8 @@ export function undoLabel(op: UndoOp, show: (name: string, isDir?: boolean) => s
         : t("undo.trashMany", { count: op.paths.length });
     case "tags":
       return t("undo.tags");
+    case "renameMany": // MI-FORK
+      return t("extras.undo.renameMany", { count: op.items.length });
   }
 }
 
@@ -115,6 +120,9 @@ export async function undoOp(op: UndoOp): Promise<void> {
       return restoreFromTrash(op.paths, op.since);
     case "tags":
       return storage.setTagsOf(op.before);
+    case "renameMany": // MI-FORK
+      await renameAll(op.items.map((item) => ({ from: item.to, to: item.from })));
+      return;
   }
 }
 
@@ -160,5 +168,7 @@ export async function redoOp(op: UndoOp): Promise<UndoOp> {
     case "tags":
       await storage.setTagsOf(op.after);
       return op;
+    case "renameMany": // MI-FORK
+      return { kind: "renameMany", items: await renameAll(op.items) };
   }
 }

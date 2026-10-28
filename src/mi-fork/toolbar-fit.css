@@ -1,0 +1,130 @@
+/* MI-FORK: umbrales del toolbar con los botones del fork.
+   index.css oculta «Nuevo» (≤ 820 px), estrecha la búsqueda (≤ 760) y la
+   vuelve icono (≤ 700) midiendo el toolbar original. El fork añade la flecha
+   «superior» y «Abrir con» (≈ +100 px) y, dentro de un repositorio, las dos
+   cápsulas de Git y el botón de terminal (≈ +166 px): con los umbrales
+   originales la búsqueda se salía por la derecha. Mismas reglas, umbrales recalculados (+ 8 px de
+   margen). Anchos mínimos, en repositorio: completo 1030, sin etiqueta 986,
+   búsqueda 200 → 926, búsqueda icono 754; fuera, 166 px menos.
+   Se importa después de index.css: con la misma especificidad gana el orden,
+   por eso se repiten las tres etapas en orden (la última que encaja gana). */
+
+/* ------------------------------ fuera de un repo -------------------------- */
+
+@container toolbar (max-width: 872px) {
+  .fw-new-label {
+    display: none;
+  }
+
+  .fw-new-btn {
+    padding: 0 6px;
+  }
+}
+
+@container toolbar (max-width: 828px) {
+  .fw-search {
+    --search-rest-scale: 0.7;
+    --search-shift: 60px;
+    width: 200px;
+  }
+}
+
+@container toolbar (max-width: 768px) {
+  .fw-search {
+    --search-rest-scale: 1;
+    --search-shift: 0px;
+    width: 28px;
+  }
+
+  .fw-search .fw-search-content {
+    padding: 0 0 0 7px;
+  }
+
+  .fw-search:not(:focus-within):not(:has(input:not(:placeholder-shown))) :is(input, .fw-search-clear) {
+    opacity: 0;
+  }
+
+  .fw-search:is(:focus-within, :has(input:not(:placeholder-shown))) {
+    width: 220px;
+  }
+
+  .fw-search:is(:focus-within, :has(input:not(:placeholder-shown))) .fw-search-content {
+    padding: 0 28px 0 10px;
+  }
+
+  .fw-toolbar:has(.fw-search:is(:focus-within, :has(input:not(:placeholder-shown)))) .fw-toolbar-tools {
+    display: none;
+  }
+}
+
+/* ------------------------- en un repo (cápsulas de Git) ------------------- */
+
+@container toolbar (max-width: 1038px) {
+  .fw-toolbar:has(.mi-git-presence.is-open) .fw-new-label {
+    display: none;
+  }
+
+  .fw-toolbar:has(.mi-git-presence.is-open) .fw-new-btn {
+    padding: 0 6px;
+  }
+}
+
+@container toolbar (max-width: 994px) {
+  .fw-toolbar:has(.mi-git-presence.is-open) .fw-search {
+    --search-rest-scale: 0.7;
+    --search-shift: 60px;
+    width: 200px;
+  }
+}
+
+@container toolbar (max-width: 934px) {
+  .fw-toolbar:has(.mi-git-presence.is-open) .fw-search {
+    --search-rest-scale: 1;
+    --search-shift: 0px;
+    width: 28px;
+  }
+
+  .fw-toolbar:has(.mi-git-presence.is-open) .fw-search .fw-search-content {
+    padding: 0 0 0 7px;
+  }
+
+  .fw-toolbar:has(.mi-git-presence.is-open)
+    .fw-search:not(:focus-within):not(:has(input:not(:placeholder-shown)))
+    :is(input, .fw-search-clear) {
+    opacity: 0;
+  }
+
+  .fw-toolbar:has(.mi-git-presence.is-open) .fw-search:is(:focus-within, :has(input:not(:placeholder-shown))) {
+    width: 220px;
+  }
+
+  .fw-toolbar:has(.mi-git-presence.is-open)
+    .fw-search:is(:focus-within, :has(input:not(:placeholder-shown)))
+    .fw-search-content {
+    padding: 0 28px 0 10px;
+  }
+
+  .fw-toolbar:has(.mi-git-presence.is-open):has(.fw-search:is(:focus-within, :has(input:not(:placeholder-shown))))
+    .fw-toolbar-tools {
+    display: none;
+  }
+}
+
+/* Muy estrecho (barra lateral ancha): las cápsulas de Git y «Abrir con»
+   pierden la flecha (−62 px; la terminal también, se elige con Mayús+clic
+   en «Abrir en terminal»). Git abre el menú igual con un clic; la app de
+   «Abrir con» se elige entonces desde el menú contextual de la carpeta. */
+@container toolbar (max-width: 762px) {
+  .fw-toolbar:has(.mi-git-presence.is-open) .mi-git-btn {
+    padding: 0 6px;
+  }
+
+  .fw-toolbar:has(.mi-git-presence.is-open) .mi-git-btn > svg:last-child,
+  .fw-toolbar:has(.mi-git-presence.is-open) .mi-open-arrow {
+    display: none;
+  }
+
+  .fw-toolbar:has(.mi-git-presence.is-open) .mi-open-main {
+    border-radius: 14px;
+  }
+}

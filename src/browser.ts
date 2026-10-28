@@ -27,6 +27,8 @@ export function useBrowserState() {
   const [tagFilter, setTagFilter] = useState<TagColor | null>(null);
   /** Pohled na Koš — stejně jako tag view samostatný režim panelu. */
   const [trashView, setTrashView] = useState(false);
+  // MI-FORK: pohled «Este equipo» (tarjetas de unidades) — režim panelu jako Koš.
+  const [computerView, setComputerView] = useState(false);
 
   // Rekurzivní hledání je stejně jako tag view samostatný režim panelu. Kořen
   // se drží spolu s dotazem, aby výsledky nezůstaly viset na jiné složce, než
@@ -53,6 +55,8 @@ export function useBrowserState() {
     setTagFilter,
     trashView,
     setTrashView,
+    computerView,
+    setComputerView,
     search,
     setSearch,
     active,
@@ -72,6 +76,8 @@ export type TabSnapshot = {
   search: PanelSearch | null;
   tagFilter: TagColor | null;
   trashView: boolean;
+  /** MI-FORK: pohled «Este equipo». */
+  computerView: boolean;
   selection: string[];
   active: string | null;
   scrollTop: number;
@@ -117,6 +123,7 @@ export function blankSnapshot(
     search: null,
     tagFilter: null,
     trashView: false,
+    computerView: false,
     selection: [],
     active: null,
     scrollTop: 0,

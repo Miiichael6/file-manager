@@ -6,12 +6,14 @@
    vyhrává pořadí. Plochy (okno, výpis, lišty, sidebar) se přepisují jen bez
    průhlednosti (:not([data-transparency])) – s ní platí dosavadní logika krytí
    (--see-*) z index.css. Výběr a menu platí v obou režimech.
-   Liquid Glass (:root[data-liquid], liquid-glass.css) si menu a lišty kreslí
-   sám – geometrie menu a linka pod lištou se proto při něm nemění.
+   :root:root drží specificitu dřívějšího :not([data-liquid]) (Liquid Glass
+   byl odstraněn – styl podle docs/reference/tableplus-style.png).
 
    Kontrast (WCAG):
-   - bílá na výběru #00afe6 = 2,54 : 1 (výpis, sloupce, ikony, sidebar, menu) –
-     barva na přání uživatele, pod WCAG AA (dřív #0f6be0 = 5,00);
+   - bílá na výběru #0a6cdf = 4,97 : 1 (výpis, sloupce, ikony, menu; sidebar má
+     černý text #1d1d1f na modrém nádechu ≈ 13 : 1) – MI-FORK: dřív azurová
+     #00afe6 (2,54, pod WCAG AA), dnes modř, která
+     ladí s tmavým #0a64d6;
    - sekundární text lišt #5b5b60 na liště 0,86 bílé: nad bílou 6,75, nejhorší
      případ nad černým obsahem 4,89, nad modrým řádkem 5,51;
    - zkratky v menu #333336 na menu 0,62 bílé nad černou ≈ 4,6 (nad bílou 12,6);
@@ -22,9 +24,11 @@
 /* ------------------------------- tokeny ---------------------------------- */
 
 :root:not(.dark) {
-  /* Plný výběr pod bílým textem (2,54 : 1 – barva na přání uživatele). */
-  --mi-select: #00afe6;
+  /* Plný výběr pod bílým textem (4,97 : 1; stejný odstín jako tmavý #0a64d6). */
+  --mi-select: #0a6cdf;
   --mi-on-select: #ffffff;
+  /* Text výběru v sidebaru černý (na přání uživatele) na modrém nádechu. */
+  --mi-sidebar-on-select: #1d1d1f;
   /* Výběr v neaktivním okně: světle šedý s tmavým textem (jako Průzkumník). */
   --row-selected-inactive: rgba(0, 0, 0, 0.08);
   /* Pruh každého druhého řádku ≈ #f5f6f8 na bílé. */
@@ -32,14 +36,15 @@
   --scroll-thumb: rgba(0, 0, 0, 0.2);
   --text-section: #3c3c43;
   /* Měkký velký stín menu a tooltipů. */
-  --shadow-popover: 0 12px 36px rgba(0, 0, 0, 0.16), 0 2px 6px rgba(0, 0, 0, 0.06);
-  /* Sidebar: výběr plnou modří, neaktivní jemně šedomodrý. */
-  --glass-sidebar-selected: var(--mi-select);
+  --shadow-popover: 0 6px 18px rgba(0, 0, 0, 0.14), 0 1px 3px rgba(0, 0, 0, 0.08);
+  /* Sidebar: výběr průsvitným modrým nádechem, neaktivní jemně šedomodrý. */
+  /* MI-FORK: en el sidebar la selección es un tinte translúcido del mismo azul, no relleno sólido. */
+  --glass-sidebar-selected: rgba(10, 108, 223, 0.16);
   --glass-sidebar-selected-inactive: rgba(20, 40, 80, 0.08);
-  /* Menu: bílé, poloprůhledné a rozmazané stejně jako v tmavém tématu
-     (krytí 0,62, dark-style.css; bez Liquid Glass). */
-  --glass-menu: rgba(255, 255, 255, 0.62);
-  --glass-menu-blur: blur(14px) saturate(170%);
+  /* MI-FORK: menús planos y opacos como TablePlus (sin desenfoque ni brillo). */
+  --glass-menu: #ffffff;
+  --glass-menu-blur: none;
+  --glass-highlight: none;
 }
 
 /* Plochy jen bez průhlednosti – s ní je přepisuje :root[data-transparency]. */
@@ -55,15 +60,15 @@
   --bg-sidebar: rgba(240, 245, 251, 0.92);
 }
 
-/* Zkratky a popisky v menu tmavší než na liště (menu má krytí jen 0,62). */
+/* Zkratky a popisky v menu: šedé na bílé (5,0 : 1). */
 :root:not(.dark) .fw-popover {
-  --text-secondary: #333336;
+  --text-secondary: #6e6e73;
 }
 
 /* ------------------------------ lišty ------------------------------------ */
 
 /* Tenká linka pod horní deskou vždy, ne až při posunu. */
-:root:not(.dark):not([data-liquid]) .fw-main::before {
+:root:root:not(.dark) .fw-main::before {
   border-bottom-color: var(--border);
 }
 
@@ -73,6 +78,8 @@
   background: #ffffff;
   backdrop-filter: none;
   box-shadow: none;
+  /* MI-FORK: bez dělicí čáry nad status barem (přání uživatele). */
+  border-top: 0;
 }
 
 /* Pole hledání: světle šedá pilulka (≈ #f0f0f2). */
@@ -155,30 +162,21 @@
 
 /* ------------------------------- sidebar --------------------------------- */
 
-/* Deska výběru (Sidebar.tsx) bere --glass-sidebar-selected; text a ikony bílé. */
+/* Deska výběru (Sidebar.tsx) bere --glass-sidebar-selected; text černý, ikony
+   si nechávají vlastní barvu (na přání uživatele). */
 :root:not(.dark) .fw-sidebar-row.is-active {
-  color: var(--mi-on-select);
+  color: var(--mi-sidebar-on-select);
   text-shadow: none;
 }
 
 :root:not(.dark) .fw-sidebar-row.is-active :is(.text-primary, .text-secondary, .fw-sidebar-value) {
-  color: var(--mi-on-select);
-}
-
-/* Ikony mají barvu jako atribut stroke/fill (lucide color=…) – CSS ho přebije. */
-:root:not(.dark) .fw-sidebar-row.is-active svg {
-  color: var(--mi-on-select);
-  stroke: var(--mi-on-select);
-}
-
-:root:not(.dark) .fw-sidebar-row.is-active svg[fill]:not([fill="none"]) {
-  fill: var(--mi-on-select);
+  color: var(--mi-sidebar-on-select);
 }
 
 /* ------------------------------ menu ------------------------------------- */
 
 :root:not(.dark) .fw-popover {
-  border-color: rgba(0, 0, 0, 0.1);
+  border-color: rgba(0, 0, 0, 0.16);
 }
 
 /* Bez skla (data-glass) kreslí menu sám prvek – stejná poloprůhledná výplň. */
@@ -193,21 +191,21 @@
   background-color: var(--mi-select);
 }
 
-/* Geometrie jako v referenci: rádius 10, vnitřní okraj 5, položky 22 px
-   se zaoblením 5. S Liquid Glass platí jeho soustředné rádiusy. */
-:root:not(.dark):not([data-liquid]) .fw-menu,
-:root:not(.dark):not([data-liquid]) .fw-menu .fw-popover.p-1 {
-  border-radius: 10px;
-  padding: 5px;
+/* Geometrie jako TablePlus: rádius 6, vnitřní okraj 4, položky 24 px
+   se zaoblením 4. */
+:root:root:not(.dark) .fw-menu,
+:root:root:not(.dark) .fw-menu .fw-popover.p-1 {
+  border-radius: 6px;
+  padding: 4px;
 }
 
-:root:not(.dark):not([data-liquid]) .fw-menu-item {
-  height: 22px;
-  border-radius: 5px;
+:root:root:not(.dark) .fw-menu-item {
+  height: 24px;
+  border-radius: 4px;
 }
 
 :root:not(.dark) .fw-menu-separator {
-  margin: 5px 10px;
+  margin: 4px 0;
   background: rgba(0, 0, 0, 0.1);
 }
 

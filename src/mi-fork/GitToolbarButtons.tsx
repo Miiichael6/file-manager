@@ -15,6 +15,7 @@ import "./git-toolbar.css";
  * MI-FORK: dos botones de Git en la barra, solo dentro de un repositorio.
  * Rama (⑂ ▾): ramas locales para cambiar, Fetch y el panel Git.
  * Acciones rápidas (⚡ ▾): Pull, Push, Preparar todo, Commit… y terminal.
+ * Detrás, `extra`: el botón partido de terminal (TerminalButton.tsx).
  * Al entrar o salir de un repositorio se abren / cierran a lo ancho con
  * fundido (git-toolbar.css), así los botones vecinos se desplazan sin saltos.
  */
@@ -25,11 +26,13 @@ type Props = {
   commands: Commands;
   /** run de useGitIntegration: aviso traducido si git falla, mensaje si termina. */
   run: (operation: (root: string) => Promise<void>, done?: string) => void;
+  /** Botones que entran y salen junto con los de Git. */
+  extra?: React.ReactNode;
 };
 
 type Menu = { kind: "branch" | "quick"; x: number; y: number };
 
-export function GitToolbarButtons({ status: live, commands, run }: Props) {
+export function GitToolbarButtons({ status: live, commands, run, extra }: Props) {
   const t = useT();
   const [menu, setMenu] = useState<Menu | null>(null);
   /** null = cargando la lista de ramas. */
@@ -164,6 +167,7 @@ export function GitToolbarButtons({ status: live, commands, run }: Props) {
             open={menu?.kind === "quick"}
             onMouseDown={toggle("quick")}
           />
+          {extra}
         </div>
       </div>
 

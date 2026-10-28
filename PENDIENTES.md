@@ -37,9 +37,9 @@ Marca cada casilla al terminarla. Prioridad: 🔴 alta · 🟡 media · 🟢 baj
 
 ## 4. Favoritos y sidebar 🟡
 
-- [ ] **Reordenar Favoritos / Acceso rápido** arrastrando.
-- [ ] Grupos o secciones personalizadas en el sidebar.
-- [ ] Renombrar un favorito sin renombrar la carpeta (alias).
+- [x] **Reordenar Favoritos / Acceso rápido** arrastrando. (Ya venía de upstream; ahora también entre secciones.)
+- [x] Grupos o secciones personalizadas en el sidebar.
+- [x] Renombrar un favorito sin renombrar la carpeta (alias). (Ya venía de upstream: clic derecho → Cambiar nombre.)
 
 ## 5. Acciones personalizadas 🟡
 
@@ -52,9 +52,9 @@ Marca cada casilla al terminarla. Prioridad: 🔴 alta · 🟡 media · 🟢 baj
 ## 6. Línea de comandos 🟡
 
 - [ ] Abrir la app desde terminal en una carpeta: `file-manager.exe C:\ruta` (ya hay `single-instance`: reenviar la ruta a la instancia abierta como pestaña nueva).
-- [ ] Opciones: `--new-window`, `--select <archivo>` (abrir la carpeta con el archivo seleccionado).
-- [ ] Añadir la carpeta del ejecutable al PATH desde el instalador (opcional).
-- [ ] Entrada «Abrir en File Manager» en el menú contextual del Explorador (opcional, registro HKCU).
+- [x] Opciones: `--new-window`, `--select <archivo>` (abrir la carpeta con el archivo seleccionado).
+- [x] Añadir la carpeta del ejecutable al PATH desde el instalador (opcional). Hecho como opción en Más → Integración con Windows (PATH de usuario); el desinstalador la quita.
+- [x] Entrada «Abrir en File Manager» en el menú contextual del Explorador (opcional, registro HKCU). En Más → Integración con Windows (carpeta, fondo de carpeta y unidad).
 
 ## 7. Dispositivos móviles 🟢
 
@@ -63,11 +63,11 @@ Marca cada casilla al terminarla. Prioridad: 🔴 alta · 🟡 media · 🟢 baj
 
 ## 8. Extras útiles (no están en Folders, pero completan la app) 🟢
 
-- [ ] Comprimir / descomprimir ZIP desde el menú contextual.
-- [ ] Renombrado por lotes (patrón, numeración, buscar y reemplazar) con vista previa.
-- [ ] Calcular tamaño de carpetas (en segundo plano, columna en la vista Lista).
-- [ ] Agrupar por tipo / fecha / tamaño en la vista Lista.
-- [ ] Vista previa de diff de texto entre dos archivos seleccionados.
+- [x] Comprimir / descomprimir ZIP desde el menú contextual.
+- [x] Renombrado por lotes (patrón, numeración, buscar y reemplazar) con vista previa.
+- [x] Calcular tamaño de carpetas (en segundo plano, columna en la vista Lista).
+- [x] Agrupar por tipo / fecha / tamaño en la vista Lista.
+- [x] Vista previa de diff de texto entre dos archivos seleccionados.
 
 ---
 

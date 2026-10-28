@@ -114,6 +114,8 @@ export type CustomFavorite = {
    * settings.json tohle pole nemá — pak se položka bere jako složka.
    */
   type: RecentKind;
+  /** MI-FORK: id de la sección propia del sidebar (mi-fork/sidebarGroups.ts); sin él, «Acceso rápido». */
+  group?: string;
 };
 
 export type RecentKind = "file" | "folder";

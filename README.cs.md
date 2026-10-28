@@ -101,6 +101,7 @@ Dirwise (dříve Finder-Win) je inspirován macOS Finderem, vytvořený pro Wind
 | `Ctrl+W` | Zavřít záložku |
 | `Ctrl+K` | Paleta příkazů (`Ctrl+Enter` = hledat soubory) |
 | `Ctrl+Shift+D` | Rozdělit okno na dva panely |
+| `Ctrl+Shift+E` | Rozdělit rozdělenou záložku do dvou záložek |
 | `F5` / `F6` | Kopírovat / přesunout výběr do druhého panelu (rozdělené okno) |
 | `Mezerník` | Náhled |
 | `Ctrl+Z` / `Ctrl+Y` | Zpět / znovu |

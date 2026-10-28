@@ -65,12 +65,13 @@ export const cs = {
   "transparency.strong": "Síla průhlednosti: silná",
   "transparency.blur": "Průhlednost: rozmazaná",
   "transparency.blurHint": "Rozmaže plochu a okna za aplikací (Acrylic). Potřebuje zapnuté Efekty průhlednosti ve Windows. Bez fokusu je okno plné, jako ostatní okna Windows.",
-  // MI-FORK: Liquid Glass.
-  "liquidGlass.menu": "Liquid Glass",
-  "liquidGlass.toggle": "Vzhled: Liquid Glass",
-  "liquidGlass.hint": "Lišty, menu a paleta jako zakřivené sklo: obsah se na okrajích láme, se světelným lemem a oblejšími rohy. Obsah zůstává beze změny.",
   // MI-FORK: color de carpetas (src/mi-fork/folderColor.ts).
   "folderColor.menu": "Barva složek",
+  "shellIntegration.menu": "Integrace s Windows", // MI-FORK
+  "shellIntegration.path": "Příkaz file-manager v terminálu", // MI-FORK
+  "shellIntegration.pathHint": "Přidá složku aplikace do uživatelské proměnné PATH: `file-manager .` otevře aktuální složku. Už otevřené terminály ji uvidí až po restartu.", // MI-FORK
+  "shellIntegration.contextMenu": "„Otevřít v File Manager“ v Průzkumníku", // MI-FORK
+  "shellIntegration.explorerLabel": "Otevřít v File Manager", // MI-FORK
   "folderColor.amber": "Jantarová (výchozí)",
   "folderColor.yellow": "Žlutá",
   "folderColor.orange": "Oranžová",
@@ -93,6 +94,8 @@ export const cs = {
   "terminal.pwsh": "PowerShell 7",
   "terminal.powershell": "Windows PowerShell",
   "terminal.cmd": "Příkazový řádek",
+  "terminal.openIn": "Otevřít v aplikaci {terminal}", // MI-FORK
+  "terminal.choose": "Vybrat terminál", // MI-FORK
   "toolbar.checkUpdates": "Kontrolovat aktualizace",
   "update.available": "Verze {version} je k dispozici",
   "update.download": "Stáhnout",
@@ -118,6 +121,11 @@ export const cs = {
   "split.toggle": "Rozdělit okno",
   "split.toggleWithShortcut": "Rozdělit okno (Ctrl+Shift+D)",
   "split.divider": "Dělicí čára panelů",
+  "split.separate": "Rozdělit do záložek",
+  "tabs.closeOthers": "Zavřít ostatní záložky",
+  "split.dropLeft": "Otevřít „{name}“ vlevo",
+  "split.dropRight": "Otevřít „{name}“ vpravo",
+  "split.dropNewTab": "Otevřít „{name}“ v nové záložce",
   "split.copyToOther": "Kopírovat do druhého panelu",
   "split.moveToOther": "Přesunout do druhého panelu",
   "command.palette": "Paleta příkazů",
@@ -181,7 +189,7 @@ export const cs = {
   "folderApps.filter": "Programy", // MI-FORK
   "folderApps.openIn": "Otevřít složku v aplikaci {app}", // MI-FORK
   "folderApps.button": "Otevřít složku v aplikaci", // MI-FORK
-  "jumpList.recent": "Nedávné", // MI-FORK
+  "jumpList.recent": "Rychlý přístup", // MI-FORK
   "menu.openInExplorer": "Otevřít v Průzkumníku",
   "menu.openInTerminal": "Otevřít v Terminálu",
   "menu.showInFolder": "Zobrazit ve složce",
@@ -247,6 +255,12 @@ export const cs = {
   "menu.currentAlreadyFavorite": "Aktuální složka už je v Rychlém přístupu",
   "menu.expandSection": "Rozbalit sekci",
   "menu.collapseSection": "Sbalit sekci",
+  "menu.newSection": "Nová sekce", // MI-FORK
+  "menu.renameSection": "Přejmenovat sekci", // MI-FORK
+  "menu.sectionUp": "Posunout sekci nahoru", // MI-FORK
+  "menu.sectionDown": "Posunout sekci dolů", // MI-FORK
+  "menu.removeSection": "Odstranit sekci", // MI-FORK
+  "menu.moveToSection": "Přesunout do", // MI-FORK
   "menu.clearRecents": "Vymazat nedávné",
   "menu.clearAllRecents": "Vymazat všechny nedávné",
   "menu.removeFromRecents": "Odebrat z nedávných",
@@ -260,6 +274,7 @@ export const cs = {
   "sidebar.trash": "Koš",
   "sidebar.trashFull": "Koš ({count})",
   "sidebar.custom": "Rychlý přístup",
+  "sidebar.newSectionName": "Nová sekce", // MI-FORK
   "sidebar.recents": "Nedávné",
   "sidebar.tags": "Štítky",
   "sidebar.dropHere": "Přetáhni sem složku nebo soubor",
@@ -286,6 +301,16 @@ export const cs = {
   "drive.optical": "Mechanika ({letter}:)",
   "drive.labeled": "{label} ({letter}:)",
   "drive.phone": "Telefon",
+  "drive.usage": "Volno {free} z {total}",
+  "menu.openComputer": "Tento počítač",
+  "computer.drives": "Jednotky",
+  "computer.free": "Volno {free}",
+  "computer.ofTotal": "z {total}",
+  "computer.breakdown": "Použito {used} · Volno {free}",
+  "computer.low": "Málo volného místa",
+  "computer.open": "Otevřít",
+  "computer.openTab": "Nový panel",
+  "computer.empty": "Žádné jednotky",
 
   "tag.red": "Červený",
   "tag.orange": "Oranžový",
@@ -689,4 +714,64 @@ export const cs = {
   "git.state.renamed": "Přejmenováno",
   "git.state.untracked": "Nesledováno",
   "git.state.ignored": "Ignorováno",
+
+  /* ---------------------------- MI-FORK: extras ---------------------------- */
+  "extras.group.folders": "Složky",
+  "extras.group.today": "Dnes",
+  "extras.group.yesterday": "Včera",
+  "extras.group.thisWeek": "Tento týden",
+  "extras.group.thisMonth": "Tento měsíc",
+  "extras.group.thisYear": "Tento rok",
+  "extras.group.older": "Před dlouhou dobou",
+  "extras.group.noDate": "Bez data",
+  "extras.group.empty": "Prázdné (0 kB)",
+  "extras.group.tiny": "Drobné (0–16 kB)",
+  "extras.group.small": "Malé (16 kB – 1 MB)",
+  "extras.group.medium": "Střední (1–128 MB)",
+  "extras.group.large": "Velké (128 MB – 1 GB)",
+  "extras.group.huge": "Obrovské (1–4 GB)",
+  "extras.group.gigantic": "Gigantické (> 4 GB)",
+  "extras.groupBy.title": "Seskupit podle",
+  "extras.groupBy.none": "Nic",
+  "extras.groupBy.kind": "Druh",
+  "extras.groupBy.date": "Datum změny",
+  "extras.groupBy.size": "Velikost",
+  "extras.folderSizes": "Počítat velikost složek",
+  "extras.zip.compress": "Komprimovat do ZIP",
+  "extras.zip.extract": "Rozbalit sem",
+  "extras.zip.compressing": "Komprimuje se…",
+  "extras.zip.done": "Archiv ZIP vytvořen",
+  "extras.zip.extracting": "Rozbaluje se…",
+  "extras.zip.extracted": "Archiv rozbalen",
+  "extras.op.zip": "Komprimace selhala",
+  "extras.op.unzip": "Rozbalení selhalo",
+  "extras.op.batchRename": "Hromadné přejmenování selhalo",
+  "extras.rename.menu": "Přejmenovat více…",
+  "extras.rename.title": "Přejmenovat více položek",
+  "extras.rename.apply": { one: "Přejmenovat {count} položku", few: "Přejmenovat {count} položky", other: "Přejmenovat {count} položek" },
+  "extras.rename.modeReplace": "Najít a nahradit",
+  "extras.rename.modePattern": "Vzor",
+  "extras.rename.find": "Najít",
+  "extras.rename.replaceWith": "Nahradit čím",
+  "extras.rename.regex": "Regulární výraz",
+  "extras.rename.matchCase": "Rozlišovat velikost písmen",
+  "extras.rename.includeExt": "Včetně přípony",
+  "extras.rename.pattern": "Nový název",
+  "extras.rename.tokens": "[name] = původní název, [n] = číslo, [date] = datum změny. Přípona zůstane.",
+  "extras.rename.start": "Začít od",
+  "extras.rename.digits": "Číslic",
+  "extras.rename.before": "Současný název",
+  "extras.rename.after": "Nový název",
+  "extras.rename.invalid": "neplatný název",
+  "extras.rename.duplicate": "duplicitní název",
+  "extras.rename.exists": "už existuje",
+  "extras.rename.badRegex": "neplatný regulární výraz",
+  "extras.compare.menu": "Porovnat soubory",
+  "extras.compare.title": "Porovnat soubory",
+  "extras.compare.summary": "+{added} −{removed}",
+  "extras.compare.identical": "Soubory mají stejný obsah.",
+  "extras.compare.folded": { one: "{count} nezměněný řádek", few: "{count} nezměněné řádky", other: "{count} nezměněných řádků" },
+  "extras.compare.truncated": "Porovnává se jen první 1 MB každého souboru.",
+  "extras.undo.renameMany": { one: "Přejmenovat {count} položku", few: "Přejmenovat {count} položky", other: "Přejmenovat {count} položek" },
+  "error.zipInvalid": "nejde o platný archiv ZIP ({detail})",
 } as const;

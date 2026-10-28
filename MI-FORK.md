@@ -9,6 +9,25 @@ Copia privada de [arcly-studio/dirwise](https://github.com/arcly-studio/dirwise)
 
 Mi rama es `main`; la de ellos es `master` (`upstream/master`).
 
+Estilo visual: sobrio y denso como TablePlus (referencia en `docs/reference/tableplus-style.png`). Liquid Glass se eliminó el 28-10-2026.
+
+## Preparar el entorno (colaboradores)
+
+Requisitos: Node + npm, Rust (`rustup`, toolchain `stable-x86_64-pc-windows-msvc`) y WebView2. Después: `npm install` y `npm run tauri dev`.
+
+Si `npm run tauri dev` falla con `failed to run 'cargo metadata' … program not found`, la terminal no encuentra `cargo`. Pasa cuando VS Code se abrió antes de instalar Rust (sus terminales heredan el PATH de ese momento) o cuando el PATH de Windows está dañado (entradas duplicadas o cortadas). Solución solo para este proyecto: crear `.vscode/settings.json` (Git lo ignora, cada uno lo crea en su máquina) con:
+
+```jsonc
+{
+  // Las terminales de VS Code en este proyecto siempre encuentran cargo (tauri dev lo necesita)
+  "terminal.integrated.env.windows": {
+    "PATH": "${env:USERPROFILE}\\.cargo\\bin;${env:PATH}"
+  }
+}
+```
+
+Luego cerrar la terminal (papelera, no solo limpiarla) y abrir una nueva. Comprobar con `cargo --version`. Fuera de VS Code, la solución de fondo es que `%USERPROFILE%\.cargo\bin` esté en el PATH de usuario y reiniciar la terminal.
+
 ## Traer los cambios de ellos
 
 ```bash
@@ -36,20 +55,19 @@ Todos los cambios llevan el comentario `MI-FORK` (`git grep MI-FORK`), salvo los
 | Archivo | Cambio |
 |---------|--------|
 | `src/lib/updates.ts` | `LATEST_RELEASE` apunta a `Miiichael6/file-manager`; `RELEASE_PAGE` acepta mi repo |
-| `src-tauri/src/main.rs` | `RELEASE_TAG_URLS` pasa de 3 a 4 entradas con mi repo; un `assert!` más en el test `accepts_only_release_tag_pages`; `mod mi_fork;`, 5 commands en `generate_handler!` («Abrir con ▸» para carpetas, lista de saltos) y el plugin `tauri_plugin_single_instance` (primer `.plugin`) |
+| `src-tauri/src/main.rs` | `RELEASE_TAG_URLS` pasa de 3 a 4 entradas con mi repo; un `assert!` más en el test `accepts_only_release_tag_pages`; `mod mi_fork;` + `mod mi_cli;`, commands en `generate_handler!` («Abrir con ▸» para carpetas, lista de saltos, `startup_launch`, `shell_integration`, `set_shell_integration`); al principio de `main()` `--unregister` y el plugin `tauri_plugin_single_instance` (solo sin `--new-window`, por eso el builder va en una variable) |
 | `src-tauri/Cargo.toml` (+ `Cargo.lock`) | Dependencia `tauri-plugin-single-instance` y feature `Win32_System_Com_StructuredStorage` del crate `windows` |
 | `.gitignore` | `.claude/worktrees/` (worktrees dentro del proyecto) |
 | `vite.config.ts` | `**/.claude/worktrees/**` en `server.watch.ignored` (que Vite no vigile las copias de los worktrees) |
 | `package.json` | Script `release` (`scripts/mi-fork/release.mjs`: `tauri build` con rustup en el PATH) |
-| `src-tauri/tauri.conf.json` | `productName` y `app.windows[0].title` = "File Manager"; `mainBinaryName` = `file-manager`; `identifier` = `com.miiichael6.midirwise`; quitado `bundle.windows.nsis.installerHooks` |
-| `src/commands.ts` | Comando `toggleLiquidGlass` (CommandId + DEFINITIONS) |
-| `src/App.tsx` | Import de `mi-fork/liquidGlass`, `useLiquidGlass()` y el handler `toggleLiquidGlass`; «Abrir con…» en el menú de la vista previa; submenú «Abrir con ▸» de carpetas y del fondo de la carpeta actual (`folderOpenWithMenu`); `<FolderOpenButton>` pasado al Toolbar; `useJumpList(…)` tras `openTab` |
-| `src/components/Toolbar.tsx` | Entrada «Liquid Glass» en Más → Apariencia; prop `openWith` (botón «Abrir carpeta con» antes de Compartir) |
+| `src-tauri/tauri.conf.json` | `productName` y `app.windows[0].title` = "File Manager"; `mainBinaryName` = `file-manager`; `identifier` = `com.miiichael6.midirwise`; `bundle.windows.nsis.installerHooks` = `./nsis/mi-hooks.nsh` (el `hooks.nsh` de ellos no se usa) |
+| `src/App.tsx` | «Abrir con…» en el menú de la vista previa; submenú «Abrir con ▸» de carpetas y del fondo de la carpeta actual (`folderOpenWithMenu`); `<FolderOpenButton>` pasado al Toolbar; `useJumpList(…)` tras `openTab` |
+| `src/components/Toolbar.tsx` | Separador antes de «Color de carpetas» en Más → Apariencia; prop `openWith` (botón «Abrir carpeta con» antes de Compartir) |
 | `src/components/Sidebar.tsx` | «Abrir con…» en el menú de archivos de Acceso rápido y Recientes; Recientes: animación al quitar y clic con la rueda = pestaña nueva (prop `onOpenTab`) |
 | `src/components/StatusBar.tsx` | Botón copiar ruta y clic en el hueco = editar ruta (prop `onCopyPath`) |
 | `index.html`, `TitleBar.tsx`, `AboutDialog.tsx`, `TabBar.tsx`, `App.tsx` | Nombre visible "File Manager" en vez de "Dirwise"; en `TitleBar.tsx`, " @ Development" detrás del nombre con `import.meta.env.DEV` (solo en `tauri dev`) |
 | `src-tauri/icons/*`, `src/assets/icon.png`, `app-icon.png` | Icono propio generado con `npx tauri icon src-tauri/icons/file-manager.svg` (al traer cambios: quedarse con los míos) |
-| `src/i18n/en.ts`, `src/i18n/cs.ts` | `toolbar.about` con "File Manager"; claves `liquidGlass.menu`, `liquidGlass.toggle`, `liquidGlass.hint` (también en `es.ts`, que es del fork) |
+| `src/i18n/en.ts`, `src/i18n/cs.ts` | `toolbar.about` con "File Manager" |
 | `src-tauri/src/main.rs` (Git) | `mod git; mod git_parse;` y 7 commands `git::git_*` en `generate_handler!` |
 | `src/App.tsx` (Git) | Git: `useGitIntegration`, `GitDialog`, `...git.handlers` en los comandos, `...git.menuItems(targets)` en el menú contextual, props `git`/`onGitClick` del `StatusBar` |
 | `src/commands.ts` (Git) | Comandos `gitPanel` (Ctrl+Shift+G), `gitStage`, `gitUnstage`, `gitPull`, `gitPush` |
@@ -59,21 +77,32 @@ Todos los cambios llevan el comentario `MI-FORK` (`git grep MI-FORK`), salvo los
 | `src/components/CommandPalette.tsx` | Icono propio para los comandos `git*` (`gitCommandIcon(command.id) ?? <Zap>`) |
 | `src/components/StatusBar.tsx` (Git) | Props `git`, `onGitClick` y `<GitBranchChip>` |
 | `src/index.css` | Variables `--git-*` (claro y oscuro) |
-| `src/main.tsx` | Import de `mi-fork/light-style.css` y `mi-fork/dark-style.css` justo después de `index.css` (estilos claro y oscuro) y `mi-fork/menu-style.css` |
+| `src/main.tsx` | Import de `mi-fork/light-style.css` y `mi-fork/dark-style.css` justo después de `index.css` (estilos claro y oscuro), `mi-fork/menu-style.css`, `mi-fork/sidebar-card.css` y `mi-fork/toolbar-fit.css` |
 | `src/components/ContextMenu.tsx` | `withMenuIcons` sobre los ítems, `icon` en submenús, fila de colores de etiquetas en línea (no submenú) |
 | `src/i18n/cs.ts`, `en.ts` (Git) | Claves `git.*`, `error.git*` al final (también en `es.ts`) |
 | `src/components/Sidebar.tsx` (árbol) | Árbol de carpetas bajo las filas de Acceso rápido / Este equipo / Unidades: flecha a la derecha de la raíz, `<FolderTree>` tras cada raíz expandida, `<GitBadge>` en las raíces, menú contextual `tree` y entradas Expandir todo / Contraer todo / Mostrar archivos, el árbol sigue a la carpeta actual y se recarga con `dir-changed`; props `showHidden` y `tabId` |
 | `src/App.tsx` (árbol) | Import de `lib/folderTree`, `setTreeTabOrder` en el efecto que guarda pestañas, `forgetTreeTab` en `closeTab`, props `showHidden`/`tabId` del Sidebar |
 | `src/i18n/cs.ts`, `en.ts` (árbol) | Claves `tree.*` tras `sidebar.resize` (también en `es.ts`) |
+| `src/types.ts`, `src/lib/storage.ts` (secciones) | Campo opcional `group` en `CustomFavorite`; `sanitizeFavorites` lo conserva |
+| `src/components/Sidebar.tsx` (secciones) | `CustomFavorites` recibe `group`/`title`/`alwaysVisible` y se pinta una vez para Acceso rápido y otra por sección propia; arrastrar entre secciones (`sidebarGroups.moveFavoriteTo`/`addFavoriteTo` en vez de `storage.moveFavorite`/`addFavorite`); menús Nueva sección, Cambiar nombre / Subir / Bajar / Eliminar sección y «Mover a ▸» en el favorito |
+| `src/i18n/cs.ts`, `en.ts` (secciones) | `menu.{newSection,renameSection,sectionUp,sectionDown,removeSection,moveToSection}` tras `menu.collapseSection` y `sidebar.newSectionName` tras `sidebar.custom` (también en `es.ts`) |
+| `src-tauri/Cargo.toml` (+ `Cargo.lock`) (extras) | Dependencia `zip` 2 (solo `deflate`, Rust puro) para comprimir / extraer |
+| `src-tauri/src/main.rs` (extras) | `mod mi_extras;` y 4 commands en `generate_handler!` (`zip_create`, `zip_extract`, `folder_sizes`, `cancel_folder_sizes`) |
+| `src/panel.ts` (extras) | `visibleEntries` pasa por `groupEntries` en la vista Lista («Agrupar por»: el teclado y Mayús siguen el orden visible) |
+| `src/components/ListView.tsx` (extras) | Filas de cabecera de grupo (`groupedRows`, el virtualizador cuenta filas; `scrollToPath`/`hitTest` mapean fila ↔ entrada), `useComputeFolderSizes` y `<FolderSizeCell>` en la columna Tamaño de las carpetas |
+| `src/App.tsx` (extras) | `useExtras(…)` tras `record`; `extras.menuItems(targets)` antes de los de Git; «Agrupar por ▸» en Ordenar por (fondo y botón de la barra, solo vista Lista); «Calcular tamaño de carpetas» en Ver; `...extras.handlers`; `{extras.dialogs}` |
+| `src/undo.ts` (extras) | Tipo `renameMany` (renombrado por lotes) en `UndoOp`, `undoLabel`, `undoOp` y `redoOp` |
+| `src/commands.ts` (extras) | Comandos `batchRename` (Ctrl+Shift+F2), `compareFiles`, `compressZip`, `extractZip` |
+| `src/i18n/cs.ts`, `en.ts` (extras) | Claves `extras.*` y `error.zipInvalid` al final (también en `es.ts`) |
 
-Archivos nuevos (no generan conflictos): `MI-FORK.md`, `src/mi-fork/liquidGlass.ts` (estado, guardado en settings.json con la clave `miLiquidGlass`), `src/mi-fork/liquid-glass.css` (material bajo `:root[data-liquid]`), `src/mi-fork/folderApps.ts` + `src-tauri/src/mi_fork.rs` («Abrir con ▸» para carpetas; apps elegidas en settings.json, claves `miFolderApps` y `miFolderAppLast`), `src/mi-fork/FolderOpenButton.tsx` + `folder-open.css` (botón de la barra), `src/mi-fork/jumpList.ts` (carpetas recientes en la lista de saltos del icono; clave `miRecentFolders`), `src/mi-fork/lens.ts` (refracción en los bordes: mapa de desplazamiento por elemento + `feDisplacementMap` en `backdrop-filter`); Git integrado: `src-tauri/src/git.rs`, `git_parse.rs`, `src/lib/{git,gitStore,gitActions,useGitIntegration}.ts`, `src/lib/gitIcons.tsx`, `src/components/Git{Badge,BranchChip,Dialog,DiffView}.tsx`; árbol de carpetas: `src/lib/folderTree.ts` (caché de hijos, nodos expandidos por pestaña en settings.json con la clave `miTree`), `src/components/FolderTree.tsx` (ramas virtualizadas, teclado, expansión al arrastrar), `src/mi-fork/folder-tree.css`; `src/mi-fork/light-style.css` (estilo claro: selección azul sólida con texto blanco, barra lateral con tinte azul esmerilado, menús blancos esmerilados, rayas sutiles; superficies blancas; solo bajo `:root:not(.dark)`); `src/mi-fork/dark-style.css` (estilo oscuro: superficies grafito #1e1e1e, barra lateral algo más clara, selección azul sólida #0a64d6 con texto blanco, menús oscuros con resaltado azul; solo bajo `:root.dark`); `src/mi-fork/menuIcons.tsx` + `menu-style.css` (menú contextual con iconos lucide por ítem, reconocidos por el texto traducido; texto alineado en ítems sin icono; etiquetas como fila de círculos).
+Archivos nuevos (no generan conflictos): `MI-FORK.md`, `src/mi-fork/folderApps.ts` + `src-tauri/src/mi_fork.rs` («Abrir con ▸» para carpetas; apps elegidas en settings.json, claves `miFolderApps` y `miFolderAppLast`), `src/mi-fork/FolderOpenButton.tsx` + `folder-open.css` (botón de la barra), `src/mi-fork/TerminalButton.tsx` (botón partido de terminal junto a los de Git, solo en un repositorio: el icono abre la terminal predeterminada, la flecha elige otra y la deja como predeterminada – misma opción `terminal` que Más → Terminal), `src/mi-fork/jumpList.ts` (carpetas de Acceso rápido en la lista de saltos del icono, mismo orden; también recibe la ruta de la terminal), línea de comandos (PENDIENTES §6): `src-tauri/src/mi_cli.rs` (`file-manager.exe [--new-window] [--select] <ruta>`, rutas relativas contra el cwd de quien lanza; PATH de usuario y «Abrir en File Manager» en HKCU; `--unregister`), `src/mi-fork/shellIntegration.ts` (Más → Integración con Windows), `src-tauri/nsis/mi-hooks.nsh` (el desinstalador llama a `--unregister`, salvo en /UPDATE), Git integrado: `src-tauri/src/git.rs`, `git_parse.rs`, `src/lib/{git,gitStore,gitActions,useGitIntegration}.ts`, `src/lib/gitIcons.tsx`, `src/components/Git{Badge,BranchChip,Dialog,DiffView}.tsx`; árbol de carpetas: `src/lib/folderTree.ts` (caché de hijos, nodos expandidos por pestaña en settings.json con la clave `miTree`), `src/components/FolderTree.tsx` (ramas virtualizadas, teclado, expansión al arrastrar), `src/mi-fork/folder-tree.css`; `src/mi-fork/light-style.css` (estilo claro: selección azul sólida con texto blanco – en la barra lateral texto negro e icono con su color –, barra lateral con tinte azul esmerilado, menús blancos esmerilados, rayas sutiles; superficies blancas; solo bajo `:root:not(.dark)`); `src/mi-fork/dark-style.css` (estilo oscuro: superficies grafito #1e1e1e, barra lateral algo más clara, selección azul sólida #0a64d6 con texto blanco, menús oscuros con resaltado azul; solo bajo `:root.dark`); `src/mi-fork/toolbar-fit.css` (umbrales del toolbar recalculados con los botones del fork – «Nuevo» sin etiqueta, búsqueda estrecha / icono – distintos dentro y fuera de un repo Git; muy estrecho: Git y «Abrir con» sin flecha); `src/mi-fork/menuIcons.tsx` + `menu-style.css` (menú contextual con iconos lucide por ítem, reconocidos por el texto traducido; texto alineado en ítems sin icono; etiquetas como fila de círculos); `src/mi-fork/sidebarGroups.ts` (secciones propias del sidebar: nombre y orden en settings.json con la clave `miSidebarGroups`, pertenencia en `favorites[].group`; al borrar una sección sus favoritos vuelven a Acceso rápido). Extras (PENDIENTES §8): `src-tauri/src/mi_extras.rs` (ZIP con el crate `zip` – protección zip-slip con `enclosed_name`, una sola raíz se extrae al lado, si no en carpeta nueva; tamaño de carpetas con WalkDir por un `Channel`, parciales cada 0,5 s, cancelable), `src/mi-fork/useExtras.tsx` (menús, comandos y diálogos), `extrasSettings.ts` (claves `miGroupBy` y `miFolderSizes` en settings.json), `grouping.ts`, `folderSizes.ts` (caché en memoria por ruta; se recalcula si cambia la fecha de la carpeta), `ListExtras.tsx`, `batchRename.ts` + `BatchRenameDialog.tsx` (buscar/reemplazar o patrón `[name]` `[n]` `[date]`; dos fases con nombres temporales si los nombres se cruzan), `textDiff.ts` + `CompareDialog.tsx` (Myers por líneas, contexto plegado).
 
 Al resolver un conflicto en estos archivos, acepta lo de ellos y vuelve a aplicar encima solo mi cambio de la tabla.
 
 ## Notas
 
 - **Repo privado y actualizaciones:** la API de GitHub sin token devuelve 404 en repos privados, así que mientras `file-manager` sea privado la app nunca avisará de versiones. El fallo es silencioso y ya no ofrece la versión oficial, que era el objetivo.
-- **installerHooks quitado:** `src-tauri/nsis/hooks.nsh` falla si `productName` no es "Dirwise" y además migra claves de registro y desinstala el antiguo Finder-Win del Dirwise oficial. Si ellos cambian `hooks.nsh`, no me afecta.
+- **installerHooks propio (`mi-hooks.nsh`):** `src-tauri/nsis/hooks.nsh` de ellos falla si `productName` no es "Dirwise" y además migra claves de registro y desinstala el antiguo Finder-Win del Dirwise oficial. Si ellos cambian `hooks.nsh`, no me afecta.
 - **Lo que sigue compartido con el Dirwise oficial:** la caché de iconos y miniaturas `%LOCALAPPDATA%\dirwise\`. La configuración ya va aparte: `%APPDATA%\com.miiichael6.midirwise\`.
 - **Nombre:** la app se llama "File Manager" (`file-manager.exe`); se instala aparte del Dirwise oficial. Quedan menciones de "Dirwise" en textos secundarios (errores de actualización, otros idiomas).
 - **Rust con rustup en symlinks:** en esta máquina `~/.cargo/bin/cargo.exe` es un symlink y `tauri dev` dice "cargo ... program not found". Para esquivarlo:

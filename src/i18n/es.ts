@@ -68,11 +68,13 @@ export const es = {
   "transparency.strong": "Intensidad de transparencia: fuerte",
   "transparency.blur": "Transparencia: difuminada",
   "transparency.blurHint": "Difumina el escritorio y las ventanas detrás de la aplicación (Acrylic). Requiere activar los Efectos de transparencia en Windows. Cuando la ventana no está activa se vuelve opaca, como las demás ventanas de Windows.",
-  "liquidGlass.menu": "Liquid Glass",
-  "liquidGlass.toggle": "Apariencia: Liquid Glass",
-  "liquidGlass.hint": "Las barras, los menús y la paleta se vuelven cristal curvo: el contenido se dobla en los bordes, con un borde de luz y esquinas más redondeadas. El contenido no cambia.",
   // MI-FORK: color de carpetas (src/mi-fork/folderColor.ts).
   "folderColor.menu": "Color de carpetas",
+  "shellIntegration.menu": "Integración con Windows", // MI-FORK
+  "shellIntegration.path": "Comando file-manager en la terminal", // MI-FORK
+  "shellIntegration.pathHint": "Añade la carpeta de la app al PATH de usuario: `file-manager .` abre la carpeta actual. Las terminales ya abiertas no lo verán hasta reiniciarlas.", // MI-FORK
+  "shellIntegration.contextMenu": "«Abrir en File Manager» en el Explorador", // MI-FORK
+  "shellIntegration.explorerLabel": "Abrir en File Manager", // MI-FORK
   "folderColor.amber": "Ámbar (predeterminado)",
   "folderColor.yellow": "Amarillo",
   "folderColor.orange": "Naranja",
@@ -95,6 +97,8 @@ export const es = {
   "terminal.pwsh": "PowerShell 7",
   "terminal.powershell": "Windows PowerShell",
   "terminal.cmd": "Símbolo del sistema",
+  "terminal.openIn": "Abrir en {terminal}", // MI-FORK
+  "terminal.choose": "Elegir terminal", // MI-FORK
   "toolbar.checkUpdates": "Buscar actualizaciones",
   "update.available": "La versión {version} está disponible",
   "update.download": "Descargar",
@@ -118,6 +122,11 @@ export const es = {
   "split.toggle": "Dividir ventana",
   "split.toggleWithShortcut": "Dividir ventana (Ctrl+Shift+D)",
   "split.divider": "Divisor de paneles",
+  "split.separate": "Separar en pestañas",
+  "tabs.closeOthers": "Cerrar las demás pestañas",
+  "split.dropLeft": "Abrir «{name}» a la izquierda",
+  "split.dropRight": "Abrir «{name}» a la derecha",
+  "split.dropNewTab": "Abrir «{name}» en una pestaña nueva",
   "split.copyToOther": "Copiar al otro panel",
   "split.moveToOther": "Mover al otro panel",
   "command.palette": "Paleta de comandos",
@@ -181,7 +190,7 @@ export const es = {
   "folderApps.filter": "Programas", // MI-FORK
   "folderApps.openIn": "Abrir carpeta en {app}", // MI-FORK
   "folderApps.button": "Abrir carpeta con", // MI-FORK
-  "jumpList.recent": "Recientes", // MI-FORK
+  "jumpList.recent": "Acceso rápido", // MI-FORK
   "menu.openInExplorer": "Abrir en el Explorador de archivos",
   "menu.openInTerminal": "Abrir en Terminal",
   "menu.showInFolder": "Mostrar en la carpeta",
@@ -235,6 +244,12 @@ export const es = {
   "menu.currentAlreadyFavorite": "La carpeta actual ya está en Acceso rápido",
   "menu.expandSection": "Expandir sección",
   "menu.collapseSection": "Contraer sección",
+  "menu.newSection": "Nueva sección", // MI-FORK
+  "menu.renameSection": "Cambiar nombre de la sección", // MI-FORK
+  "menu.sectionUp": "Subir sección", // MI-FORK
+  "menu.sectionDown": "Bajar sección", // MI-FORK
+  "menu.removeSection": "Eliminar sección", // MI-FORK
+  "menu.moveToSection": "Mover a", // MI-FORK
   "menu.clearRecents": "Borrar recientes",
   "menu.clearAllRecents": "Borrar todos los recientes",
   "menu.removeFromRecents": "Quitar de recientes",
@@ -248,6 +263,7 @@ export const es = {
   "sidebar.trash": "Papelera de reciclaje",
   "sidebar.trashFull": "Papelera de reciclaje ({count})",
   "sidebar.custom": "Acceso rápido",
+  "sidebar.newSectionName": "Nueva sección", // MI-FORK
   "sidebar.recents": "Recientes",
   "sidebar.tags": "Etiquetas",
   "sidebar.dropHere": "Arrastra aquí una carpeta o un archivo",
@@ -274,6 +290,16 @@ export const es = {
   "drive.optical": "Unidad de CD ({letter}:)",
   "drive.labeled": "{label} ({letter}:)",
   "drive.phone": "Teléfono",
+  "drive.usage": "{free} libres de {total}",
+  "menu.openComputer": "Este equipo",
+  "computer.drives": "Unidades",
+  "computer.free": "{free} libres",
+  "computer.ofTotal": "de {total}",
+  "computer.breakdown": "Usado {used} · Libre {free}",
+  "computer.low": "Poco espacio libre",
+  "computer.open": "Abrir",
+  "computer.openTab": "Pestaña nueva",
+  "computer.empty": "No hay unidades",
 
   "tag.red": "Rojo",
   "tag.orange": "Naranja",
@@ -665,4 +691,64 @@ export const es = {
   "git.state.renamed": "Renombrado",
   "git.state.untracked": "Sin seguimiento",
   "git.state.ignored": "Ignorado",
+
+  /* ---------------------------- MI-FORK: extras ---------------------------- */
+  "extras.group.folders": "Carpetas",
+  "extras.group.today": "Hoy",
+  "extras.group.yesterday": "Ayer",
+  "extras.group.thisWeek": "Esta semana",
+  "extras.group.thisMonth": "Este mes",
+  "extras.group.thisYear": "Este año",
+  "extras.group.older": "Hace mucho tiempo",
+  "extras.group.noDate": "Sin fecha",
+  "extras.group.empty": "Vacío (0 KB)",
+  "extras.group.tiny": "Diminuto (0–16 KB)",
+  "extras.group.small": "Pequeño (16 KB – 1 MB)",
+  "extras.group.medium": "Mediano (1–128 MB)",
+  "extras.group.large": "Grande (128 MB – 1 GB)",
+  "extras.group.huge": "Enorme (1–4 GB)",
+  "extras.group.gigantic": "Gigantesco (> 4 GB)",
+  "extras.groupBy.title": "Agrupar por",
+  "extras.groupBy.none": "Ninguno",
+  "extras.groupBy.kind": "Tipo",
+  "extras.groupBy.date": "Fecha de modificación",
+  "extras.groupBy.size": "Tamaño",
+  "extras.folderSizes": "Calcular tamaño de carpetas",
+  "extras.zip.compress": "Comprimir en ZIP",
+  "extras.zip.extract": "Extraer aquí",
+  "extras.zip.compressing": "Comprimiendo…",
+  "extras.zip.done": "Archivo ZIP creado",
+  "extras.zip.extracting": "Extrayendo…",
+  "extras.zip.extracted": "Archivo extraído",
+  "extras.op.zip": "No se pudo comprimir",
+  "extras.op.unzip": "No se pudo extraer",
+  "extras.op.batchRename": "No se pudo renombrar el lote",
+  "extras.rename.menu": "Renombrar varios…",
+  "extras.rename.title": "Renombrar varios elementos",
+  "extras.rename.apply": { one: "Renombrar {count} elemento", other: "Renombrar {count} elementos" },
+  "extras.rename.modeReplace": "Buscar y reemplazar",
+  "extras.rename.modePattern": "Patrón",
+  "extras.rename.find": "Buscar",
+  "extras.rename.replaceWith": "Reemplazar por",
+  "extras.rename.regex": "Expresión regular",
+  "extras.rename.matchCase": "Distinguir mayúsculas",
+  "extras.rename.includeExt": "Incluir extensión",
+  "extras.rename.pattern": "Nombre nuevo",
+  "extras.rename.tokens": "[name] = nombre original, [n] = número, [date] = fecha de modificación. La extensión se conserva.",
+  "extras.rename.start": "Empezar en",
+  "extras.rename.digits": "Cifras",
+  "extras.rename.before": "Nombre actual",
+  "extras.rename.after": "Nombre nuevo",
+  "extras.rename.invalid": "nombre no válido",
+  "extras.rename.duplicate": "nombre repetido",
+  "extras.rename.exists": "ya existe",
+  "extras.rename.badRegex": "expresión regular no válida",
+  "extras.compare.menu": "Comparar archivos",
+  "extras.compare.title": "Comparar archivos",
+  "extras.compare.summary": "+{added} −{removed}",
+  "extras.compare.identical": "Los archivos tienen el mismo contenido.",
+  "extras.compare.folded": { one: "{count} línea sin cambios", other: "{count} líneas sin cambios" },
+  "extras.compare.truncated": "Solo se compara el primer MB de cada archivo.",
+  "extras.undo.renameMany": { one: "Renombrar {count} elemento", other: "Renombrar {count} elementos" },
+  "error.zipInvalid": "no es un archivo ZIP válido ({detail})",
 } satisfies Dictionary;

@@ -13,6 +13,9 @@ import * as storage from "./lib/storage";
 import type { ViewHandle } from "./lib/viewHandle";
 import type { NavDirection } from "./navigation";
 import type { FileEntry, SelectMods, ViewMode } from "./types";
+// MI-FORK: agrupar por tipo / fecha / tamaño.
+import { useExtrasSettings } from "./mi-fork/extrasSettings";
+import { groupEntries } from "./mi-fork/grouping";
 
 /**
  * Jeden panel prohlížeče: složka a její výpis, historie, zobrazení, řazení,
@@ -105,6 +108,8 @@ export function usePanel({ slot, showHidden, setNotice }: PanelOptions) {
     setTagFilter,
     trashView,
     setTrashView,
+    computerView,
+    setComputerView,
     search,
     setSearch,
     active,
@@ -207,6 +212,7 @@ export function usePanel({ slot, showHidden, setNotice }: PanelOptions) {
     setOverlaySelected(null);
     setTagFilter(null);
     setTrashView(false);
+    setComputerView(false);
     // Odchod z výsledků bere s sebou i dotaz. Bez toho by cílová složka zůstala
     // zafiltrovaná textem, kterým uživatel jen hledal, a chyběla by v ní půlka
     // souborů. Mimo hledání se filtr při navigaci nemaže — to je staré chování.
@@ -377,11 +383,14 @@ export function usePanel({ slot, showHidden, setNotice }: PanelOptions) {
     [entries, sortKey, sortDirection, locale],
   );
 
+  // MI-FORK: «Agrupar por» reordena en la vista Lista, para que teclado y
+  // selección con Mayús sigan el orden que se ve.
+  const { groupBy } = useExtrasSettings();
   const visibleEntries = useMemo(() => {
     const needle = filterQuery.trim().toLowerCase();
-    if (!needle) return sortedEntries;
-    return sortedEntries.filter((entry) => entry.name.toLowerCase().includes(needle));
-  }, [sortedEntries, filterQuery]);
+    const filtered = needle ? sortedEntries.filter((entry) => entry.name.toLowerCase().includes(needle)) : sortedEntries;
+    return viewMode === "list" ? groupEntries(filtered, groupBy) : filtered;
+  }, [sortedEntries, filterQuery, viewMode, groupBy]);
 
   // Po každé změně výpisu i filtru se výběr musí sesouhlasit s tím, co je
   // vidět. Po smazání nebo přejmenování by `active` jinak dál ukazoval na
@@ -427,6 +436,7 @@ export function usePanel({ slot, showHidden, setNotice }: PanelOptions) {
 
     setTagFilter(null);
     setTrashView(false);
+    setComputerView(false);
     setOverlaySelected(null);
     setSearch({ root: currentDir, query: needle });
   }, [query, currentDir]);
@@ -440,6 +450,7 @@ export function usePanel({ slot, showHidden, setNotice }: PanelOptions) {
 
     setTagFilter(null);
     setTrashView(false);
+    setComputerView(false);
     setOverlaySelected(null);
     setSearch((previous) =>
       previous?.criteria !== undefined
@@ -743,6 +754,7 @@ export function usePanel({ slot, showHidden, setNotice }: PanelOptions) {
     search,
     tagFilter,
     trashView,
+    computerView,
     selection: [...selection],
     active: active?.path ?? null,
     scrollTop: scrollRef.current?.scrollTop ?? 0,
@@ -777,6 +789,7 @@ export function usePanel({ slot, showHidden, setNotice }: PanelOptions) {
     setSearch(snapshot.search);
     setTagFilter(snapshot.tagFilter);
     setTrashView(snapshot.trashView);
+    setComputerView(snapshot.computerView ?? false);
     setSelection(new Set());
     setActive(null);
     setOverlaySelected(null);
@@ -886,8 +899,11 @@ export function usePanel({ slot, showHidden, setNotice }: PanelOptions) {
     setQuery,
     tagFilter,
     setTagFilter,
-    trashView,
+    // MI-FORK: «Este equipo» se ve navenek jako Koš (režim bez složky); kdo je potřebuje rozlišit, čte computerView.
+    trashView: trashView || computerView,
     setTrashView,
+    computerView,
+    setComputerView,
     search,
     setSearch,
     active,

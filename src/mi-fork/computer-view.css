@@ -1,0 +1,161 @@
+/* MI-FORK: vista «Este equipo» (ComputerView.tsx). */
+.fw-computer {
+  --drive-warn: #b86e00;
+  --drive-full: var(--danger);
+  height: 100%;
+  overflow-y: auto;
+  padding: 20px 24px;
+}
+
+.dark .fw-computer {
+  --drive-warn: #ffb340;
+}
+
+.fw-computer-heading {
+  margin: 0 0 12px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.fw-computer-heading span {
+  margin-left: 4px;
+  opacity: 0.6;
+}
+
+.fw-computer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.fw-drive-card {
+  --drive-color: var(--accent);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 14px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--text-secondary) 5%, transparent);
+  cursor: default;
+  outline: none;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.fw-drive-card.is-warn {
+  --drive-color: var(--drive-warn);
+}
+
+.fw-drive-card.is-full {
+  --drive-color: var(--drive-full);
+}
+
+.fw-drive-card:hover,
+.fw-drive-card:focus-visible {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+}
+
+.fw-drive-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  color: var(--text-secondary);
+}
+
+.fw-drive-card-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--text-primary, inherit);
+}
+
+.fw-drive-card-free {
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+.fw-drive-card-total {
+  margin-bottom: 10px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.fw-drive-card-bar {
+  height: 5px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--text-secondary) 22%, transparent);
+}
+
+.fw-drive-card-bar div {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--drive-color);
+  transition: width 0.4s ease;
+}
+
+.fw-drive-card-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.fw-drive-card-alert {
+  color: var(--drive-color);
+}
+
+/* Las acciones aparecen al pasar el ratón o al enfocar la tarjeta. */
+.fw-drive-card-actions {
+  display: flex;
+  gap: 6px;
+  max-height: 0;
+  margin-top: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.15s ease, margin-top 0.15s ease, opacity 0.15s ease;
+}
+
+.fw-drive-card:hover .fw-drive-card-actions,
+.fw-drive-card:focus-within .fw-drive-card-actions {
+  max-height: 32px;
+  margin-top: 10px;
+  opacity: 1;
+}
+
+.fw-drive-card-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  font-size: 11px;
+  color: inherit;
+}
+
+.fw-drive-card-actions button:hover {
+  background: var(--accent-bg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fw-drive-card,
+  .fw-drive-card-bar div,
+  .fw-drive-card-actions {
+    transition: none;
+  }
+}

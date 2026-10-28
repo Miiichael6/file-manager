@@ -68,12 +68,13 @@ export const en = {
   "transparency.strong": "Transparency Strength: Strong",
   "transparency.blur": "Transparency: Blurred",
   "transparency.blurHint": "Blurs the desktop and windows behind the app (Acrylic). Needs Transparency effects turned on in Windows. When the window isn't active it turns solid, like other Windows windows.",
-  // MI-FORK: Liquid Glass.
-  "liquidGlass.menu": "Liquid Glass",
-  "liquidGlass.toggle": "Appearance: Liquid Glass",
-  "liquidGlass.hint": "Bars, menus and the palette turn into curved glass: content bends at the edges, with a light rim and rounder corners. Content stays as it is.",
   // MI-FORK: color de carpetas (src/mi-fork/folderColor.ts).
   "folderColor.menu": "Folder Color",
+  "shellIntegration.menu": "Windows Integration", // MI-FORK
+  "shellIntegration.path": "file-manager Command in Terminal", // MI-FORK
+  "shellIntegration.pathHint": "Adds the app folder to your user PATH: `file-manager .` opens the current folder. Terminals that are already open won’t see it until restarted.", // MI-FORK
+  "shellIntegration.contextMenu": "“Open in File Manager” in File Explorer", // MI-FORK
+  "shellIntegration.explorerLabel": "Open in File Manager", // MI-FORK
   "folderColor.amber": "Amber (default)",
   "folderColor.yellow": "Yellow",
   "folderColor.orange": "Orange",
@@ -96,6 +97,8 @@ export const en = {
   "terminal.pwsh": "PowerShell 7",
   "terminal.powershell": "Windows PowerShell",
   "terminal.cmd": "Command Prompt",
+  "terminal.openIn": "Open in {terminal}", // MI-FORK
+  "terminal.choose": "Choose Terminal", // MI-FORK
   "toolbar.checkUpdates": "Check for Updates",
   "update.available": "Version {version} is available",
   "update.download": "Download",
@@ -119,6 +122,11 @@ export const en = {
   "split.toggle": "Split Window",
   "split.toggleWithShortcut": "Split Window (Ctrl+Shift+D)",
   "split.divider": "Panel divider",
+  "split.separate": "Separate into Tabs",
+  "tabs.closeOthers": "Close Other Tabs",
+  "split.dropLeft": "Open “{name}” on the left",
+  "split.dropRight": "Open “{name}” on the right",
+  "split.dropNewTab": "Open “{name}” in a new tab",
   "split.copyToOther": "Copy to Other Panel",
   "split.moveToOther": "Move to Other Panel",
   "command.palette": "Command Palette",
@@ -182,7 +190,7 @@ export const en = {
   "folderApps.filter": "Programs", // MI-FORK
   "folderApps.openIn": "Open Folder in {app}", // MI-FORK
   "folderApps.button": "Open Folder With", // MI-FORK
-  "jumpList.recent": "Recent", // MI-FORK
+  "jumpList.recent": "Quick access", // MI-FORK
   "menu.openInExplorer": "Open in File Explorer",
   "menu.openInTerminal": "Open in Terminal",
   "menu.showInFolder": "Show in Folder",
@@ -236,6 +244,12 @@ export const en = {
   "menu.currentAlreadyFavorite": "Current Folder Is Already in Quick Access",
   "menu.expandSection": "Expand Section",
   "menu.collapseSection": "Collapse Section",
+  "menu.newSection": "New Section", // MI-FORK
+  "menu.renameSection": "Rename Section", // MI-FORK
+  "menu.sectionUp": "Move Section Up", // MI-FORK
+  "menu.sectionDown": "Move Section Down", // MI-FORK
+  "menu.removeSection": "Delete Section", // MI-FORK
+  "menu.moveToSection": "Move To", // MI-FORK
   "menu.clearRecents": "Clear Recents",
   "menu.clearAllRecents": "Clear All Recents",
   "menu.removeFromRecents": "Remove from Recents",
@@ -249,6 +263,7 @@ export const en = {
   "sidebar.trash": "Recycle Bin",
   "sidebar.trashFull": "Recycle Bin ({count})",
   "sidebar.custom": "Quick access",
+  "sidebar.newSectionName": "New section", // MI-FORK
   "sidebar.recents": "Recent",
   "sidebar.tags": "Tags",
   "sidebar.dropHere": "Drag a folder or file here",
@@ -275,6 +290,16 @@ export const en = {
   "drive.optical": "CD Drive ({letter}:)",
   "drive.labeled": "{label} ({letter}:)",
   "drive.phone": "Phone",
+  "drive.usage": "{free} free of {total}",
+  "menu.openComputer": "This PC",
+  "computer.drives": "Drives",
+  "computer.free": "{free} free",
+  "computer.ofTotal": "of {total}",
+  "computer.breakdown": "Used {used} · Free {free}",
+  "computer.low": "Low free space",
+  "computer.open": "Open",
+  "computer.openTab": "New tab",
+  "computer.empty": "No drives",
 
   "tag.red": "Red",
   "tag.orange": "Orange",
@@ -666,4 +691,64 @@ export const en = {
   "git.state.renamed": "Renamed",
   "git.state.untracked": "Untracked",
   "git.state.ignored": "Ignored",
+
+  /* ---------------------------- MI-FORK: extras ---------------------------- */
+  "extras.group.folders": "Folders",
+  "extras.group.today": "Today",
+  "extras.group.yesterday": "Yesterday",
+  "extras.group.thisWeek": "Earlier this week",
+  "extras.group.thisMonth": "Earlier this month",
+  "extras.group.thisYear": "Earlier this year",
+  "extras.group.older": "A long time ago",
+  "extras.group.noDate": "No date",
+  "extras.group.empty": "Empty (0 KB)",
+  "extras.group.tiny": "Tiny (0–16 KB)",
+  "extras.group.small": "Small (16 KB – 1 MB)",
+  "extras.group.medium": "Medium (1–128 MB)",
+  "extras.group.large": "Large (128 MB – 1 GB)",
+  "extras.group.huge": "Huge (1–4 GB)",
+  "extras.group.gigantic": "Gigantic (> 4 GB)",
+  "extras.groupBy.title": "Group By",
+  "extras.groupBy.none": "None",
+  "extras.groupBy.kind": "Kind",
+  "extras.groupBy.date": "Date Modified",
+  "extras.groupBy.size": "Size",
+  "extras.folderSizes": "Calculate Folder Sizes",
+  "extras.zip.compress": "Compress to ZIP",
+  "extras.zip.extract": "Extract Here",
+  "extras.zip.compressing": "Compressing…",
+  "extras.zip.done": "ZIP archive created",
+  "extras.zip.extracting": "Extracting…",
+  "extras.zip.extracted": "Archive extracted",
+  "extras.op.zip": "Compression failed",
+  "extras.op.unzip": "Extraction failed",
+  "extras.op.batchRename": "Batch rename failed",
+  "extras.rename.menu": "Rename Multiple…",
+  "extras.rename.title": "Rename Multiple Items",
+  "extras.rename.apply": { one: "Rename {count} Item", other: "Rename {count} Items" },
+  "extras.rename.modeReplace": "Find and Replace",
+  "extras.rename.modePattern": "Pattern",
+  "extras.rename.find": "Find",
+  "extras.rename.replaceWith": "Replace with",
+  "extras.rename.regex": "Regular expression",
+  "extras.rename.matchCase": "Match case",
+  "extras.rename.includeExt": "Include extension",
+  "extras.rename.pattern": "New name",
+  "extras.rename.tokens": "[name] = original name, [n] = number, [date] = date modified. The extension is kept.",
+  "extras.rename.start": "Start at",
+  "extras.rename.digits": "Digits",
+  "extras.rename.before": "Current name",
+  "extras.rename.after": "New name",
+  "extras.rename.invalid": "invalid name",
+  "extras.rename.duplicate": "duplicate name",
+  "extras.rename.exists": "already exists",
+  "extras.rename.badRegex": "invalid regular expression",
+  "extras.compare.menu": "Compare Files",
+  "extras.compare.title": "Compare Files",
+  "extras.compare.summary": "+{added} −{removed}",
+  "extras.compare.identical": "The files have the same content.",
+  "extras.compare.folded": { one: "{count} unchanged line", other: "{count} unchanged lines" },
+  "extras.compare.truncated": "Only the first 1 MB of each file is compared.",
+  "extras.undo.renameMany": { one: "Rename {count} Item", other: "Rename {count} Items" },
+  "error.zipInvalid": "not a valid ZIP archive ({detail})",
 } satisfies Dictionary;

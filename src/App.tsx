@@ -1,7 +1,7 @@
 import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { listen } from "@tauri-apps/api/event";
-import { CircleAlert, CircleCheck, FolderOpen, Plus, Search, SearchX, Trash2, X } from "lucide-react";
+import { CircleAlert, CircleCheck, FolderOpen, Monitor, PanelLeft, PanelRight, Plus, Search, SearchX, Trash2, X } from "lucide-react";
 
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 
@@ -21,14 +21,16 @@ import { ListView } from "./components/ListView";
 import { QuickLook } from "./components/QuickLook";
 // MI-FORK: Git integrado.
 import { GitDialog } from "./components/GitDialog";
+import { useExtras } from "./mi-fork/useExtras"; // MI-FORK
 import { useGitIntegration } from "./lib/useGitIntegration";
 import { SearchCriteriaBar, type SearchLocation } from "./components/SearchCriteriaBar";
 import { SearchView } from "./components/SearchView";
 import { Sidebar } from "./components/Sidebar";
 import { QuickBar, StatusBar } from "./components/StatusBar";
-import { TabBar } from "./components/TabBar";
+import { TAB_MIME, TabBar, tabTitle } from "./components/TabBar";
 import { TagView } from "./components/TagView";
 import { RecycleBinView } from "./components/RecycleBinView";
+import { ComputerView } from "./mi-fork/ComputerView"; // MI-FORK
 import { FolderIcon, folderDisplayName, sidebarIcon, sidebarIconColor, sidebarLabel } from "./components/icons";
 import { TitleBar } from "./components/TitleBar";
 import { Toolbar } from "./components/Toolbar";
@@ -85,7 +87,7 @@ import {
 } from "./format";
 import { errorText, failure, languageSetting, t, useLocale, type MessageKey } from "./i18n";
 import { homeDir } from "@tauri-apps/api/path";
-import { canDropInto, droppedPaths, endDrag, getDrag, isExternalFileDrag } from "./lib/dnd";
+import { canDropInto, draggedFolder, droppedPaths, endDrag, getDrag, isExternalFileDrag, useDrag } from "./lib/dnd";
 import { isTypingTarget } from "./lib/dom";
 import {
   applyWindowBackdrop,
@@ -104,14 +106,15 @@ import { refreshExplorerExtensions, useDisplayNames } from "./lib/extensions";
 import { applyMotion, motionEnabled, motionMs, smoothIfAllowed } from "./lib/motion";
 import * as storage from "./lib/storage";
 import type { TransparencyStrength } from "./lib/storage";
-import { setLiquidGlass, useLiquidGlass } from "./mi-fork/liquidGlass"; // MI-FORK
 import { folderOpenWithMenu, useFolderApps } from "./mi-fork/folderApps";
 import { FolderOpenButton } from "./mi-fork/FolderOpenButton"; // MI-FORK
 import { GitToolbarButtons } from "./mi-fork/GitToolbarButtons"; // MI-FORK
-import { useJumpList } from "./mi-fork/jumpList"; // MI-FORK // MI-FORK
+import { TerminalButton } from "./mi-fork/TerminalButton"; // MI-FORK
+import { useJumpList, type Launch } from "./mi-fork/jumpList"; // MI-FORK
 import { forgetTreeTab, setTreeTabOrder } from "./lib/folderTree"; // MI-FORK: árbol por pestaña
 import { TAG_COLORS, TAG_HEX, tagLabel } from "./lib/tags";
 import { useStableCallback } from "./lib/rowDnd";
+import { FolderDragGhost } from "./mi-fork/FolderDragGhost";
 import { usePanel, type Panel } from "./panel";
 
 /** Jen funkce panelu (settery, navigace) — viz activeFns. */
@@ -148,7 +151,9 @@ type MainMenu =
   | { kind: "entry"; x: number; y: number; entry: FileEntry; overlay: boolean }
   | { kind: "background"; x: number; y: number; dir: string }
   | { kind: "status"; x: number; y: number; dir: string }
-  | { kind: "quicklook"; x: number; y: number; entry: FileEntry };
+  | { kind: "quicklook"; x: number; y: number; entry: FileEntry }
+  /** MI-FORK: ouško záložky. */
+  | { kind: "tab"; x: number; y: number; id: number };
 
 const VIEW_LABELS: Record<ViewMode, MessageKey> = {
   icon: "view.icons",
@@ -293,7 +298,6 @@ export default function App() {
     windowTransparency,
     transparencyStrength,
   } = useStorage();
-  const liquidGlass = useLiquidGlass(); // MI-FORK
   const folderApps = useFolderApps(); // MI-FORK
   // Překreslení po přepnutí jazyka; texty se berou z `t`, které čte aktuální locale.
   const locale = useLocale();
@@ -394,6 +398,7 @@ export default function App() {
     setQuery,
     setTagFilter,
     setTrashView,
+    setComputerView,
     setSearch,
     setActive,
     setSelection,
@@ -425,6 +430,7 @@ export default function App() {
     query,
     tagFilter,
     trashView,
+    computerView,
     search,
     streamingCount,
     freeSpace,
@@ -474,12 +480,19 @@ export default function App() {
 
   /** Zapne / vypne rozdělení. Prázdný druhý panel začne ve stejné složce. */
   const toggleSplit = useCallback(() => {
+    const current = panelRef.current;
+    const other = panelsRef.current[activePanel === 0 ? 1 : 0];
     if (splitOn) {
+      // MI-FORK: el otro panel no se pierde — si muestra otra carpeta, pasa a
+      // su propia pestaña (como «Separar pestañas»); si es la misma, solo se cierra.
+      const otherDir = other.nav.current;
+      if (otherDir !== null && (current.currentDir === null || !storage.samePath(otherDir, current.currentDir))) {
+        separateTab(activeTabId);
+        return;
+      }
       setSplitOn(false);
       return;
     }
-    const current = panelRef.current;
-    const other = panelsRef.current[activePanel === 0 ? 1 : 0];
     if (other.nav.current === null && current.currentDir !== null) {
       other.applySnapshot(
         blankSnapshot(current.currentDir, {
@@ -490,7 +503,9 @@ export default function App() {
       );
     }
     setSplitOn(true);
-  }, [splitOn, activePanel]);
+    // MI-FORK: separateTab es estable (useStableCallback).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [splitOn, activePanel, activeTabId]);
 
   /**
    * Dělicí čára. Během tažení se mění jen styl levého panelu (jednou za
@@ -1162,6 +1177,9 @@ export default function App() {
     setHistory((current) => ({ undo: [...current.undo, op].slice(-UNDO_LIMIT), redo: [] }));
   }, []);
 
+  // MI-FORK: ZIP, renombrar varios, comparar, agrupar por y tamaño de carpetas.
+  const extras = useExtras({ targets: targetEntries, siblings: sortedEntries, runOperation, record, requestSelect, showInfo });
+
   const stepHistory = useCallback(
     async (direction: "undo" | "redo") => {
       const stack = historyRef.current[direction];
@@ -1826,9 +1844,10 @@ export default function App() {
   });
 
   /** Nová záložka na konci lišty (jako ve Finderu), hned aktivní. */
-  const openTab = useStableCallback((path: string | null) => {
+  const openTab = useStableCallback((path: string | null, overlay?: Partial<TabSnapshot>) => {
     if (path === null) return;
-    const tab = { ...newTab(path, { viewMode, sortKey, sortDirection }), fresh: true };
+    const base = newTab(path, { viewMode, sortKey, sortDirection });
+    const tab = { ...base, snapshot: { ...base.snapshot, ...overlay }, fresh: true };
     const captured = captureTab();
     setTabs((current) => [
       ...current.map((item) => (item.id === activeTabId ? { ...item, ...captured } : item)),
@@ -1844,8 +1863,14 @@ export default function App() {
     );
   });
 
-  // MI-FORK: carpetas recientes en la lista de saltos del icono de la barra de tareas.
-  useJumpList(tagFilter === null && search === null && !trashView ? nav.current : null, openTab);
+  // MI-FORK: carpetas de Acceso rápido en la lista de saltos del icono de la barra de tareas.
+  const jumpListFolders = favorites.filter((item) => item.type !== "file").map((item) => item.path);
+  // MI-FORK: carpeta de la terminal / lista de saltos en pestaña nueva; la pestaña nueva usa el panel izquierdo.
+  const openLaunch = useStableCallback(({ path, select }: Launch) => {
+    openTab(path);
+    if (select !== null) panels[0].requestSelect(path, select);
+  });
+  useJumpList(tagFilter === null && search === null && !trashView ? nav.current : null, jumpListFolders, openLaunch);
 
   /** Poslední záložka se nezavírá — okno s jedinou záložkou zůstává. */
   const closeTab = useStableCallback((id: number) => {
@@ -1877,6 +1902,133 @@ export default function App() {
       return next;
     });
   }, []);
+
+  /**
+   * MI-FORK: ouško puštěné na polovinu plochy panelů — záložka se otevře
+   * v panelu `side` aktivní záložky a okno se rozdělí. Nic se neztratí:
+   * panel, který na té straně byl, i druhý panel tažené rozdělené záložky
+   * zůstanou jako záložky na místě taženého ouška.
+   */
+  const [draggedTab, setDraggedTab] = useState<number | null>(null);
+  const [splitDropSide, setSplitDropSide] = useState<0 | 1 | null>(null);
+  const splitWithTab = useStableCallback((id: number, side: 0 | 1) => {
+    const dragged = openTabs.find((tab) => tab.id === id);
+    if (!dragged || id === activeTabId) return;
+    const incoming = tabFace(dragged);
+    const leftovers: TabSnapshot[] = [];
+    if (dragged.split && dragged.second) {
+      leftovers.push(dragged.activePanel === 1 ? dragged.snapshot : dragged.second);
+    }
+    if (splitOn) {
+      leftovers.push(panels[side].captureSnapshot());
+    } else {
+      // Dosavadní obsah okna přejde na druhou stranu.
+      const current = panels[activePanel].captureSnapshot();
+      if (activePanel !== (side === 0 ? 1 : 0)) panels[side === 0 ? 1 : 0].applySnapshot(current);
+    }
+    panels[side].applySnapshot(incoming);
+    setSplitOn(true);
+    setActivePanel(side);
+
+    const replacements = leftovers.map((snapshot) => ({ ...newTab(null), snapshot }));
+    if (replacements.length === 0) forgetTreeTab(id);
+    setTabs((current) => {
+      const index = current.findIndex((tab) => tab.id === id);
+      if (index < 0) return current;
+      const next = [...current];
+      next.splice(index, 1, ...replacements);
+      return next;
+    });
+  });
+
+  /**
+   * MI-FORK: složka ze sidebaru puštěná na plochu panelů — vlevo / vpravo se
+   * otevře v tom panelu (okno se rozdělí, dosavadní obsah přejde na druhou
+   * stranu), uprostřed v nové záložce.
+   */
+  const dragPayload = useDrag();
+  const folderDrag = draggedFolder(dragPayload);
+  const folderDragName =
+    dragPayload?.kind === "place" ? dragPayload.name : folderDrag !== null ? tabTitle(folderDrag) : "";
+  const [folderDropZone, setFolderDropZone] = useState<0 | 1 | "tab" | null>(null);
+  useEffect(() => {
+    if (folderDrag === null) setFolderDropZone(null);
+  }, [folderDrag]);
+  const openFolderAt = useStableCallback((path: string, zone: 0 | 1 | "tab") => {
+    if (zone === "tab") {
+      openTab(path);
+      return;
+    }
+    if (splitOn) {
+      panels[zone].navigate(path);
+    } else {
+      const current = panels[activePanel].captureSnapshot();
+      const other = zone === 0 ? 1 : 0;
+      if (activePanel !== other) panels[other].applySnapshot(current);
+      panels[zone].applySnapshot(blankSnapshot(path, { viewMode, sortKey, sortDirection }));
+      setSplitOn(true);
+    }
+    setActivePanel(zone);
+  });
+
+  /**
+   * MI-FORK: rozdělená záložka se rozdělí na dvě — záložka si nechá aktivní
+   * panel, druhý panel (s historií, zobrazením a řazením) se otevře jako
+   * nová záložka hned za ní, na pozadí.
+   */
+  const separateTab = useStableCallback((id: number) => {
+    const target = openTabs.find((tab) => tab.id === id);
+    if (!target) return;
+    let detached: TabSnapshot;
+    if (id === activeTabId) {
+      if (!splitOn) return;
+      const keep = activePanel;
+      const other = keep === 0 ? 1 : 0;
+      detached = panels[other].captureSnapshot();
+      // Zůstávající panel je vždy levý — uložení záložky bere levý panel.
+      if (keep === 1) panels[0].applySnapshot(panels[1].captureSnapshot());
+      panels[1].applySnapshot(blankSnapshot(null));
+      setActivePanel(0);
+      setSplitOn(false);
+    } else {
+      if (!target.split || !target.second) return;
+      detached = target.activePanel === 1 ? target.snapshot : target.second;
+      const face = tabFace(target);
+      setTabs((current) =>
+        current.map((tab) =>
+          tab.id === id ? { ...tab, snapshot: face, second: undefined, split: false, activePanel: 0 } : tab,
+        ),
+      );
+    }
+    const created = { ...newTab(null), snapshot: detached, fresh: true };
+    setTabs((current) => {
+      const index = current.findIndex((tab) => tab.id === id);
+      const next = [...current];
+      next.splice(index < 0 ? next.length : index + 1, 0, created);
+      return next;
+    });
+    window.setTimeout(
+      () => setTabs((current) => current.map((item) => (item.id === created.id ? { ...item, fresh: false } : item))),
+      motionMs("--dur-nav") + 50,
+    );
+  });
+
+  /** MI-FORK: zavře všechny záložky kromě `id` (ta se stane aktivní). */
+  const closeOtherTabs = useStableCallback((id: number) => {
+    const keep = openTabs.find((tab) => tab.id === id);
+    if (!keep || openTabs.length <= 1) return;
+    if (id !== activeTabId) {
+      setActiveTabId(id);
+      applyTab(keep);
+    }
+    const closing = new Set(openTabs.filter((tab) => tab.id !== id).map((tab) => tab.id));
+    for (const other of closing) forgetTreeTab(other);
+    setTabs((current) => current.map((tab) => (closing.has(tab.id) ? { ...tab, closing: true } : tab)));
+    window.setTimeout(
+      () => setTabs((current) => current.filter((tab) => !closing.has(tab.id))),
+      motionMs("--dur-nav"),
+    );
+  });
 
   /** Ctrl+Tab / Ctrl+Shift+Tab — dokola. */
   const cycleTab = useStableCallback((delta: number) => {
@@ -2191,6 +2343,7 @@ export default function App() {
       setSearch(null);
       setOverlaySelected(null);
       setTrashView(false);
+      setComputerView(false);
       setTagFilter(color);
     },
     [search],
@@ -2202,7 +2355,18 @@ export default function App() {
     setSearch(null);
     setOverlaySelected(null);
     setTagFilter(null);
+    setComputerView(false);
     setTrashView(true);
+  }, [search]);
+
+  /** MI-FORK: pohled «Este equipo» — tarjetas de unidades; vylučuje se s Košem, tagy i hledáním. */
+  const openComputer = useCallback(() => {
+    if (search !== null) setQuery("");
+    setSearch(null);
+    setOverlaySelected(null);
+    setTagFilter(null);
+    setTrashView(false);
+    setComputerView(true);
   }, [search]);
 
   const openStatusMenu = useCallback(
@@ -2267,6 +2431,34 @@ export default function App() {
       label,
       onSelect: () => copyText(path, "op.copyPath"),
     });
+
+    if (menu.kind === "tab") {
+      const target = openTabs.find((tab) => tab.id === menu.id);
+      const isSplit = menu.id === activeTabId ? splitOn : target?.split === true && target.second !== undefined;
+      return [
+        {
+          type: "item",
+          label: t("split.separate"),
+          shortcut: menu.id === activeTabId ? "Ctrl+Shift+E" : undefined,
+          disabled: !isSplit,
+          onSelect: () => separateTab(menu.id),
+        },
+        { type: "separator" },
+        {
+          type: "item",
+          label: t("tabs.close"),
+          shortcut: menu.id === activeTabId ? "Ctrl+W" : undefined,
+          disabled: openTabs.length <= 1,
+          onSelect: () => closeTab(menu.id),
+        },
+        {
+          type: "item",
+          label: t("tabs.closeOthers"),
+          disabled: openTabs.length <= 1,
+          onSelect: () => closeOtherTabs(menu.id),
+        },
+      ];
+    }
 
     if (menu.kind === "status") {
       return [
@@ -2345,6 +2537,7 @@ export default function App() {
               checked: showHidden === true,
               onSelect: toggleHidden,
             },
+            extras.folderSizesItem(), // MI-FORK
           ],
         },
         {
@@ -2372,6 +2565,8 @@ export default function App() {
               checked: sortDirection === "desc",
               onSelect: () => setSortDirection("desc"),
             },
+            // MI-FORK: «Agrupar por ▸» (solo la vista Lista agrupa).
+            ...(viewMode === "list" ? [{ type: "separator" as const }, extras.groupByMenu()] : []),
           ],
         },
         { type: "separator" },
@@ -2598,6 +2793,8 @@ export default function App() {
                 for (const path of targetPaths) await storage.clearTags(path);
               }),
           },
+      // MI-FORK: ZIP, renombrar varios, comparar.
+      ...extras.menuItems(targets),
       // MI-FORK: Git integrado (Stage / Unstage).
       ...git.menuItems(targets),
       { type: "separator" },
@@ -2612,6 +2809,9 @@ export default function App() {
     return items.filter((item): item is MenuItem => item !== null);
   }, [
     menu,
+    tabs, // MI-FORK: menu záložky
+    activeTabId,
+    splitOn,
     tags,
     favorites,
     targetEntries,
@@ -2648,6 +2848,9 @@ export default function App() {
     otherDir,
     transferToOther,
     git.menuItems, // MI-FORK
+    extras.menuItems, // MI-FORK
+    extras.groupByMenu, // MI-FORK
+    extras.folderSizesItem, // MI-FORK
     locale,
     folderApps, // MI-FORK
   ]);
@@ -2677,8 +2880,10 @@ export default function App() {
         checked: sortDirection === "desc",
         onSelect: () => setSortDirection("desc"),
       },
+      // MI-FORK: «Agrupar por ▸» en la vista Lista.
+      ...(viewMode === "list" ? [{ type: "separator" as const }, extras.groupByMenu()] : []),
     ],
-    [sortKey, sortDirection, locale],
+    [sortKey, sortDirection, locale, viewMode, extras.groupByMenu],
   );
 
   /** Zpět / Znovu na začátku menu Více — s názvem operace, jako ve Finderu. */
@@ -2709,6 +2914,7 @@ export default function App() {
       nextTab: { run: () => cycleTab(1), enabled: openTabs.length > 1 },
       previousTab: { run: () => cycleTab(-1), enabled: openTabs.length > 1 },
       toggleSplit: { run: toggleSplit, checked: splitOn },
+      separateTabs: { run: () => separateTab(activeTabId), enabled: splitOn },
       switchPanel: { run: () => setActivePanel(activePanel === 0 ? 1 : 0), enabled: splitVisible },
       copyToOther: { run: () => transferToOther("copy"), enabled: splitVisible && otherDir !== null },
       moveToOther: { run: () => transferToOther("cut"), enabled: splitVisible && otherDir !== null },
@@ -2769,8 +2975,6 @@ export default function App() {
         ...strengthCommand("strong", windowTransparency && transparencyStrength === "strong"),
         enabled: acrylicAvailable,
       },
-      // MI-FORK: Liquid Glass (Más → Apariencia).
-      toggleLiquidGlass: { run: () => void setLiquidGlass(!liquidGlass), checked: liquidGlass },
       terminalAuto: { run: () => void storage.setTerminal("auto"), checked: terminal === "auto" },
       terminalWindows: {
         run: () => void storage.setTerminal("windowsTerminal"),
@@ -2832,6 +3036,7 @@ export default function App() {
       delete: { run: deleteTargets, enabled: targetEntries.length > 0 },
       deletePermanently: { run: deleteTargetsPermanently, enabled: targetEntries.length > 0 },
       openTrash: { run: openTrash },
+      openComputer: { run: openComputer }, // MI-FORK
       emptyTrash: { run: confirmEmptyTrash, enabled: trashState === null || trashState.count > 0 },
       copyPath: {
         run: () => {
@@ -2849,6 +3054,7 @@ export default function App() {
       checkUpdates: { run: () => void storage.setUpdates({ check: !updates.check }), checked: updates.check },
       about: { run: () => setAboutOpen(true) },
       ...git.handlers, // MI-FORK: Git integrado.
+      ...extras.handlers, // MI-FORK: extras (ZIP, renombrar varios, comparar).
     },
     t,
   );
@@ -2953,6 +3159,7 @@ export default function App() {
   // Ikona před názvem v toolbaru: stejná jako u složky v sidebaru, jinak
   // obecná složka; v tag view puntík barvy, ve výsledcích lupa.
   const folderIcon = (() => {
+    if (computerView) return <Monitor size={16} strokeWidth={1.75} className="text-secondary" />; // MI-FORK
     if (trashView) return <Trash2 size={16} strokeWidth={1.75} className="text-secondary" />;
     if (tagFilter !== null) {
       return (
@@ -2995,7 +3202,9 @@ export default function App() {
   }
 
   const crumbs = nav.current ? breadcrumbs(nav.current) : [];
-  const folderName = trashView
+  const folderName = computerView
+    ? t("menu.openComputer") // MI-FORK
+    : trashView
     ? t("sidebar.trash")
     : tagFilter !== null
       ? tagLabel(tagFilter)
@@ -3127,7 +3336,7 @@ export default function App() {
                 if (paths.length > 0) dropInto(dir, paths, copy);
               });
             }}
-            className={`fw-scroll min-h-0 flex-1 overflow-x-hidden overflow-y-auto ${
+            className={`fw-scroll min-h-0 flex-1 ${q.viewMode === "list" ? "overflow-x-auto" : "overflow-x-hidden"} overflow-y-auto ${
               backgroundDrop === index ? "fw-drop-zone" : ""
             }`}
           >
@@ -3146,6 +3355,7 @@ export default function App() {
     const {
       tagFilter,
       trashView,
+      computerView,
       overlaySelected,
       setOverlaySelected,
       refreshToken,
@@ -3168,6 +3378,18 @@ export default function App() {
     } = q;
     // Neaktivní panel ukazuje výběr šedě, jako okno bez fokusu.
     const windowFocused = windowFocusedAll && q === panel;
+
+    if (computerView) {
+      return (
+        <ComputerView
+          sections={sections}
+          windowFocused={windowFocused}
+          onOpen={(path) => navigate(path)}
+          onOpenTab={openTab}
+          onCountChange={setTagCount}
+        />
+      );
+    }
 
     if (trashView) {
       return (
@@ -3336,6 +3558,7 @@ export default function App() {
       return (
         <ListView
           {...shared}
+          pane={q === panels[1] ? 1 : 0} // MI-FORK: anchos de columna por panel
           sortKey={sortKey}
           sortDirection={sortDirection}
           onSort={sortBy}
@@ -3367,9 +3590,11 @@ export default function App() {
           onReveal={reveal}
           activeTag={tagFilter}
           onSelectTag={selectTag}
-          trashActive={trashView}
+          trashActive={trashView && !computerView}
           trashCount={trashState?.count ?? 0}
           onOpenTrash={openTrash}
+          // MI-FORK: clic central en la Papelera — pestaña nueva con la vista de la Papelera.
+          onOpenTrashTab={() => openTab(nav.current ?? currentDir, { trashView: true })}
           onDropInto={dropInto}
           onError={setNotice}
           onConfirm={setConfirm}
@@ -3415,6 +3640,7 @@ export default function App() {
                 status={tagFilter === null && search === null && !trashView ? git.status : null}
                 commands={commands}
                 run={git.run}
+                extra={<TerminalButton path={nav.current} run={(label, action) => void runOperation(label, action)} />}
               />
             }
           />
@@ -3423,6 +3649,16 @@ export default function App() {
             tabs={tabs.map((tab) => ({
               id: tab.id,
               path: tab.id === activeTabId ? nav.current : tabFace(tab).nav.current,
+              // MI-FORK: rozdělená záložka ukazuje oba panely (levý, pravý).
+              panes:
+                tab.id === activeTabId
+                  ? splitOn
+                    ? [panels[0].nav.current, panels[1].nav.current]
+                    : undefined
+                  : tab.split && tab.second
+                    ? [tab.snapshot.nav.current, tab.second.nav.current]
+                    : undefined,
+              activePane: tab.id === activeTabId ? activePanel : (tab.activePanel ?? 0),
               closing: tab.closing === true,
               fresh: tab.fresh === true,
             }))}
@@ -3433,9 +3669,128 @@ export default function App() {
             onReorder={reorderTab}
             onDropInto={dropInto}
             newTab={commands.newTab}
+            onTabMenu={(id, x, y) => setMenu({ kind: "tab", x, y, id })}
+            onTabDrag={(id) => {
+              setDraggedTab(id);
+              setSplitDropSide(null);
+            }}
           />
 
-          <div ref={panelsBoxRef} className="fw-panels flex min-h-0 flex-1">
+          <div ref={panelsBoxRef} className="fw-panels relative flex min-h-0 flex-1">
+            {/* MI-FORK: zóny rozdělení při tažení ouška. Plochu panelů dělí podle
+                skutečné dělicí čáry (bez rozdělení napůl); jediný náhled klouže
+                na stranu pod kurzorem a ukazuje, kam se záložka otevře. */}
+            {draggedTab !== null && draggedTab !== activeTabId && !narrow && (() => {
+              const ratio = splitVisible ? splitRatio : 0.5;
+              const dragged = openTabs.find((tab) => tab.id === draggedTab);
+              const name = dragged ? tabTitle(tabFace(dragged).nav.current) : "";
+              const side = splitDropSide;
+              return (
+                <div className={`mi-split-drop ${side !== null ? "is-armed" : ""}`} aria-hidden>
+                  <div
+                    className="mi-split-drop-preview"
+                    style={{
+                      left: side === 1 ? `${ratio * 100}%` : 0,
+                      width: `${(side === 1 ? 1 - ratio : ratio) * 100}%`,
+                    }}
+                  >
+                    <div className="mi-split-drop-chip">
+                      {side === 1 ? <PanelRight size={15} strokeWidth={2} /> : <PanelLeft size={15} strokeWidth={2} />}
+                      <span className="truncate">{t(side === 1 ? "split.dropRight" : "split.dropLeft", { name })}</span>
+                    </div>
+                  </div>
+                  {([0, 1] as const).map((zone) => (
+                    <div
+                      key={zone}
+                      className="mi-split-drop-zone"
+                      style={{ flex: `0 0 ${(zone === 0 ? ratio : 1 - ratio) * 100}%` }}
+                      onDragOver={(event) => {
+                        if (!event.dataTransfer.types.includes(TAB_MIME)) return;
+                        event.preventDefault();
+                        event.dataTransfer.dropEffect = "move";
+                        if (splitDropSide !== zone) setSplitDropSide(zone);
+                      }}
+                      onDragLeave={(event) => {
+                        // Odchod mimo celou plochu (ne jen do druhé poloviny) náhled schová.
+                        const into = event.relatedTarget as Node | null;
+                        if (event.currentTarget.parentElement?.contains(into)) return;
+                        setSplitDropSide(null);
+                      }}
+                      onDrop={(event) => {
+                        event.preventDefault();
+                        const id = draggedTab;
+                        setDraggedTab(null);
+                        setSplitDropSide(null);
+                        splitWithTab(id, zone);
+                      }}
+                    />
+                  ))}
+                </div>
+              );
+            })()}
+            {folderDrag !== null && <FolderDragGhost path={folderDrag} name={folderDragName} />}
+            {/* MI-FORK: zóny pro složku ze sidebaru — vlevo, nová záložka, vpravo.
+                V úzkém okně (bez rozdělení) jen nová záložka. */}
+            {folderDrag !== null && (() => {
+              const ratio = splitVisible ? splitRatio : 0.5;
+              const zone = folderDropZone;
+              const zones: { id: 0 | 1 | "tab"; width: number }[] = narrow
+                ? [{ id: "tab", width: 1 }]
+                : [
+                    { id: 0, width: 0.3 },
+                    { id: "tab", width: 0.4 },
+                    { id: 1, width: 0.3 },
+                  ];
+              const preview =
+                zone === 0 ? { left: 0, width: ratio } : zone === 1 ? { left: ratio, width: 1 - ratio } : { left: 0, width: 1 };
+              return (
+                <div className={`mi-split-drop ${zone !== null ? "is-armed" : ""}`} aria-hidden>
+                  <div
+                    className="mi-split-drop-preview"
+                    style={{ left: `${preview.left * 100}%`, width: `${preview.width * 100}%` }}
+                  >
+                    <div className="mi-split-drop-chip">
+                      {zone === 0 ? (
+                        <PanelLeft size={15} strokeWidth={2} />
+                      ) : zone === 1 ? (
+                        <PanelRight size={15} strokeWidth={2} />
+                      ) : (
+                        <Plus size={15} strokeWidth={2} />
+                      )}
+                      <span className="truncate">
+                        {t(zone === 0 ? "split.dropLeft" : zone === 1 ? "split.dropRight" : "split.dropNewTab", {
+                          name: folderDragName,
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                  {zones.map(({ id, width }) => (
+                    <div
+                      key={id}
+                      className="mi-split-drop-zone"
+                      style={{ flex: `0 0 ${width * 100}%` }}
+                      onDragOver={(event) => {
+                        event.preventDefault();
+                        event.dataTransfer.dropEffect = "move";
+                        if (folderDropZone !== id) setFolderDropZone(id);
+                      }}
+                      onDragLeave={(event) => {
+                        const into = event.relatedTarget as Node | null;
+                        if (event.currentTarget.parentElement?.contains(into)) return;
+                        setFolderDropZone(null);
+                      }}
+                      onDrop={(event) => {
+                        event.preventDefault();
+                        const path = folderDrag;
+                        endDrag();
+                        setFolderDropZone(null);
+                        openFolderAt(path, id);
+                      }}
+                    />
+                  ))}
+                </div>
+              );
+            })()}
             {visiblePanels.map((index) => (
               <Fragment key={index}>
                 {index === 1 && splitVisible && (
@@ -3625,6 +3980,7 @@ export default function App() {
             setQuery(text);
             setTagFilter(null);
             setTrashView(false);
+            setComputerView(false);
             setOverlaySelected(null);
             setSearch({ root: currentDir, query: text });
           }}
@@ -3642,6 +3998,7 @@ export default function App() {
       )}
 
       {/* MI-FORK: Git integrado. */}
+      {extras.dialogs /* MI-FORK */}
       {git.dialogOpen && git.status && (
         <GitDialog status={git.status} onClose={() => git.setDialogOpen(false)} />
       )}

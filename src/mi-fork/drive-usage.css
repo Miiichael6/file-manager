@@ -1,0 +1,23 @@
+/* MI-FORK: dona de ocupación de unidades en el sidebar (DriveUsage.tsx). */
+.fw-drive-donut {
+  flex-shrink: 0;
+}
+
+.fw-drive-donut circle {
+  fill: none;
+  stroke-width: 2.5;
+}
+
+.fw-drive-donut-track {
+  stroke: color-mix(in srgb, var(--text-secondary) 25%, transparent);
+}
+
+.fw-drive-donut-fill {
+  stroke: var(--sidebar-accent, var(--accent));
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.4s ease;
+}
+
+.fw-drive-donut.is-full .fw-drive-donut-fill {
+  stroke: var(--danger);
+}

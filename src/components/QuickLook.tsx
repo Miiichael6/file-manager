@@ -441,7 +441,7 @@ export function QuickLook({
           event.stopPropagation();
           onContextMenu(current, event.clientX, event.clientY);
         }}
-        className="flex flex-col overflow-hidden rounded-xl outline-none"
+        className="fw-ql-card flex flex-col overflow-hidden rounded-xl outline-none"
         style={{
           background: "var(--bg-main)",
           width: "85%",
@@ -456,7 +456,7 @@ export function QuickLook({
         }}
       >
         <header
-          className="flex h-11 shrink-0 items-center gap-2 border-b border-line px-4"
+          className="fw-ql-header flex h-11 shrink-0 items-center gap-2 border-b border-line px-4"
           style={{ background: "var(--bg-toolbar)" }}
         >
           <SmallEntryIcon entry={current} />
@@ -480,7 +480,7 @@ export function QuickLook({
           <button
             type="button"
             onClick={handleOpen}
-            className="shrink-0 rounded-full bg-[color:var(--accent-fill)] px-3 py-1 text-[12px] font-medium text-[color:var(--on-accent)] fw-t-opacity hover:opacity-90"
+            className="fw-ql-open shrink-0 rounded-full bg-[color:var(--accent-fill)] px-3 py-1 text-[12px] font-medium text-[color:var(--on-accent)] fw-t-opacity hover:opacity-90"
           >
             {t("common.open")}
           </button>

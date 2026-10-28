@@ -1,0 +1,102 @@
+/* MI-FORK: sidebar plano como TablePlus (docs/reference/tableplus-style.png).
+
+   Sin tarjeta ni cristal: el panel es una superficie lisa algo distinta de la
+   lista, separada por una línea de 1 px. Filas compactas de 24 px a todo el
+   ancho (ROW_CLASS en Sidebar.tsx, ROW en FolderTree.tsx) y selección como
+   barra azul sólida de esquinas rectas con texto e iconos blancos. Los
+   títulos de sección van en versalitas pequeñas y apagadas.
+
+   Va después de light-/dark-style.css; :root:root sube la especificidad por
+   encima de index.css (:root[data-glass="on"] .fw-sidebar*). Con
+   Transparencia el fondo lo sigue poniendo index.css (krytí --see-*).
+
+   Kontrast (WCAG): bílá na #003b5e = 11,9 : 1, na #0a64d6 = 5,6 : 1; nadpis
+   #8e8e93 na #232323 = 5,1, #6e6e73 na #f2f2f2 = 4,6. */
+
+:root:root {
+  --mi-sb-bg: #f2f2f2;
+  --mi-sb-border: #d4d4d4;
+  --mi-sb-hover: rgb(0 0 0 / 0.05);
+  --mi-sb-select: #0a64d6;
+  --mi-sb-select-dim: rgb(0 0 0 / 0.09);
+  --mi-sb-heading: #6e6e73;
+}
+
+:root:root.dark {
+  --mi-sb-bg: #232323;
+  --mi-sb-border: #0f0f0f;
+  --mi-sb-hover: rgb(255 255 255 / 0.05);
+  --mi-sb-select: #003b5e;
+  --mi-sb-select-dim: rgb(255 255 255 / 0.08);
+  --mi-sb-heading: #8e8e93;
+}
+
+:root:root:not([data-transparency]) .fw-sidebar-box {
+  background: var(--mi-sb-bg);
+}
+
+:root:root .fw-sidebar-box {
+  box-shadow: inset -1px 0 0 var(--mi-sb-border);
+}
+
+:root:root .fw-sidebar {
+  background: transparent;
+  backdrop-filter: none;
+}
+
+:root:root .fw-sidebar-row:hover:not(.is-active):not(.is-active-dim) {
+  background-color: var(--mi-sb-hover);
+}
+
+/* Barra de selección (la placa que se desliza entre filas). */
+:root:root .fw-sidebar-indicator {
+  border-radius: 0;
+  background-color: var(--mi-sb-select);
+}
+
+:root:root .fw-sidebar-indicator[data-dim="true"] {
+  background-color: var(--mi-sb-select-dim);
+}
+
+:root:root .fw-sidebar-row.is-active,
+:root:root .fw-sidebar-row.is-active :is(.text-primary, .text-secondary, .fw-sidebar-value) {
+  color: #ffffff;
+  text-shadow: none;
+}
+
+/* Tmavé téma: všechny ikony sidebaru jednou tlumenou modrou (přání
+   uživatele); na tmavém pozadí #232323 = 3,6 : 1 (ikona ≥ 3). Barvu z atributu stroke
+   (iconColor v Sidebar.tsx) CSS přebije; aktivní řádek zůstává bílý. */
+:root:root.dark .fw-sidebar-row:not(.is-active) .fw-sidebar-icon {
+  color: #4680a0;
+  stroke: #4680a0;
+}
+
+:root:root .fw-sidebar-row.is-active svg {
+  color: #ffffff;
+  stroke: #ffffff;
+}
+
+:root:root .fw-sidebar-row.is-active svg[fill]:not([fill="none"]) {
+  fill: #ffffff;
+}
+
+:root:root .fw-sidebar .fw-section-heading {
+  padding: 12px 12px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--mi-sb-heading);
+}
+
+/* Foco de teclado: línea fina por dentro en lugar del contorno negro por
+   defecto del navegador (sobre la barra azul, línea blanca). */
+:root:root .fw-sidebar-row:focus-visible {
+  outline: 1px solid var(--focus-ring);
+  outline-offset: -1px;
+}
+
+:root:root .fw-sidebar-row.is-active:focus-visible {
+  outline-color: rgb(255 255 255 / 0.7);
+}

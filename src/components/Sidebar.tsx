@@ -13,6 +13,7 @@ import { isTypingTarget } from "../lib/dom";
 import {
   canDropInto,
   droppedPaths,
+  EMPTY_DRAG_IMAGE,
   endDrag,
   getDrag,
   isExternalFileDrag,
@@ -40,12 +41,17 @@ import { GitBadge } from "./GitBadge";
 import * as tree from "../lib/folderTree";
 import type { FileEntry } from "../types";
 import "../mi-fork/folder-tree.css";
+import { DriveDonut, driveUsageText, useDriveUsage } from "../mi-fork/DriveUsage";
+// MI-FORK: secciones propias en el sidebar.
+import * as sidebarGroups from "../mi-fork/sidebarGroups";
 
 /** Nedávných se ukládá 20, ale sidebar by z nich neúměrně narostl. */
 const RECENTS_SHOWN = 10;
 
 /** Klíče sekcí pro sbalení. Sekce od backendu mají klíč `system:<id>`. */
 const CUSTOM_ID = "custom";
+/** MI-FORK: secciones propias — clave `group:<id>`. */
+const GROUP_PREFIX = "group:";
 const RECENTS_ID = "recents";
 const TAGS_ID = "tags";
 
@@ -66,6 +72,8 @@ type SidebarProps = {
   trashActive: boolean;
   trashCount: number;
   onOpenTrash: () => void;
+  /** MI-FORK: Papelera en una pestaña nueva (botón central). */
+  onOpenTrashTab: () => void;
   /** Položky (nebo soubory z Průzkumníku) puštěné na složku v sidebaru. */
   onDropInto: DropInto;
   /** Chyby (Průzkumník, Terminál, schránka) — do stejné hlášky jako v App. */
@@ -169,12 +177,17 @@ function Collapsible({ open, children }: { open: boolean; children: React.ReactN
 
 /** Společný vzhled všech řádků sidebaru, ať už jde o složku, tag nebo nedávný soubor. */
 const ROW_CLASS =
-  "fw-sidebar-row mx-2 flex h-[28px] items-center gap-2 rounded-[6px] px-2 text-left text-[13px] text-primary";
+  "fw-sidebar-row flex h-[24px] items-center gap-2 px-3 text-left text-[13px] text-primary"; // MI-FORK: fila plana a todo el ancho (estilo TablePlus)
 
 /**
  * Hover posun i podbarvení řeší .fw-sidebar-row v CSS — jen tam jde napsat
  * "posuň při hoveru, ale ne když je řádek aktivní" bez druhé sady tříd.
  */
+/** MI-FORK: botón central — mousedown evita el autoscroll; auxclick abre la pestaña. */
+function preventMiddleScroll(event: React.MouseEvent) {
+  if (event.button === 1) event.preventDefault();
+}
+
 function rowStateClass(active: boolean, windowFocused: boolean): string {
   if (!active) return "";
   return windowFocused ? "is-active" : "is-active-dim";
@@ -187,8 +200,8 @@ function iconColor(base: string, active: boolean): string {
   return active ? `color-mix(in srgb, ${base} 85%, var(--sidebar-icon-mix, white))` : base;
 }
 
-/** Výška řádku (ROW_CLASS h-[28px]) — posuny při přerovnání počítají s ní. */
-const ROW_HEIGHT = 28;
+/** Výška řádku (ROW_CLASS h-[24px]) — posuny při přerovnání počítají s ní. */
+const ROW_HEIGHT = 24;
 
 /** Popisek se edituje volně — na rozdíl od názvu souboru ho Windows neomezují. */
 function LabelInput({
@@ -263,11 +276,17 @@ type CustomFavoritesProps = {
   renamingPath: string | null;
   onRenameSubmit: (path: string, label: string) => void;
   onRenameCancel: () => void;
+  onOpenTab: (path: string) => void;
   heading: HeadingControl;
+  /** MI-FORK: sección propia (undefined = «Acceso rápido»), título y si se ve vacía. */
+  group: string | undefined;
+  title: React.ReactNode;
+  alwaysVisible?: boolean;
 };
 
 function CustomFavorites({
   items,
+  onOpenTab,
   currentPath,
   windowFocused,
   onActivate,
@@ -276,6 +295,9 @@ function CustomFavorites({
   onRenameSubmit,
   onRenameCancel,
   heading,
+  group,
+  title,
+  alwaysVisible = false,
 }: CustomFavoritesProps) {
   const names = useDisplayNames();
   const t = useT();
@@ -283,15 +305,29 @@ function CustomFavorites({
   const [dropIndex, setDropIndex] = useState<number | null>(null);
   const navRef = useRef<HTMLElement>(null);
 
+  // MI-FORK: el favorito arrastrado puede venir de otra sección — entonces aquí
+  // no es «origen» sino un elemento que entra (como una carpeta del listado).
+  const sourceIndex =
+    drag?.kind === "favorite" ? items.findIndex((item) => storage.samePath(item.path, drag.path)) : -1;
+  const source = sourceIndex >= 0 ? sourceIndex : null;
+  const foreignFavorite =
+    drag?.kind === "favorite" && source === null
+      ? (storage.getSnapshot().favorites.find((item) => storage.samePath(item.path, drag.path)) ?? null)
+      : null;
+
   // Soubor i složka sem smí, ale co už v seznamu je, se podruhé nepřidává.
   // U vícenásobného tažení stačí, když je aspoň jedna položka nová.
+  // MI-FORK: un favorito de otra sección sí entra (se mueve), pero un archivo
+  // que ya es favorito en otra sección no (sería un duplicado).
+  // MI-FORK: složka ze sidebaru (place) se přidá jako oblíbená, pokud ještě není.
+  const isFavorite = (path: string) => storage.getSnapshot().favorites.some((item) => storage.samePath(item.path, path));
   const accepts =
     drag !== null &&
     (drag.kind === "favorite" ||
-      drag.items.some((dragged) => !items.some((item) => storage.samePath(item.path, dragged.path))));
+      (drag.kind === "place" ? !isFavorite(drag.path) : drag.items.some((dragged) => !isFavorite(dragged.path))));
 
   // Prázdná sekce se odhalí jen na dobu tažení, aby bylo kam pustit první složku.
-  const visible = items.length > 0 || (accepts && drag?.kind === "entry");
+  const visible = items.length > 0 || alwaysVisible || (accepts && source === null);
   if (!visible) return null;
 
   /**
@@ -316,8 +352,21 @@ function CustomFavorites({
   // místo, řádky mezi uhnou o jeden. Zvenku (ze složky) uhnou řádky pod
   // pozicí a do mezery se vloží duch přidávané položky. Jen transformace —
   // layout seznamu se během tažení nehne.
-  const source = drag?.kind === "favorite" ? drag.index : null;
-  const incoming = drag?.kind === "entry" && dropIndex !== null ? drag.items : null;
+  // MI-FORK: el «fantasma» que entra también puede ser un favorito de otra sección.
+  const incoming =
+    dropIndex === null
+      ? null
+      : drag?.kind === "entry"
+        ? drag.items.map((item) => ({
+            name: names.name(item.name, item.isDir),
+            path: item.path,
+            type: (item.isDir ? "folder" : "file") as RecentKind,
+          }))
+        : drag?.kind === "place"
+          ? [{ name: drag.name, path: drag.path, type: "folder" as RecentKind }]
+          : foreignFavorite
+            ? [{ name: foreignFavorite.label, path: foreignFavorite.path, type: foreignFavorite.type }]
+            : null;
 
   function offsetOf(index: number): number {
     if (dropIndex === null) return 0;
@@ -339,8 +388,17 @@ function CustomFavorites({
 
     if (payload === null) return;
 
+    // MI-FORK: reordenar o mover entre secciones (sidebarGroups) en vez de moveFavorite.
     if (payload.kind === "favorite") {
-      void storage.moveFavorite(payload.index, target);
+      void sidebarGroups.moveFavoriteTo(payload.path, group, target);
+      return;
+    }
+    if (payload.kind === "place") {
+      void sidebarGroups.addFavoriteTo(
+        { label: payload.name, path: payload.path, icon: "Folder", type: "folder" },
+        group,
+        target,
+      );
       return;
     }
 
@@ -349,8 +407,9 @@ function CustomFavorites({
     void (async () => {
       let at = target;
       for (const item of payload.items) {
-        const added = await storage.addFavorite(
+        const added = await sidebarGroups.addFavoriteTo(
           { label: item.name, path: item.path, icon: "Folder", type: item.isDir ? "folder" : "file" },
+          group,
           at,
         );
         if (added) at += 1;
@@ -367,7 +426,7 @@ function CustomFavorites({
       }}
       onDrop={handleDrop}
     >
-      <SectionHeading control={heading}>{t("sidebar.custom")}</SectionHeading>
+      <SectionHeading control={heading}>{title}</SectionHeading>
 
       {/* Sbalená sekce se během tažení otevře — jinak by nebylo kam pustit. */}
       <Collapsible open={!heading.collapsed || accepts}>
@@ -399,13 +458,23 @@ function CustomFavorites({
                   onDragStart={(event) => {
                     event.stopPropagation();
                     setDropIndex(null);
-                    startDrag({ kind: "favorite", path: item.path, index }, event.dataTransfer);
+                    startDrag(
+                      { kind: "favorite", path: item.path, index, isDir: item.type === "folder" },
+                      event.dataTransfer,
+                    );
+                    // MI-FORK: složku provází duch z App (jako ouško), soubor nativní obrázek.
+                    if (item.type === "folder") event.dataTransfer.setDragImage(EMPTY_DRAG_IMAGE, 0, 0);
                   }}
                   onDragEnd={() => {
                     setDropIndex(null);
                     endDrag();
                   }}
                   onClick={() => !isRenaming && onActivate(item)}
+                  // MI-FORK: botón central = pestaña nueva (solo carpetas).
+                  onMouseDown={preventMiddleScroll}
+                  onAuxClick={(event) => {
+                    if (event.button === 1 && !isRenaming && item.type === "folder") onOpenTab(item.path);
+                  }}
                   onContextMenu={(event) => {
                     if (isTypingTarget(event.target)) return;
                     event.preventDefault();
@@ -445,15 +514,13 @@ function CustomFavorites({
                 style={{ top: dropIndex * ROW_HEIGHT, opacity: 0.45 }}
               >
                 <EntryIcon
-                  name={incoming[0].name}
+                  name={storage.lastSegment(incoming[0].path)}
                   path={incoming[0].path}
-                  type={incoming[0].isDir ? "folder" : "file"}
+                  type={incoming[0].type}
                   active={false}
                 />
                 <span className="truncate">
-                  {incoming.length > 1
-                    ? `${names.name(incoming[0].name, incoming[0].isDir)} +${incoming.length - 1}`
-                    : names.name(incoming[0].name, incoming[0].isDir)}
+                  {incoming.length > 1 ? `${incoming[0].name} +${incoming.length - 1}` : incoming[0].name}
                 </span>
               </div>
               {/* Místo pro řádek navíc, ať poslední uhnutý nevjede do další sekce. */}
@@ -470,6 +537,19 @@ function CustomFavorites({
       </Collapsible>
     </div>
   );
+}
+
+/** MI-FORK: řádek složky jako zdroj tažení — do panelu vlevo / vpravo / nová záložka. */
+function placeDragProps(path: string, name: string) {
+  return {
+    draggable: true,
+    onDragStart: (event: React.DragEvent) => {
+      event.stopPropagation();
+      startDrag({ kind: "place", path, name }, event.dataTransfer);
+      event.dataTransfer.setDragImage(EMPTY_DRAG_IMAGE, 0, 0);
+    },
+    onDragEnd: () => endDrag(),
+  };
 }
 
 /* ------------------------------- NEDÁVNÉ ---------------------------------- */
@@ -583,6 +663,7 @@ function Recents({
                 type="button"
                 data-tooltip={entry.path}
                 onClick={() => onActivate(entry)}
+                {...(entry.type === "folder" ? placeDragProps(entry.path, entry.name) : {})}
                 // Prostřední tlačítko: mousedown zabrání autoscrollu, auxclick otevře záložku.
                 onMouseDown={(event) => {
                   if (event.button === 1) event.preventDefault();
@@ -706,6 +787,7 @@ export function Sidebar({
   trashActive,
   trashCount,
   onOpenTrash,
+  onOpenTrashTab,
   onDropInto,
   onError,
   onConfirm,
@@ -724,10 +806,20 @@ export function Sidebar({
     () => sections.flatMap((section) => section.items.filter((item) => !item.external).map((item) => item.path)),
     [sections],
   );
+  // MI-FORK: dona de ocupación — solo unidades con letra (no teléfonos ni nube).
+  const drivePaths = useMemo(
+    () =>
+      sections
+        .filter((section) => section.id === "devices")
+        .flatMap((section) => section.items.filter((item) => item.letter !== null && !item.external))
+        .map((item) => item.path),
+    [sections],
+  );
+  const driveUsage = useDriveUsage(drivePaths);
   // El árbol sigue a la carpeta actual: bajo la raíz más profunda que la
   // contiene se abren los antepasados, pero solo si esa raíz ya está desplegada.
   useEffect(() => {
-    if (currentPath === null) return;
+    if (currentPath === null || !tree.TREE_ENABLED) return;
     // Lo que muestra la carpeta actual en el árbol se refresca al entrar en ella.
     tree.refreshLoaded([currentPath]);
     const key = storage.pathKey(currentPath);
@@ -744,7 +836,7 @@ export function Sidebar({
   }, [currentPath, treeRoots]);
   // Cambios en disco (el watcher vigila la carpeta actual).
   useEffect(() => {
-    if (currentPath === null) return;
+    if (currentPath === null || !tree.TREE_ENABLED) return;
     const unlisten = listen("dir-changed", () => tree.refreshLoaded([currentPath]));
     return () => void unlisten.then((stop) => stop());
   }, [currentPath]);
@@ -828,6 +920,12 @@ export function Sidebar({
 
   const [menu, setMenu] = useState<SidebarMenu | null>(null);
   const [renamingPath, setRenamingPath] = useState<string | null>(null);
+  // MI-FORK: secciones propias; la recién creada entra directamente en edición del nombre.
+  const groups = sidebarGroups.useSidebarGroups();
+  const [renamingGroup, setRenamingGroup] = useState<string | null>(null);
+  function createGroup() {
+    void sidebarGroups.addGroup(t("sidebar.newSectionName")).then(setRenamingGroup);
+  }
   const [pathTip, setPathTip] = useState<{ x: number; y: number; path: string } | null>(null);
   const [collapsed, setCollapsed] = useState<Set<string>>(readCollapsed);
 
@@ -959,6 +1057,37 @@ export function Sidebar({
         );
       }
 
+      // MI-FORK: «Acceso rápido» y las secciones propias — crear, renombrar, mover, eliminar.
+      if (id === CUSTOM_ID || id.startsWith(GROUP_PREFIX)) {
+        items.push({ type: "separator" }, { type: "item", label: t("menu.newSection"), onSelect: createGroup });
+      }
+      if (id.startsWith(GROUP_PREFIX)) {
+        const groupId = id.slice(GROUP_PREFIX.length);
+        const at = groups.findIndex((group) => group.id === groupId);
+        items.push(
+          { type: "item", label: t("menu.renameSection"), onSelect: () => setRenamingGroup(groupId) },
+          {
+            type: "item",
+            label: t("menu.sectionUp"),
+            disabled: at <= 0,
+            onSelect: () => void sidebarGroups.shiftGroup(groupId, -1),
+          },
+          {
+            type: "item",
+            label: t("menu.sectionDown"),
+            disabled: at < 0 || at >= groups.length - 1,
+            onSelect: () => void sidebarGroups.shiftGroup(groupId, 1),
+          },
+          { type: "separator" },
+          {
+            type: "item",
+            label: t("menu.removeSection"),
+            danger: true,
+            onSelect: () => void sidebarGroups.removeGroup(groupId),
+          },
+        );
+      }
+
       return items;
     }
 
@@ -982,6 +1111,7 @@ export function Sidebar({
             });
           },
         },
+        { type: "item", label: t("menu.newSection"), onSelect: createGroup }, // MI-FORK
         { type: "separator" },
         {
           type: "item",
@@ -1085,12 +1215,40 @@ export function Sidebar({
         toggleFavorite(item.path, sidebarLabel(item), "folder"),
         copyPathItem(item.path),
         showPath(item.path),
-        ...treeItems(item.path), // MI-FORK
+        ...(tree.TREE_ENABLED ? treeItems(item.path) : []), // MI-FORK
       ];
     }
 
     if (menu.kind === "favorite") {
       const { item } = menu;
+      // MI-FORK: «Mover a ▸» — las demás secciones (y una nueva al final).
+      const here = sidebarGroups.groupOf(item, groups);
+      const targets = [
+        { id: undefined as string | undefined, name: t("sidebar.custom") },
+        ...groups.map((group) => ({ id: group.id as string | undefined, name: group.name })),
+      ].filter((target) => target.id !== here);
+      const moveTo: MenuItem = {
+        type: "submenu",
+        label: t("menu.moveToSection"),
+        items: [
+          ...targets.map((target) => ({
+            type: "item" as const,
+            label: target.name,
+            onSelect: () => void sidebarGroups.moveFavoriteTo(item.path, target.id, Number.MAX_SAFE_INTEGER),
+          })),
+          ...(targets.length > 0 ? [{ type: "separator" as const }] : []),
+          {
+            type: "item" as const,
+            label: t("menu.newSection"),
+            onSelect: () => {
+              void sidebarGroups.addGroup(t("sidebar.newSectionName")).then(async (id) => {
+                await sidebarGroups.moveFavoriteTo(item.path, id, 0);
+                setRenamingGroup(id);
+              });
+            },
+          },
+        ],
+      };
 
       return [
         { type: "item", label: t("menu.open"), onSelect: () => activateFavorite(item) },
@@ -1101,6 +1259,7 @@ export function Sidebar({
           label: t("menu.rename"),
           onSelect: () => setRenamingPath(item.path),
         },
+        moveTo,
         {
           type: "item",
           label: t("menu.removeFromFavorites"),
@@ -1156,6 +1315,7 @@ export function Sidebar({
   }, [
     menu,
     favorites,
+    groups, // MI-FORK
     recents,
     collapsed,
     currentPath,
@@ -1184,30 +1344,46 @@ export function Sidebar({
               const Icon = sidebarIcon(item.icon_name);
               const isActive =
                 !item.external && highlightPath !== null && storage.samePath(item.path, highlightPath);
+              const usage = section.id === "devices" ? driveUsage(item.path) : undefined;
 
               return (
                 <div key={`${section.id}/${item.path}`} className="contents">
                   <button
                     type="button"
                     // Shellová cesta telefonu ("::{20D04FE0…}\\?\usb#…") nikomu nic neřekne.
-                    data-tooltip={item.external ? t("sidebar.opensInExplorer") : item.path}
+                    data-tooltip={
+                      item.external
+                        ? t("sidebar.opensInExplorer")
+                        : usage
+                          ? `${item.path}\n${driveUsageText(usage, t)}`
+                          : item.path
+                    }
                     onClick={() => {
                       if (item.external) openDeviceOrReport(item.path);
                       else onNavigate(item.path);
                     }}
                     {...(item.external ? {} : folderDropProps(item.path))}
+                    {...(item.external ? {} : placeDragProps(item.path, sidebarLabel(item)))}
+                    // MI-FORK: botón central = pestaña nueva, como en Recientes.
+                    onMouseDown={preventMiddleScroll}
+                    onAuxClick={(event) => {
+                      if (event.button === 1 && !item.external) onOpenTab(item.path);
+                    }}
                     onContextMenu={(event) => {
                       event.preventDefault();
                       event.stopPropagation();
                       setMenu({ kind: "section", item, x: event.clientX, y: event.clientY });
                     }}
                     // MI-FORK: raíz del árbol — doble clic y teclado como en el Explorador.
-                    {...(!item.external && {
-                      "data-tree-path": item.path,
-                      "aria-expanded": tree.isExpanded(item.path),
-                      onDoubleClick: () => tree.toggleExpanded(item.path),
-                      onKeyDown: (event: React.KeyboardEvent<HTMLElement>) => handleTreeKey(event, item.path, true),
-                    })}
+                    {...(!item.external && tree.TREE_ENABLED
+                      ? {
+                          "data-tree-path": item.path,
+                          "aria-expanded": tree.isExpanded(item.path),
+                          onDoubleClick: () => tree.toggleExpanded(item.path),
+                          onKeyDown: (event: React.KeyboardEvent<HTMLElement>) =>
+                            handleTreeKey(event, item.path, true),
+                        }
+                      : {})}
                     className={`group ${ROW_CLASS} ${rowStateClass(isActive, windowFocused)} ${
                       dropPath === item.path ? "fw-drop-target" : ""
                     }`}
@@ -1222,14 +1398,17 @@ export function Sidebar({
                     {!item.external && (
                       <span className="ml-auto flex shrink-0 items-center gap-1.5">
                         <GitBadge path={item.path} isDir className="" />
+                        {usage && <DriveDonut usage={usage} />}
                         {/* Flecha a la derecha y solo al pasar el ratón (como en los
                             títulos de sección), así las raíces no se desalinean. */}
-                        <TreeToggle path={item.path} className="fw-tree-root-toggle -mr-1" />
+                        {tree.TREE_ENABLED && (
+                          <TreeToggle path={item.path} className="fw-tree-root-toggle -mr-1" />
+                        )}
                       </span>
                     )}
                   </button>
                   {/* Montado también contraído: así la raíz anima al cerrarse. */}
-                  {!item.external && (
+                  {tree.TREE_ENABLED && !item.external && (
                     <FolderTree
                       root={item.path}
                       rows={tree.flatten(item.path)}
@@ -1256,6 +1435,10 @@ export function Sidebar({
                 type="button"
                 data-tooltip={trashCount > 0 ? t("sidebar.trashFull", { count: trashCount }) : t("sidebar.trash")}
                 onClick={onOpenTrash}
+                onMouseDown={preventMiddleScroll}
+                onAuxClick={(event) => {
+                  if (event.button === 1) onOpenTrashTab();
+                }}
                 className={`${ROW_CLASS} ${rowStateClass(trashActive, windowFocused)}`}
               >
                 {/* Plný Koš = vyplněná nádoba (jako ikona Koše ve Windows). */}
@@ -1325,6 +1508,21 @@ export function Sidebar({
   // V Koši se složka, ze které uživatel přišel, nezvýrazňuje.
   const highlightPath = trashActive ? null : currentPath;
 
+  // MI-FORK: lo común a «Acceso rápido» y a las secciones propias.
+  const favoriteProps = {
+    currentPath: highlightPath,
+    windowFocused,
+    onActivate: activateFavorite,
+    onContextMenu: (item: CustomFavorite, x: number, y: number) => setMenu({ kind: "favorite", item, x, y }),
+    renamingPath,
+    onRenameSubmit: (path: string, label: string) => {
+      setRenamingPath(null);
+      void storage.renameFavorite(path, label);
+    },
+    onRenameCancel: () => setRenamingPath(null),
+    onOpenTab,
+  };
+
   // Výběr jako deska, která mezi řádky sjíždí nahoru/dolů. Stejná složka může
   // být ve více sekcích (Rychlý přístup i Tento počítač) — pak má desku každý
   // aktivní řádek; první sjíždí, další se objeví na místě. Měří se po každém
@@ -1392,20 +1590,38 @@ export function Sidebar({
       >
         {/* display: contents — desky se umisťují vůči <aside>. */}
         <div ref={indicatorsRef} className="contents" aria-hidden="true" />
+        {/* MI-FORK: «Acceso rápido» y después cada sección propia, con los mismos favoritos repartidos. */}
         <CustomFavorites
-          items={favorites}
-          currentPath={highlightPath}
-          windowFocused={windowFocused}
-          onActivate={activateFavorite}
-          onContextMenu={(item, x, y) => setMenu({ kind: "favorite", item, x, y })}
-          renamingPath={renamingPath}
-          onRenameSubmit={(path, label) => {
-            setRenamingPath(null);
-            void storage.renameFavorite(path, label);
-          }}
-          onRenameCancel={() => setRenamingPath(null)}
+          {...favoriteProps}
+          items={favorites.filter((item) => sidebarGroups.groupOf(item, groups) === undefined)}
+          group={undefined}
+          title={t("sidebar.custom")}
           heading={headingFor(CUSTOM_ID)}
         />
+        {groups.map((group) => (
+          <CustomFavorites
+            key={group.id}
+            {...favoriteProps}
+            items={favorites.filter((item) => sidebarGroups.groupOf(item, groups) === group.id)}
+            group={group.id}
+            alwaysVisible
+            title={
+              renamingGroup === group.id ? (
+                <LabelInput
+                  initial={group.name}
+                  onSubmit={(name) => {
+                    setRenamingGroup(null);
+                    void sidebarGroups.renameGroup(group.id, name);
+                  }}
+                  onCancel={() => setRenamingGroup(null)}
+                />
+              ) : (
+                group.name
+              )
+            }
+            heading={headingFor(`${GROUP_PREFIX}${group.id}`)}
+          />
+        ))}
 
         {favoritesSection && renderSystemSection(favoritesSection)}
 

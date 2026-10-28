@@ -25,10 +25,13 @@
   pointer-events: auto;
 }
 
-/* Recorta el contenido mientras la columna es más estrecha que los botones. */
+/* Recorta el contenido mientras la columna es más estrecha que los botones.
+   clip + margen (no hidden): la sombra de los botones
+   sale por debajo y quedaría cortada. */
 .mi-git-presence > .fw-tool-group {
   min-width: 0;
-  overflow: hidden;
+  overflow: clip;
+  overflow-clip-margin: 12px;
 }
 
 /* MI-FORK: botones de Git en la barra (GitToolbarButtons.tsx). Icono + flecha

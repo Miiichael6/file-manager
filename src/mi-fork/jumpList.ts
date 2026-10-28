@@ -1,88 +1,51 @@
 import { useEffect, useRef } from "react";
 import { listen } from "@tauri-apps/api/event";
-import { getStore } from "@tauri-apps/plugin-store";
 
 import { invoke } from "../fileops";
 import { useT } from "../i18n";
-import * as storage from "../lib/storage";
 
 /*
  * MI-FORK: lista de saltos de la barra de tareas (src-tauri/src/mi_fork.rs).
  *
- * Las últimas carpetas abiertas se guardan en settings.json (`miRecentFolders`)
- * y se escriben en la categoría «Recientes» del icono. Una carpeta elegida ahí
- * llega como argumento al arrancar (`startup_folder`) o, con la app ya abierta,
- * como evento `mi-open-folder`; en ambos casos se abre en una pestaña nueva.
+ * La categoría «Acceso rápido» del icono muestra solo las carpetas ancladas en
+ * Acceso rápido (`favorites` de settings.json), en el mismo orden. Una carpeta
+ * elegida ahí — o pasada desde la terminal (`file-manager.exe <ruta>`, ver
+ * src-tauri/src/mi_cli.rs) — llega al arrancar (`startup_launch`) o, con la app
+ * ya abierta, como evento `mi-open-folder`; en ambos casos se abre en una
+ * pestaña nueva, con el archivo indicado seleccionado.
  */
 
-const KEY = "miRecentFolders";
-const STORE_FILE = "settings.json";
-const LIMIT = 10;
-/** Navegar rápido no reescribe la lista en cada paso. */
-const WRITE_DELAY = 1500;
+/** Carpeta que abrir y, si se pidió un archivo o `--select`, el elemento que seleccionar. */
+export type Launch = { path: string; select: string | null };
 
-function samePath(a: string, b: string) {
-  return a.toLowerCase() === b.toLowerCase();
-}
+/** Cambios seguidos (arrastrar para reordenar) no reescriben la lista en cada paso. */
+const WRITE_DELAY = 500;
 
 /**
  * `currentDir` = carpeta real del panel activo (null en Papelera, búsqueda,
- * etiquetas). `openTab` = abrir una pestaña nueva de App.tsx.
+ * etiquetas). `folders` = rutas de las carpetas de Acceso rápido. `openTab` =
+ * abrir una pestaña nueva de App.tsx (y seleccionar en ella).
  */
-export function useJumpList(currentDir: string | null, openTab: (path: string) => void) {
+export function useJumpList(currentDir: string | null, folders: string[], openTab: (launch: Launch) => void) {
   const t = useT();
   const category = t("jumpList.recent");
-  const recent = useRef<string[] | null>(null);
-  const timer = useRef<number | undefined>(undefined);
-  const categoryRef = useRef(category);
-  categoryRef.current = category;
   const openTabRef = useRef(openTab);
   openTabRef.current = openTab;
   const started = useRef(false);
+  // El array cambia de identidad en cada render; la clave solo cuando cambia el contenido.
+  const key = folders.join("\n");
 
-  function write() {
-    window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(() => {
-      const paths = recent.current ?? [];
-      void invoke("set_jump_list", { category: categoryRef.current, paths }).catch(() => undefined);
-      void storage
-        .init()
-        .then(() => getStore(STORE_FILE))
-        .then((store) => store?.set(KEY, paths))
-        .catch(() => undefined);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const paths = key === "" ? [] : key.split("\n");
+      void invoke("set_jump_list", { category, paths }).catch(() => undefined);
     }, WRITE_DELAY);
-  }
-
-  // Lista guardada (y reescritura con el idioma actual).
-  useEffect(() => {
-    void storage
-      .init()
-      .then(() => getStore(STORE_FILE))
-      .then((store) => store?.get<unknown>(KEY))
-      .then((value) => {
-        const saved = Array.isArray(value) ? value.filter((path): path is string => typeof path === "string") : [];
-        // Lo visitado mientras cargaba va delante.
-        const visited = recent.current ?? [];
-        recent.current = [...visited, ...saved.filter((path) => !visited.some((known) => samePath(known, path)))].slice(0, LIMIT);
-        write();
-      })
-      .catch(() => undefined);
-    return () => window.clearTimeout(timer.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category]);
-
-  useEffect(() => {
-    if (currentDir === null) return;
-    const list = recent.current ?? [];
-    if (list.length > 0 && samePath(list[0], currentDir)) return;
-    recent.current = [currentDir, ...list.filter((path) => !samePath(path, currentDir))].slice(0, LIMIT);
-    write();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentDir]);
+    return () => window.clearTimeout(timer);
+  }, [category, key]);
 
   // Carpeta de la lista con la app ya abierta (tauri-plugin-single-instance).
   useEffect(() => {
-    const unlisten = listen<string>("mi-open-folder", (event) => openTabRef.current(event.payload));
+    const unlisten = listen<Launch>("mi-open-folder", (event) => openTabRef.current(event.payload));
     return () => {
       void unlisten.then((fn) => fn());
     };
@@ -93,9 +56,9 @@ export function useJumpList(currentDir: string | null, openTab: (path: string) =
   useEffect(() => {
     if (currentDir === null || started.current) return;
     started.current = true;
-    void invoke<string | null>("startup_folder")
-      .then((path) => {
-        if (path) openTabRef.current(path);
+    void invoke<Launch | null>("startup_launch")
+      .then((launch) => {
+        if (launch) openTabRef.current(launch);
       })
       .catch(() => undefined);
   }, [currentDir]);

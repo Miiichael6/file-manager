@@ -101,6 +101,7 @@ Dirwise (formerly Finder-Win) is inspired by the macOS Finder, built for Windows
 | `Ctrl+W` | Close tab |
 | `Ctrl+K` | Command palette (`Ctrl+Enter` = search files) |
 | `Ctrl+Shift+D` | Split window into two panels |
+| `Ctrl+Shift+E` | Separate a split tab into two tabs |
 | `F5` / `F6` | Copy / move selection to the other panel (split view) |
 | `Space` | Preview |
 | `Ctrl+Z` / `Ctrl+Y` | Undo / redo |
