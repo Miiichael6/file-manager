@@ -1,28 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import {
-  emptyRecycleBin,
-  purgeRecycled,
-  recycleBinState,
-  restoreRecycled,
-  type ItemFailure,
-  type RecycleEntry,
-  type RecycleState,
-} from "../../../shared/application/fileops";
-import { t, type MessageKey } from "../../../shared/i18n/index";
-import type { ConfirmRequest } from "../../dialogs/ui/ConfirmDialog";
-
-type Options = {
-  /** Mění se po každé operaci v panelech — spouští nové načtení stavu Koše. */
-  refreshTokens: readonly [number, number];
-  runOperation: (label: MessageKey, action: () => Promise<unknown>) => Promise<void>;
-  reportFailures: (label: MessageKey, failed: ItemFailure[], count: number) => void;
-  askAdmin: (paths: string[], retry: () => void) => void;
-  setConfirm: (request: ConfirmRequest) => void;
-  /** Zobrazený název položky (skrytá přípona apod.). */
-  displayName: (name: string) => string;
-};
-
+import { emptyRecycleBin, purgeRecycled, recycleBinState, restoreRecycled, type RecycleEntry, type RecycleState } from "../../../shared/application/fileops";
+import { t } from "../../../shared/i18n/index";
+import type { Options } from "./useRecycleBin.types";
 /** Stav Koše (počet položek) a operace nad ním: obnovení, trvalé smazání, vysypání. */
 export function useRecycleBin({ refreshTokens, runOperation, reportFailures, askAdmin, setConfirm, displayName }: Options) {
   /** Počet položek v Koši — ikona v sidebaru (prázdný / plný). */

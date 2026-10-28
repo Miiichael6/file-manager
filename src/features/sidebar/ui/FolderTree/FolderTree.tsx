@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, type RefObject } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { ChevronRight } from "lucide-react";
 
 import { GitBadge } from "../../../git/ui/GitBadge";
@@ -6,21 +6,11 @@ import { SmallEntryIcon } from "../../../../shared/ui/icons";
 import { parentPath } from "../../../../shared/application/fileops";
 import { useT } from "../../../../shared/i18n/index";
 import { useDisplayNames } from "../../../file-list/application/extensions";
-import {
-  canExpand,
-  childrenOf,
-  expandSubtree,
-  isExpanded,
-  revealedRecently,
-  setExpanded,
-  toggleExpanded,
-  treeInMotion,
-  type TreeRow,
-} from "../../application/folderTree";
+import { canExpand, childrenOf, expandSubtree, isExpanded, revealedRecently, setExpanded, toggleExpanded, treeInMotion } from "../../application/folderTree";
+import type { TreeRow } from "../../application/folderTree.types";
 import { motionMs } from "../../../../shared/lib/motion";
 import * as storage from "../../../../shared/infrastructure/storage";
-import type { FileEntry } from "../../../../shared/domain/types";
-
+import type { FolderTreeProps, Ghost } from "./FolderTree.types";
 /*
  * MI-FORK: árbol de carpetas bajo las filas del sidebar (Acceso rápido, Este
  * equipo, discos). Estado y carga en lib/folderTree.ts.
@@ -41,15 +31,6 @@ const STAGGER_MS = 14;
 const STAGGER_ROWS = 12;
 /** Cambios mayores (expandir con `*`, contraer node_modules) van sin deslizar. */
 const MAX_ANIMATED_DELTA = 40;
-
-/** Fila que acaba de salir: se pinta un momento donde estaba, desvaneciéndose. */
-type Ghost = TreeRow & { index: number };
-
-type DropHandlers = {
-  onDragOver: (event: React.DragEvent) => void;
-  onDragLeave: (event: React.DragEvent) => void;
-  onDrop: (event: React.DragEvent) => void;
-};
 
 /* ------------------------------- flecha ----------------------------------- */
 
@@ -159,24 +140,6 @@ export function handleTreeKey(event: React.KeyboardEvent<HTMLElement>, path: str
 }
 
 /* -------------------------------- ramas ----------------------------------- */
-
-type FolderTreeProps = {
-  root: string;
-  rows: TreeRow[];
-  highlightPath: string | null;
-  scrollRef: RefObject<HTMLElement | null>;
-  /** Clases de una fila del sidebar (aspecto, activo, destino de soltar). */
-  rowClass: (active: boolean, dropTarget: boolean) => string;
-  dropPath: string | null;
-  dropProps: (path: string) => DropHandlers;
-  onNavigate: (path: string) => void;
-  onOpenTab: (path: string) => void;
-  onOpenFile: (path: string, name: string) => void;
-  onReveal: (path: string) => void;
-  onContextMenu: (entry: FileEntry, x: number, y: number) => void;
-  /** Tras cambiar las filas pintadas (la placa de selección se vuelve a medir). */
-  onLayout: () => void;
-};
 
 export function FolderTree({
   root,

@@ -4,21 +4,13 @@ import appIcon from "../../../../assets/icon.png";
 import { useT } from "../../../../shared/i18n/index";
 import { windowControls } from "../../application/ports";
 import type { SnapButtonState } from "../../domain/ports";
+import type { CaptionButtonProps } from "./TitleBar.types";
 
 /** Glyfy Segoe Fluent Icons (Windows 11); Segoe MDL2 Assets (Windows 10) má stejné kódy. */
 const GLYPH_MINIMIZE = "\uE921";
 const GLYPH_MAXIMIZE = "\uE922";
 const GLYPH_RESTORE = "\uE923";
 const GLYPH_CLOSE = "\uE8BB";
-
-type CaptionButtonProps = {
-  glyph: string;
-  label: string;
-  onClick: () => void;
-  className?: string;
-  /** Tooltip jen tam, kde ho neukáže systém (Maximalizovat má Snap Layouts). */
-  tooltip?: boolean;
-};
 
 function CaptionButton({ glyph, label, onClick, className = "", tooltip = true }: CaptionButtonProps) {
   return (

@@ -2,34 +2,7 @@ import { useEffect, useLayoutEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 
 import { motionMs } from "../../lib/motion";
-
-export type DialogAction = {
-  label: string;
-  onClick: () => void;
-  /** primary = akcent a Enter; danger = červené, Enter ho NIKDY nespustí. */
-  kind?: "primary" | "danger" | "secondary";
-  disabled?: boolean;
-  /** Tlačítko s fokusem po otevření (jinak dostane fokus celý dialog). */
-  autoFocus?: boolean;
-};
-
-type DialogProps = {
-  /** Přístupný název dialogu, když nemá viditelný nadpis s id. */
-  label?: string;
-  labelledBy?: string;
-  describedBy?: string;
-  /** alertdialog = potvrzení / varování, dialog = informace. */
-  role?: "dialog" | "alertdialog";
-  width?: number;
-  onClose: () => void;
-  /** Tlačítka vpravo, v pořadí zleva doprava. */
-  actions: DialogAction[];
-  /** Tlačítko vlevo (Zastavit u kolize). */
-  leftAction?: DialogAction;
-  /** Klik na podklad zavře (u rozhodovacích dialogů ne). */
-  closeOnOverlay?: boolean;
-  children: React.ReactNode;
-};
+import type { DialogAction, DialogProps } from "./Dialog.types";
 
 function actionClass(kind: DialogAction["kind"]): string {
   if (kind === "primary") return "fw-button is-primary";

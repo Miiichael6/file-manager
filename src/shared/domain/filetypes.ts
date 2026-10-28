@@ -1,31 +1,11 @@
-import type { MessageKey } from "../i18n/index";
+import type { MessageKey } from "../i18n/index.types";
+import type { FileGroup, FileType, PreviewKind } from "./filetypes.types";
 
 /**
  * Jediná tabulka typů souborů: přípona → druh (sloupec Druh), skupina ikony
  * a způsob náhledu v Quick Look. Dřív to byly tři seznamy ve dvou souborech
  * a rozcházely se (heic měl ikonu obrázku, ale žádný druh; txt ikonu kódu).
  */
-
-/** Skupina určuje ikonu a její barvu (icons.tsx). */
-export type FileGroup =
-  | "image"
-  | "video"
-  | "audio"
-  | "pdf"
-  | "code"
-  | "text"
-  | "document"
-  | "archive"
-  | "app"
-  | "other";
-
-export type PreviewKind = "image" | "pdf" | "markdown" | "text" | "video" | "audio" | "other";
-
-/**
- * `kind` je klíč do slovníku (sloupec Druh), `format` parametr {format}
- * v něm — "Obrázek {format}" / "{format} Image" → "Obrázek JPEG" / "JPEG Image".
- */
-export type FileType = { kind: MessageKey; format?: string; group: FileGroup; preview: PreviewKind };
 
 const type = (
   kind: MessageKey | [MessageKey, string],

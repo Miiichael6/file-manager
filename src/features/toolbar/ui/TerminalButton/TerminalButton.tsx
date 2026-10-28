@@ -3,11 +3,12 @@ import { ChevronDown, SquareTerminal } from "lucide-react";
 
 import { ContextMenu, type MenuItem } from "../../../../shared/ui/ContextMenu";
 import { availableTerminals, openTerminal, type TerminalId } from "../../../../shared/application/fileops";
-import type { MessageKey } from "../../../../shared/i18n/index";
+import type { MessageKey } from "../../../../shared/i18n/index.types";
 import { useT } from "../../../../shared/i18n/index";
 import * as storage from "../../../../shared/infrastructure/storage";
 import { useStorage } from "../../../../shared/lib/useStorage";
 import "../FolderOpenButton/folder-open.css";
+import type { Props } from "./TerminalButton.types";
 
 /*
  * MI-FORK: botón partido «Abrir terminal» en la barra, junto a los de Git
@@ -22,13 +23,6 @@ const LABELS: Record<TerminalId, MessageKey> = {
   pwsh: "terminal.pwsh",
   powershell: "terminal.powershell",
   cmd: "terminal.cmd",
-};
-
-type Props = {
-  /** Carpeta actual; null = no hay carpeta real. */
-  path: string | null;
-  /** runOperation de App.tsx (aviso de error traducido). */
-  run: (label: MessageKey, action: () => Promise<unknown>) => void;
 };
 
 export function TerminalButton({ path, run }: Props) {

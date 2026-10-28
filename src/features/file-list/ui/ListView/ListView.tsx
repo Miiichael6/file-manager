@@ -7,37 +7,26 @@ import { RenameInput } from "../RenameInput";
 import { TagDots } from "../../../tags/ui/TagDots";
 import { GitBadge } from "../../../git/ui/GitBadge"; // MI-FORK: Git integrado.
 import { dragItemsFor, endDrag, startEntryDrag } from "../../application/dnd";
-import {
-  dropPropsFor,
-  selectMods,
-  useFolderDrop,
-  useStableCallback,
-  type DropInto,
-  type FolderDropHandlers,
-} from "../../application/rowDnd";
+import { dropPropsFor, selectMods, useFolderDrop, useStableCallback } from "../../application/rowDnd";
 import { sameEntry } from "../../application/rows";
 import { useGlassInsets } from "../../../theme/application/glass";
 import { tagsOf } from "../../../../shared/infrastructure/storage";
-import type { ViewHandleRef } from "../../application/viewHandle";
-import {
-  entryOpacity,
-  formatModified,
-  formatSize,
-  kindLabel,
-  type SortDirection,
-  type SortKey,
-} from "../../../../shared/domain/format";
-import { useLocale, useT, type MessageKey } from "../../../../shared/i18n/index";
-import type { FileEntry, SelectMods, TagColor, TagMap } from "../../../../shared/domain/types";
+import { entryOpacity, formatModified, formatSize, kindLabel } from "../../../../shared/domain/format";
+import type { SortKey } from "../../../../shared/domain/format.types";
+import { useLocale, useT } from "../../../../shared/i18n/index";
+import type { MessageKey } from "../../../../shared/i18n/index.types";
+import type { FileEntry } from "../../../../shared/domain/types";
 import { useDisplayNames } from "../../application/extensions";
 // MI-FORK: agrupar por y tamaño de carpetas.
 import { useExtrasSettings } from "../../../extras/application/extrasSettings";
 import { groupedRows } from "../../application/grouping";
 import { FolderSizeCell, GroupHeaderRow } from "../ListExtras";
 import { useComputeFolderSizes } from "../../application/folderSizes";
-import { DEFAULT_WIDTHS, useColumnWidths, type ColumnWidths, type Pane, type ResizableColumn } from "../../application/columnWidths";
+import { DEFAULT_WIDTHS, useColumnWidths } from "../../application/columnWidths";
+import type { ColumnWidths, ResizableColumn } from "../../application/columnWidths.types";
 import { ColumnResizer } from "../ColumnResizer";
 import { HorizontalScrollbar } from "../HorizontalScrollbar";
+import type { ListViewProps, RowHandlers, RowProps } from "./ListView.types";
 
 const COLUMNS: { key: SortKey; label: MessageKey; width: string; align: "left" | "right" }[] = [
   { key: "name", label: "sort.name", width: "minmax(0, 1fr)", align: "left" },
@@ -75,31 +64,6 @@ const ROW_HEIGHT = 24;
 const HEADER_HEIGHT = 24;
 
 /* ---------------------------------- řádek ---------------------------------- */
-
-type RowHandlers = {
-  select: (entry: FileEntry, mods: SelectMods) => void;
-  open: (entry: FileEntry) => void;
-  contextMenu: (entry: FileEntry, x: number, y: number) => void;
-  dragItems: (entry: FileEntry) => ReturnType<typeof dragItemsFor>;
-  renameSubmit: (entry: FileEntry, name: string) => void;
-  renameCancel: () => void;
-  drop: FolderDropHandlers;
-  folderSizes: boolean; // MI-FORK
-  gridTemplate: string; // MI-FORK: anchos de columna
-};
-
-type RowProps = {
-  entry: FileEntry;
-  index: number;
-  top: number;
-  selected: boolean;
-  cut: boolean;
-  renaming: boolean;
-  dropTarget: boolean;
-  windowFocused: boolean;
-  tags: TagColor[];
-  handlers: RowHandlers;
-};
 
 /**
  * Jeden řádek. Memoizovaný s porovnáním jen toho, co řádek ukazuje — klik na
@@ -206,33 +170,6 @@ const ListRow = memo(
 );
 
 /* ---------------------------------- výpis ---------------------------------- */
-
-type ListViewProps = {
-  /** MI-FORK: panel de la ventana dividida (anchos de columna propios). */
-  pane: Pane;
-  entries: FileEntry[];
-  selectedPaths: Set<string>;
-  cutPaths: Set<string>;
-  windowFocused: boolean;
-  renamingPath: string | null;
-  onRenameSubmit: (entry: FileEntry, name: string) => void;
-  onRenameCancel: () => void;
-  sortKey: SortKey;
-  sortDirection: SortDirection;
-  onSort: (key: SortKey) => void;
-  onSelect: (entry: FileEntry, mods: SelectMods) => void;
-  onOpen: (entry: FileEntry) => void;
-  onContextMenu?: (entry: FileEntry, x: number, y: number) => void;
-  onDropInto: DropInto;
-  tags: TagMap;
-  /** Posouvaný kontejner (drží ho App) — virtualizace podle něj měří. */
-  scrollRef: React.RefObject<HTMLDivElement | null>;
-  /** Ovládání výpisu pro App (posun na položku, gumička, klávesnice). */
-  handleRef: ViewHandleRef;
-  /** Počáteční posun (návrat Zpět). Virtualizace si při připojení scroller
-   *  sama nastaví na svou pozici — bez tohohle by ho vrátila na začátek. */
-  initialOffset?: number;
-};
 
 export function ListView({
   entries,

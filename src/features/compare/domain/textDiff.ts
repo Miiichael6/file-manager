@@ -1,16 +1,11 @@
+import type { DiffLine, DiffRow } from "./textDiff.types";
+
 /*
  * MI-FORK: diff de texto por líneas para «Comparar» (CompareDialog). Algoritmo
  * de Myers (O(ND)) tras recortar el prefijo y el sufijo comunes. Si los
  * archivos difieren en más de MAX_EDITS líneas, el centro se da por cambiado
  * entero en vez de buscar el diff mínimo (sería lento y nadie lo leería).
  */
-
-export type DiffLine =
-  | { type: "same"; a: number; b: number; text: string }
-  | { type: "del"; a: number; text: string }
-  | { type: "add"; b: number; text: string };
-
-export type DiffRow = DiffLine | { type: "fold"; count: number };
 
 const MAX_EDITS = 2000;
 

@@ -4,7 +4,7 @@
  * výchozí terminál z nastavení, cache jednou za běh); samotné volání backendu
  * je v adaptérech (shared/infrastructure/tauriFileOps.ts).
  */
-import type { SearchRule } from "../../features/search/domain/searchCriteria";
+import type { SearchRule } from "../../features/search/domain/searchCriteria.types";
 import type {
   ClipboardFiles,
   DeleteReport,
@@ -18,11 +18,12 @@ import type {
 } from "../domain/fileops";
 import type { FileEntry, FileProperties, FolderStats, OpResult, StatResult } from "../domain/types";
 import { t } from "../i18n/index";
-import { getSnapshot, type TerminalPreference } from "../infrastructure/storage";
+import { getSnapshot } from "../infrastructure/storage";
+import type { TerminalPreference } from "../infrastructure/storage.types";
 import { BackendFailure } from "./errors";
 import { fileClipboard, fileOperations, recycleBin, shellImages, shellLauncher } from "./ports";
 
-export type { BackendError } from "../domain/backendError";
+export type { BackendError } from "../domain/backendError.types";
 export type {
   ClipboardFiles,
   DeleteReport,

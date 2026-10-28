@@ -1,24 +1,13 @@
 import { useCallback, useRef, useState } from "react";
 
 import { isTypingTarget } from "../../../shared/lib/dom";
+import type { Rect, RubberBandOptions } from "./rubberBand.types";
 
 /** Pohyb pod tímhle prahem je klik, ne tažení — klik do prázdna ruší výběr. */
 const DRAG_THRESHOLD = 4;
 /** Jak blízko okraje kontejneru se při tažení začne posouvat obsah. */
 const EDGE = 24;
 const EDGE_STEP = 18;
-
-type Rect = { left: number; top: number; width: number; height: number };
-
-type RubberBandOptions = {
-  /** Začátek tažení; `additive` = držený Ctrl / Shift (přidávat k výběru). */
-  onStart?: (additive: boolean) => void;
-  /** Cesty položek pod obdélníkem, průběžně při každém pohybu. */
-  onChange: (paths: string[], additive: boolean) => void;
-  /** Zásah počítaný z geometrie (virtualizované výpisy — řádky mimo
-   *  obrazovku nejsou v DOM). Bez něj se hledá v DOM podle `data-path`. */
-  hitTest?: (box: { left: number; top: number; right: number; bottom: number }) => string[];
-};
 
 /**
  * Gumičkový výběr tažením v prázdné ploše. Kontejner, na který se pověsí

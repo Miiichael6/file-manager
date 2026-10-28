@@ -1,5 +1,4 @@
-/** Chyba z Rustu (AppError): klíč do slovníku a parametry, i vnořené chyby. */
-export type BackendError = { key: string; args?: Record<string, string | number | BackendError> };
+import type { BackendError } from "./backendError.types";
 
 export function isBackendError(value: unknown): value is BackendError {
   return (

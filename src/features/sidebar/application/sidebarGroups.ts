@@ -3,6 +3,7 @@ import { useSyncExternalStore } from "react";
 import { settingsStore } from "../../../shared/application/ports";
 import * as storage from "../../../shared/infrastructure/storage";
 import type { CustomFavorite } from "../../../shared/domain/types";
+import type { SidebarGroup } from "./sidebarGroups.types";
 
 /*
  * MI-FORK: secciones propias en el sidebar (grupos de favoritos).
@@ -15,8 +16,6 @@ import type { CustomFavorite } from "../../../shared/domain/types";
  * La lista de secciones (nombre y orden) va en la clave propia
  * `miSidebarGroups`, sin tocar lib/storage.ts.
  */
-
-export type SidebarGroup = { id: string; name: string };
 
 const KEY = "miSidebarGroups";
 

@@ -15,6 +15,7 @@ import { useDisplayNames } from "../../../file-list/application/extensions";
 import { gitFileFor, useGitVersion } from "../../../git/application/gitStore";
 import { GitDiffView } from "../../../git/ui/GitDiffView";
 import { GIT_ICONS } from "../../../git/ui/gitIcons";
+import type { Origin, QuickLookProps, TextState } from "./QuickLook.types";
 
 const MAX_PREVIEW_BYTES = 1_048_576;
 
@@ -25,8 +26,6 @@ const CLOSE = "--dur-slow";
 /** Když se ikona nenajde, jede se jen jemný zoom uprostřed. */
 const FALLBACK = "--dur-enter";
 const OVERLAY_IN = "--dur-slow";
-
-type Origin = { x: number; y: number };
 
 /**
  * Posun ze středu okna na střed ikony dané položky. Řádky ve všech views
@@ -50,15 +49,6 @@ function originFor(path: string): Origin | null {
 }
 
 /* ------------------------------ textový obsah ------------------------------ */
-
-/** `truncated` = soubor je delší a ukazuje se jen začátek (poznámka se
- *  připisuje až při vykreslení, v aktuálním jazyce). */
-type TextState = {
-  loading: boolean;
-  content: string | null;
-  truncated: boolean;
-  error: string | null;
-};
 
 const NO_TEXT: TextState = { loading: false, content: null, truncated: false, error: null };
 
@@ -256,19 +246,6 @@ function PreviewBody({ entry, state }: { entry: FileEntry; state: TextState }) {
 }
 
 /* ------------------------------- Quick Look ------------------------------- */
-
-type QuickLookProps = {
-  /** Seznam v pořadí zdrojového view; složky se přeskakují. */
-  entries: FileEntry[];
-  entry: FileEntry;
-  onClose: () => void;
-  onOpenFile: (entry: FileEntry) => void;
-  /** Pravý klik na kartu — menu pro právě zobrazený soubor. */
-  onContextMenu: (entry: FileEntry, x: number, y: number) => void;
-  /** Šipky přepnuly soubor — výběr ve výpisu se má posunout s ním, jinak
-   *  by po zavření zůstal vybraný ten, kterým se začínalo. */
-  onCurrentChange?: (entry: FileEntry) => void;
-};
 
 export function QuickLook({
   entries,

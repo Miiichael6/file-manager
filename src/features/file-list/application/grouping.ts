@@ -1,14 +1,14 @@
 import { compareNames, kindLabel } from "../../../shared/domain/format";
-import { t, type MessageKey } from "../../../shared/i18n/index";
+import { t } from "../../../shared/i18n/index";
+import type { MessageKey } from "../../../shared/i18n/index.types";
 import type { FileEntry } from "../../../shared/domain/types";
-import type { GroupBy } from "../../extras/application/extrasSettings";
+import type { GroupBy } from "../../extras/application/extrasSettings.types";
+import type { Group, GroupedRow } from "./grouping.types";
 
 /*
  * MI-FORK: «Agrupar por» en la vista Lista. El orden de los grupos es fijo;
  * dentro de cada grupo se mantiene el orden de la columna elegida (sort estable).
  */
-
-type Group = { key: string; rank: number; label: string };
 
 const DAY = 86_400;
 
@@ -84,10 +84,6 @@ export function groupEntries(entries: FileEntry[], groupBy: GroupBy): FileEntry[
     return ga.rank - gb.rank || (ga.key === gb.key ? 0 : compareNames(ga.label, gb.label));
   });
 }
-
-export type GroupedRow =
-  | { type: "header"; key: string; label: string; count: number }
-  | { type: "entry"; entry: FileEntry; index: number };
 
 /** Filas para la lista virtual: una cabecera antes de cada grupo. */
 export function groupedRows(entries: FileEntry[], groupBy: GroupBy): GroupedRow[] {

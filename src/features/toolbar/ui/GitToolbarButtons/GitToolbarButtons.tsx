@@ -3,13 +3,13 @@ import { ChevronDown, GitBranch, Zap, type LucideIcon } from "lucide-react";
 
 import { ContextMenu, type MenuItem } from "../../../../shared/ui/ContextMenu";
 import { commandMenuItem } from "../Toolbar";
-import type { Commands } from "../../../command-palette/domain/commands";
 import { useT } from "../../../../shared/i18n/index";
-import type { GitStatus } from "../../../git/domain/git";
+import type { GitStatus } from "../../../git/domain/git.types";
 import { gitBranches, gitCheckout, gitFetch, gitStage } from "../../../git/application/gitActions";
 import { gitMenuIcon } from "../../../git/ui/gitIcons";
 import { motionMs } from "../../../../shared/lib/motion";
 import "./git-toolbar.css";
+import type { Menu, Props } from "./GitToolbarButtons.types";
 
 /*
  * MI-FORK: dos botones de Git en la barra, solo dentro de un repositorio.
@@ -19,18 +19,6 @@ import "./git-toolbar.css";
  * Al entrar o salir de un repositorio se abren / cierran a lo ancho con
  * fundido (git-toolbar.css), así los botones vecinos se desplazan sin saltos.
  */
-
-type Props = {
-  /** null = fuera de un repositorio: los botones se ocultan con animación. */
-  status: GitStatus | null;
-  commands: Commands;
-  /** run de useGitIntegration: aviso traducido si git falla, mensaje si termina. */
-  run: (operation: (root: string) => Promise<void>, done?: string) => void;
-  /** Botones que entran y salen junto con los de Git. */
-  extra?: React.ReactNode;
-};
-
-type Menu = { kind: "branch" | "quick"; x: number; y: number };
 
 export function GitToolbarButtons({ status: live, commands, run, extra }: Props) {
   const t = useT();

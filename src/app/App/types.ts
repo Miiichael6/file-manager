@@ -1,4 +1,4 @@
-import type { Panel } from "../../features/navigation/application/panel";
+import type { Panel } from "../../features/navigation/application/panel.types";
 import type { FileEntry } from "../../shared/domain/types";
 
 /** Jen funkce panelu (settery, navigace) — viz activeFns. */

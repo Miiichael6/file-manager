@@ -12,8 +12,8 @@ import {
 } from "../../../shared/application/fileops";
 import { t } from "../../../shared/i18n/index";
 import * as storage from "../../../shared/infrastructure/storage";
-import type { TagColor } from "../../../shared/domain/types";
-import { renameAll } from "../../batch-rename/application/renameAll"; // MI-FORK: renombrado por lotes.
+import { renameAll } from "../../batch-rename/application/renameAll";
+import type { Moved, UndoOp } from "./undo.types"; // MI-FORK: renombrado por lotes.
 
 /**
  * Zpět / Znovu. Zásobník drží App (jen v paměti, posledních 50 operací);
@@ -23,22 +23,6 @@ import { renameAll } from "../../batch-rename/application/renameAll"; // MI-FORK
  */
 
 export const UNDO_LIMIT = 50;
-
-/** Položka před operací a po ní. */
-type Moved = { from: string; to: string };
-
-export type UndoOp =
-  | { kind: "rename"; from: string; to: string }
-  | { kind: "move"; items: Moved[] }
-  /** Kopie i duplikace: `to` je nově vzniklá položka. */
-  | { kind: "copy"; items: Moved[] }
-  /** `shellNew` = přípona typu z menu Nový — Znovu vytvoří soubor se stejným obsahem. */
-  | { kind: "create"; path: string; folder: boolean; shellNew?: string }
-  /** `since` = unix sekundy těsně před smazáním — podle nich se hledá v Koši. */
-  | { kind: "trash"; paths: string[]; since: number }
-  | { kind: "tags"; before: Record<string, TagColor[]>; after: Record<string, TagColor[]> }
-  // MI-FORK: renombrado por lotes (mi-fork/batchRename.ts).
-  | { kind: "renameMany"; items: Moved[] };
 
 const name = storage.lastSegment;
 

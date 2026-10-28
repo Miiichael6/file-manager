@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 
 import { settingsStore } from "../../../shared/application/ports";
+import type { GroupBy, Settings } from "./extrasSettings.types";
 
 /*
  * MI-FORK: ajustes de los extras de la vista Lista, en settings.json con
@@ -9,10 +10,7 @@ import { settingsStore } from "../../../shared/application/ports";
  * - `miFolderSizes`: calcular el tamaño de las carpetas en segundo plano.
  */
 
-export type GroupBy = "none" | "kind" | "date" | "size";
 export const GROUP_BY: GroupBy[] = ["none", "kind", "date", "size"];
-
-type Settings = { groupBy: GroupBy; folderSizes: boolean };
 
 const KEYS = { groupBy: "miGroupBy", folderSizes: "miFolderSizes" } as const;
 

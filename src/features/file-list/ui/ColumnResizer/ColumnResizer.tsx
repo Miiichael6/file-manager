@@ -1,11 +1,5 @@
-import {
-  DEFAULT_WIDTHS,
-  getColumnWidths,
-  saveColumnWidths,
-  setColumnWidth,
-  type Pane,
-  type ResizableColumn,
-} from "../../application/columnWidths";
+import { DEFAULT_WIDTHS, getColumnWidths, saveColumnWidths, setColumnWidth } from "../../application/columnWidths";
+import type { Pane, ResizableColumn } from "../../application/columnWidths.types";
 import "./column-resizer.css";
 
 /*

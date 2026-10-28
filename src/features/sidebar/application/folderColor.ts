@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 
 import { settingsStore } from "../../../shared/application/ports";
+import type { FolderColor, Palette } from "./folderColor.types";
 
 /*
  * MI-FORK: color de las carpetas (Más → Apariencia → Color de carpetas).
@@ -13,26 +14,6 @@ import { settingsStore } from "../../../shared/application/ports";
  * lib/storage.ts; en localStorage hay una copia solo para el primer render,
  * igual que el tema.
  */
-
-export type FolderColor =
-  | "amber"
-  | "yellow"
-  | "orange"
-  | "red"
-  | "pink"
-  | "purple"
-  | "indigo"
-  | "blue"
-  | "windowsBlue"
-  | "sky"
-  | "teal"
-  | "green"
-  | "lime"
-  | "brown"
-  | "gray"
-  | "graphite";
-
-type Palette = { back: string; frontTop: string; front: string; glyph: string };
 
 export const FOLDER_PALETTES: Record<FolderColor, Palette> = {
   amber: { back: "#e0a12a", frontTop: "#ffd86b", front: "#f6b73c", glyph: "rgba(122, 72, 0, 0.75)" },

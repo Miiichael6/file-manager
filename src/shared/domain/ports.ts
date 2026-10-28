@@ -1,4 +1,4 @@
-import type { SearchRule } from "../../features/search/domain/searchCriteria";
+import type { SearchRule } from "../../features/search/domain/searchCriteria.types";
 import type {
   ClipboardFiles,
   DeleteReport,

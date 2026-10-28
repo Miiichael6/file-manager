@@ -2,7 +2,6 @@ import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, use
 import { flushSync } from "react-dom";
 import { FolderOpen, Monitor, PanelLeft, PanelRight, Plus, Search, SearchX, Trash2, X } from "lucide-react";
 
-
 import { ColumnView, InfoPanel } from "../../features/column-view/ui/ColumnView";
 import {
   ConflictDialog,
@@ -33,7 +32,8 @@ import { FolderIcon, folderDisplayName, sidebarIcon, sidebarIconColor, sidebarLa
 import { TitleBar } from "../../features/titlebar/ui/TitleBar";
 import { Toolbar } from "../../features/toolbar/ui/Toolbar";
 import { CommandPalette, type PaletteAction, type PaletteFolder } from "../../features/command-palette/ui/CommandPalette";
-import { buildCommands, type Commands } from "../../features/command-palette/domain/commands";
+import { buildCommands } from "../../features/command-palette/domain/commands";
+import type { Commands } from "../../features/command-palette/domain/commands.types";
 import { TooltipLayer } from "../../shared/ui/Tooltip";
 import { Skeleton, ViewTransition } from "../../shared/ui/ViewTransition";
 import {
@@ -66,19 +66,14 @@ import {
 import {
   breadcrumbs,
 } from "../../shared/domain/format";
-import { errorText, failure, languageSetting, t, useLocale, type MessageKey } from "../../shared/i18n/index";
+import { errorText, failure, languageSetting, t, useLocale } from "../../shared/i18n/index";
+import type { MessageKey } from "../../shared/i18n/index.types";
 import { dirWatcher, fileSystem, shellLauncher, systemPlaces } from "../../shared/application/ports";
 import { nativeDrag } from "../../features/file-list/application/ports";
 import { canDropInto, draggedFolder, droppedPaths, endDrag, getDrag, isExternalFileDrag, useDrag } from "../../features/file-list/application/dnd";
 import { isTypingTarget } from "../../shared/lib/dom";
-import {
-  GLASS_STATUS,
-  GLASS_TOP,
-  GLASS_UPDATE_BAR,
-  GLASS_QUICK,
-  GlassInsetsContext,
-  type GlassInsets,
-} from "../../features/theme/application/glass";
+import { GLASS_STATUS, GLASS_TOP, GLASS_UPDATE_BAR, GLASS_QUICK, GlassInsetsContext } from "../../features/theme/application/glass";
+import type { GlassInsets } from "../../features/theme/application/glass.types";
 import { refreshExplorerExtensions, useDisplayNames } from "../../features/file-list/application/extensions";
 import { applyMotion } from "../../shared/lib/motion";
 import * as storage from "../../shared/infrastructure/storage";
@@ -91,7 +86,8 @@ import { setTreeTabOrder } from "../../features/sidebar/application/folderTree";
 import { TAG_HEX, tagLabel } from "../../features/tags/application/tags";
 import { useStableCallback } from "../../features/file-list/application/rowDnd";
 import { FolderDragGhost } from "../../features/file-list/ui/FolderDragGhost";
-import { usePanel, type Panel } from "../../features/navigation/application/panel";
+import { usePanel } from "../../features/navigation/application/panel";
+import type { Panel } from "../../features/navigation/application/panel.types";
 
 import { useClipboardTransfer } from "../../features/file-list/application/useClipboardTransfer";
 import { useKeyboardNavigation } from "../../features/navigation/application/useKeyboardNavigation";
@@ -108,11 +104,14 @@ import { folderEntry, strengthCommand } from "./helpers";
 import { Placeholder } from "./Placeholder";
 import type { MainMenu, PanelFunctions } from "./types";
 import { setSpecialFolders } from "../../features/sidebar/domain/specialFolders";
-import { checkForUpdate, type AvailableUpdate } from "../../features/updates/infrastructure/updates";
+import { checkForUpdate } from "../../features/updates/infrastructure/updates";
+import type { AvailableUpdate } from "../../features/updates/infrastructure/updates.types";
 import { useStorage } from "../../shared/lib/useStorage";
-import { blankSnapshot, newTab, tabFace, type Tab, type TabSnapshot } from "../../features/tabs/application/browser";
+import { blankSnapshot, newTab, tabFace } from "../../features/tabs/application/browser";
+import type { Tab, TabSnapshot } from "../../features/tabs/application/browser.types";
 import { useWindowAppearance } from "../../features/theme/application/useWindowAppearance";
-import { redoOp, trashTimestamp, undoLabel, undoOp, UNDO_LIMIT, type UndoOp } from "../../features/history/application/undo";
+import { redoOp, trashTimestamp, undoLabel, undoOp, UNDO_LIMIT } from "../../features/history/application/undo";
+import type { UndoOp } from "../../features/history/application/undo.types";
 import type {
   Clipboard,
   FavoriteSection,
@@ -173,7 +172,6 @@ export default function App() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   /** Registr příkazů z posledního renderu — pro handler kláves. */
   const commandsRef = useRef<Commands | null>(null);
-
 
   const {
     tags,
@@ -457,7 +455,6 @@ export default function App() {
 
   const searchRef = useRef<HTMLInputElement>(null);
 
-
   // Persistentní nastavení se načte jednou; do té doby jedou sekce prázdné.
   // Přepínač skrytých souborů bere uloženou volbu, a dokud si ho uživatel
   // nezměnil sám, platí to, co má nastavené Průzkumník.
@@ -677,7 +674,6 @@ export default function App() {
     return () => void unlisten.then((stop) => stop());
   }, []);
 
-
   // Soubor v náhledu zmizel (smazán zvenčí, sloupec zrušil výběr) — Quick Look
   // se odmontuje sám, ale příznak by zůstal a jako "otevřený modal" by
   // blokoval všechny zkratky i tlačítka myši až do restartu.
@@ -688,7 +684,6 @@ export default function App() {
   }, [quickLookOpen, quickLookShown]);
 
   /* ---------------------------- operace ---------------------------------- */
-
 
   /* ---------------------- živé obnovení otevřených složek ------------------- */
 
@@ -798,7 +793,6 @@ export default function App() {
     },
     [openFile],
   );
-
 
   /**
    * Kopie nenásleduje symlinky a junctions. Když nějaké přeskočila, musí se to
@@ -1208,7 +1202,6 @@ export default function App() {
     return elsewhere ? dir : null;
   };
 
-
   /* -------------------------------- záložky -------------------------------- */
 
   const {
@@ -1370,7 +1363,6 @@ export default function App() {
   }, [quickLookOpen, overlayPreview, goBack, goForward]);
 
   /* ----------------------------- view mode -------------------------------- */
-
 
   const cutPaths = useMemo(
     () => new Set(clipboard?.mode === "cut" ? clipboard.paths : []),

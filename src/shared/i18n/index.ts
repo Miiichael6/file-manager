@@ -4,6 +4,7 @@ import { getSnapshot, setLanguage, subscribe as subscribeStorage } from "../infr
 import { cs } from "./cs";
 import { en } from "./en";
 import { es } from "./es";
+import type { LanguageSetting, Locale, Message, MessageKey, Params, Translate } from "./index.types";
 
 /**
  * Překlady UI. Výchozí je angličtina, čeština se zapne podle jazyka systému
@@ -16,15 +17,6 @@ import { es } from "./es";
  * Komponenty berou `t` z useT() — tím se při přepnutí jazyka překreslí.
  * Mimo React (callbacky, toasty) stačí obyčejné `t`, které čte aktuální locale.
  */
-
-export type Locale = "en" | "cs" | "es";
-export type LanguageSetting = "system" | Locale;
-export type MessageKey = keyof typeof cs;
-export type Params = Record<string, string | number>;
-export type Translate = (key: MessageKey, params?: Params) => string;
-
-type Plural = { one: string; few?: string; many?: string; other: string };
-type Message = string | Plural;
 
 const DICTIONARIES: Record<Locale, Record<MessageKey, Message>> = { cs, en, es };
 

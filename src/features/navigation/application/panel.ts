@@ -1,21 +1,25 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { useBrowserState, type TabSnapshot } from "../../tabs/application/browser";
+import { useBrowserState } from "../../tabs/application/browser";
+import type { TabSnapshot } from "../../tabs/application/browser.types";
 import { useColumns } from "../../column-view/application/columns";
 import { parentPath } from "../../../shared/application/fileops";
 import { fileSystem } from "../../../shared/application/ports";
-import { sortEntries, type SortKey } from "../../../shared/domain/format";
+import { sortEntries } from "../../../shared/domain/format";
+import type { SortKey } from "../../../shared/domain/format.types";
 import { errorText, useLocale } from "../../../shared/i18n/index";
 import { motionMs } from "../../../shared/lib/motion";
 import { useRubberBand } from "../../file-list/application/rubberBand";
-import { newRow, type CriterionRow } from "../../search/domain/searchCriteria";
+import { newRow } from "../../search/domain/searchCriteria";
+import type { CriterionRow } from "../../search/domain/searchCriteria.types";
 import * as storage from "../../../shared/infrastructure/storage";
 import type { ViewHandle } from "../../file-list/application/viewHandle";
-import type { NavDirection } from "./navigation";
+import type { NavDirection } from "./navigation.types";
 import type { FileEntry, SelectMods, ViewMode } from "../../../shared/domain/types";
 // MI-FORK: agrupar por tipo / fecha / tamaño.
 import { useExtrasSettings } from "../../extras/application/extrasSettings";
 import { groupEntries } from "../../file-list/application/grouping";
+import type { PanelOptions } from "./panel.types";
 
 /**
  * Jeden panel prohlížeče: složka a její výpis, historie, zobrazení, řazení,
@@ -76,15 +80,6 @@ function spawnViewGhost(source: HTMLElement, host: HTMLElement) {
   // Pojistka: s vypnutými animacemi (0 ms) se animationend nemusí dostavit.
   window.setTimeout(remove, motionMs("--dur-nav") + 50);
 }
-
-export type PanelOptions = {
-  /** 0 = levý, 1 = pravý — backend podle něj drží streamované výpisy zvlášť. */
-  slot: number;
-  /** null = ještě se neví (nastavení se načítá) — výpis do té doby čeká. */
-  showHidden: boolean | null;
-  /** Chyby bez vlastního místa v UI (refresh sloupce). */
-  setNotice: (text: string | null) => void;
-};
 
 export function usePanel({ slot, showHidden, setNotice }: PanelOptions) {
   const locale = useLocale();
@@ -960,4 +955,3 @@ export function usePanel({ slot, showHidden, setNotice }: PanelOptions) {
   };
 }
 
-export type Panel = ReturnType<typeof usePanel>;

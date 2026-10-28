@@ -1,36 +1,12 @@
 import { isValidFileName, parentPath } from "../../../shared/domain/paths";
 import type { FileEntry } from "../../../shared/domain/types";
+import type { Preview, RenameOptions, Renamed, Status } from "./batchRename.types";
 
 /*
  * MI-FORK: renombrado por lotes. Cálculo de los nombres nuevos (reemplazar o
  * patrón con numeración), validación para la vista previa y ejecución en dos
  * fases cuando los nombres se cruzan (a→b, b→a) — esa está en application/renameAll.ts.
  */
-
-export type ReplaceOptions = {
-  mode: "replace";
-  find: string;
-  replace: string;
-  regex: boolean;
-  matchCase: boolean;
-  /** También la extensión (si no, solo el nombre sin ella). */
-  includeExt: boolean;
-};
-
-export type PatternOptions = {
-  mode: "pattern";
-  /** [name] = nombre sin extensión, [n] = número, [date] = fecha de modificación
-   *  (corchetes y no llaves: en los textos de t() las llaves son parámetros). */
-  pattern: string;
-  start: number;
-  /** Cifras mínimas del número (relleno con ceros). */
-  pad: number;
-};
-
-export type RenameOptions = ReplaceOptions | PatternOptions;
-
-export type Status = "same" | "ok" | "invalid" | "duplicate" | "exists" | "badRegex";
-export type Preview = { entry: FileEntry; next: string; status: Status };
 
 function split(entry: FileEntry): [string, string] {
   const dot = entry.name.lastIndexOf(".");
@@ -92,8 +68,6 @@ export function previewRename(entries: FileEntry[], siblings: FileEntry[], optio
     return { entry, next, status };
   });
 }
-
-export type Renamed = { from: string; to: string };
 
 /** Destino completo de una vista previa. */
 export function targetOf(preview: Preview): Renamed {

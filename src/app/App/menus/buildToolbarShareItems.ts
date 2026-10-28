@@ -1,12 +1,6 @@
-import { t, type MessageKey } from "../../../shared/i18n/index";
+import { t } from "../../../shared/i18n/index";
 import { type MenuItem } from "../../../shared/ui/ContextMenu";
-
-export type BuildToolbarShareItemsDeps = {
-  sharePaths: string[];
-  copyText: (text: string, failed: MessageKey) => void;
-  putOnClipboard: (paths: string[], mode: "copy" | "cut") => void;
-  revealInExplorer: (path: string) => void;
-};
+import type { BuildToolbarShareItemsDeps } from "./buildToolbarShareItems.types";
 
 export function buildToolbarShareItems(deps: BuildToolbarShareItemsDeps): MenuItem[] {
   const {

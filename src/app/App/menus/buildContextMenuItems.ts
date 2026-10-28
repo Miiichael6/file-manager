@@ -1,77 +1,15 @@
 import * as storage from "../../../shared/infrastructure/storage";
-import { t, type MessageKey } from "../../../shared/i18n/index";
+import { t } from "../../../shared/i18n/index";
 import { type MenuItem } from "../../../shared/ui/ContextMenu";
-import { openWith, parentPath, type TerminalId } from "../../../shared/application/fileops";
+import { openWith, parentPath } from "../../../shared/application/fileops";
 import { folderOpenWithMenu } from "../../../features/toolbar/application/folderApps";
 import { VIEW_LABELS, SORT_LABELS } from "../constants";
-import { type ViewMode, type FileEntry } from "../../../shared/domain/types";
-import { type SortKey, formatItemCount } from "../../../shared/domain/format";
+import { type ViewMode } from "../../../shared/domain/types";
+import { formatItemCount } from "../../../shared/domain/format";
+import type { SortKey } from "../../../shared/domain/format.types";
 import { folderEntry } from "../helpers";
 import { TAG_COLORS } from "../../../features/tags/application/tags";
-import { type MainMenu } from "../types";
-import { type Tab, type TabSnapshot } from "../../../features/tabs/application/browser";
-
-import type { Dispatch, SetStateAction } from "react";
-import type { CustomFavorite, TagMap } from "../../../shared/domain/types";
-import type { SortDirection } from "../../../shared/domain/format";
-import type { DisplayNames } from "../../../features/file-list/application/extensions";
-import type { FolderApp } from "../../../features/toolbar/application/folderApps";
-import type { useExtras } from "../../../features/extras/application/useExtras";
-import type { useGitIntegration } from "../../../features/git/application/useGitIntegration";
-
-export type BuildContextMenuItemsDeps = {
-  menu: MainMenu | null;
-  copyText: (text: string, failed: MessageKey) => void;
-  openTabs: Tab[];
-  activeTabId: number;
-  splitOn: boolean;
-  separateTab: (id: number) => void;
-  closeTab: (id: number) => void;
-  closeOtherTabs: (id: number) => void;
-  setPathEditing: Dispatch<SetStateAction<boolean>>;
-  openFile: (entry: FileEntry) => void;
-  runOperation: (label: MessageKey, action: () => Promise<unknown>) => Promise<void>;
-  revealInExplorer: (path: string) => void;
-  favorites: CustomFavorite[];
-  newMenuEntries: (dir: string) => Extract<MenuItem, { type: "item"; } | { type: "separator"; }>[];
-  clipboardHasItems: boolean;
-  paste: (into?: string) => void;
-  folderApps: FolderApp[];
-  openTerminalAt: (path: string, terminal?: TerminalId) => void;
-  terminalItems: (path: string) => Extract<MenuItem, { type: "item"; }>[];
-  viewMode: ViewMode;
-  changeViewMode: (mode: ViewMode) => void;
-  showHidden: boolean | null;
-  toggleHidden: () => void;
-  extras: Pick<ReturnType<typeof useExtras>, "menuItems" | "groupByMenu" | "folderSizesItem">;
-  sortKey: SortKey;
-  setSortKey: Dispatch<SetStateAction<SortKey>>;
-  sortDirection: SortDirection;
-  setSortDirection: Dispatch<SetStateAction<SortDirection>>;
-  isColumnView: boolean;
-  visibleEntries: FileEntry[];
-  selectAll: () => void;
-  refresh: () => void;
-  setPropertiesFor: Dispatch<SetStateAction<FileEntry | null>>;
-  targetEntries: FileEntry[];
-  tags: TagMap;
-  openFromResults: (entry: FileEntry) => void;
-  open: (entry: FileEntry) => void;
-  openTab: (path: string | null, overlay?: Partial<TabSnapshot> | undefined) => void;
-  reveal: (path: string, rename?: boolean) => void;
-  setOverlayPreview: Dispatch<SetStateAction<FileEntry | null>>;
-  previewEntry: (entry: FileEntry) => void;
-  names: DisplayNames;
-  setRenamingPath: Dispatch<SetStateAction<string | null>>;
-  duplicateEntry: (entry: FileEntry, select?: boolean) => void;
-  copyToClipboard: (mode: "copy" | "cut", items?: FileEntry[]) => void;
-  otherDir: string | null;
-  transferToOther: (mode: "copy" | "cut", items?: FileEntry[]) => void;
-  deleteEntries: (items: FileEntry[], permanent?: boolean) => void;
-  changeTags: (paths: string[], action: () => Promise<void>) => void;
-  git: Pick<ReturnType<typeof useGitIntegration>, "menuItems">;
-};
-
+import type { BuildContextMenuItemsDeps } from "./buildContextMenuItems.types";
 export function buildContextMenuItems(deps: BuildContextMenuItemsDeps): MenuItem[] {
   const {
     menu,

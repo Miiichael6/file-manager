@@ -1,4 +1,5 @@
-import { t, type MessageKey } from "../../../shared/i18n/index";
+import { t } from "../../../shared/i18n/index";
+import type { MessageKey } from "../../../shared/i18n/index.types";
 import type { TagColor } from "../../../shared/domain/types";
 
 export { TAG_COLORS } from "../../../shared/infrastructure/storage";

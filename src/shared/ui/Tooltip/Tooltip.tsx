@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { localeSignal } from "../../i18n/index";
+import type { Tip } from "./Tooltip.types";
 
 /** Stejná prodleva jako u macOS — rychlejší tooltip ruší při přejíždění myší. */
 const SHOW_DELAY_MS = 600;
@@ -11,8 +12,6 @@ const WARM_MS = 500;
 const MARGIN = 8;
 /** Odsazení pod kurzorem, ať bublina nezakrývá to, na co uživatel míří. */
 const CURSOR_OFFSET = 18;
-
-type Tip = { text: string; x: number; y: number };
 
 /**
  * Jediná vrstva tooltipů pro celou aplikaci. Prvky si o tooltip řeknou

@@ -8,21 +8,8 @@ import { useT } from "../../../../shared/i18n/index";
 import * as storage from "../../../../shared/infrastructure/storage";
 import { tagLabel } from "../../application/tags";
 import { useStorage } from "../../../../shared/lib/useStorage";
-import type { FileEntry, TagColor } from "../../../../shared/domain/types";
-
-type TagViewProps = {
-  color: TagColor;
-  windowFocused: boolean;
-  selectedPath: string | null;
-  onSelectionChange: (entry: FileEntry | null) => void;
-  onOpen: (entry: FileEntry) => void;
-  /** Pravý klik — stejné menu jako u běžné položky. */
-  onContextMenu: (entry: FileEntry, x: number, y: number) => void;
-  /** Roste po každé souborové operaci; výsledky se pak načtou znovu. */
-  refreshToken: number;
-  /** Ať status bar hlásí počet z tag view, ne z podkladové složky. */
-  onCountChange: (count: number) => void;
-};
+import type { FileEntry } from "../../../../shared/domain/types";
+import type { TagViewProps } from "./TagView.types";
 
 /** Virtuální složka všech položek jedné barvy. Vykresluje ResultsView. */
 export function TagView({

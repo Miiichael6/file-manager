@@ -1,6 +1,8 @@
-import { findKey, isBackendError, type BackendError } from "../domain/backendError";
+import { findKey, isBackendError } from "../domain/backendError";
+import type { BackendError } from "../domain/backendError.types";
 import type { ItemFailure } from "../domain/fileops";
-import { errorText, isMessageKey, t, type Params } from "../i18n/index";
+import { errorText, isMessageKey, t } from "../i18n/index";
+import type { Params } from "../i18n/index.types";
 
 /* ------------------------------ chyby backendu ------------------------------ */
 

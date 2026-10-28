@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 
 import { settingsStore } from "../../../shared/application/ports";
+import type { ColumnWidths, Pane, ResizableColumn } from "./columnWidths.types";
 
 /*
  * MI-FORK: anchos de las columnas de la vista Lista (Nombre, Fecha, Tamaño,
@@ -12,10 +13,6 @@ import { settingsStore } from "../../../shared/application/ports";
  * la de siempre) y `miListColumns2`; el panel 1 sin anchos guardados arranca
  * con los del 0. Sin tocar lib/storage.ts.
  */
-
-export type ResizableColumn = "name" | "modified" | "size" | "kind";
-export type ColumnWidths = { name: number | null } & Record<Exclude<ResizableColumn, "name">, number>;
-export type Pane = 0 | 1;
 
 export const DEFAULT_WIDTHS: ColumnWidths = { name: null, modified: 140, size: 80, kind: 100 };
 const LIMITS: Record<ResizableColumn, [number, number]> = {

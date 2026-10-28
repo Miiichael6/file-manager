@@ -2,6 +2,7 @@ import { useSyncExternalStore } from "react";
 
 import { pathKey } from "../../../shared/infrastructure/storage";
 import { nativeDrag } from "./ports";
+import type { DragItem, DragPayload, WebView2 } from "./dnd.types";
 
 /**
  * Sdílený stav právě probíhajícího tažení.
@@ -12,17 +13,6 @@ import { nativeDrag } from "./ports";
  * sama). Payload se proto drží tady v modulu a `dataTransfer` nese jen cesty
  * jako text, aby tažení ven z aplikace nebylo prázdné.
  */
-
-export type DragItem = { path: string; name: string; isDir: boolean };
-
-export type DragPayload =
-  /** Položky z hlavního panelu — celý výběr, když se táhne za vybraný řádek. */
-  | { kind: "entry"; items: DragItem[] }
-  /** Existující vlastní oblíbená — přerovnání v rámci sekce. */
-  | { kind: "favorite"; path: string; index: number; isDir?: boolean }
-  /** MI-FORK: složka ze sidebaru (Tento počítač, jednotky, nedávné, strom) —
-   *  nad plochou panelů se pustí vlevo, vpravo nebo do nové záložky. */
-  | { kind: "place"; path: string; name: string };
 
 /** MI-FORK: složka, kterou jde pustit do panelu (vlevo / vpravo / nová záložka). */
 export function draggedFolder(payload: DragPayload | null): string | null {
@@ -170,10 +160,6 @@ export function isExternalFileDrag(event: { dataTransfer: DataTransfer | null })
   ensureDropListener().catch(() => undefined);
   return true;
 }
-
-type WebView2 = {
-  postMessageWithAdditionalObjects?: (message: unknown, objects: ArrayLike<unknown>) => void;
-};
 
 /** Čekající dropy: id zprávy → kdo čeká na cesty. */
 const pendingDrops = new Map<number, (paths: string[]) => void>();

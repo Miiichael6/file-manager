@@ -1,9 +1,11 @@
 import { useState } from "react";
 
 import { Dialog } from "../../../../shared/ui/Dialog";
-import { useT, type MessageKey } from "../../../../shared/i18n/index";
-import type { FileEntry } from "../../../../shared/domain/types";
-import { previewRename, type Preview, type RenameOptions, type Status } from "../../domain/batchRename";
+import { useT } from "../../../../shared/i18n/index";
+import type { MessageKey } from "../../../../shared/i18n/index.types";
+import { previewRename } from "../../domain/batchRename";
+import type { RenameOptions, Status } from "../../domain/batchRename.types";
+import type { Props } from "./BatchRenameDialog.types";
 
 /*
  * MI-FORK: diálogo «Renombrar varios»: buscar y reemplazar (texto o regex) o
@@ -15,13 +17,6 @@ const STATUS_TEXT: Record<Exclude<Status, "ok" | "same">, MessageKey> = {
   duplicate: "extras.rename.duplicate",
   exists: "extras.rename.exists",
   badRegex: "extras.rename.badRegex",
-};
-
-type Props = {
-  entries: FileEntry[];
-  siblings: FileEntry[];
-  onApply: (previews: Preview[]) => void;
-  onClose: () => void;
 };
 
 const inputClass =

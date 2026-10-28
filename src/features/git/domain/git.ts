@@ -1,3 +1,5 @@
+import type { GitFile, GitState } from "./git.types";
+
 /**
  * Git ve výpisu: stav souborů (odznaky v řádcích), větev ve status baru a
  * akce stage/unstage/commit/push/pull. Backend volá git.exe (git.rs).
@@ -6,28 +8,7 @@
  * backendu gitActions.ts (přes port GitRepository).
  */
 
-/** Jak git vidí položku; pořadí = priorita při shrnutí složky. */
-export type GitState = "conflicted" | "deleted" | "modified" | "added" | "renamed" | "untracked" | "ignored";
-
 export const PRIORITY: GitState[] = ["conflicted", "deleted", "modified", "renamed", "added", "untracked", "ignored"];
-
-/** Odpovídá GitFile v git.rs. `.` = beze změny, `?` nesledovaný, `!` ignorovaný. */
-export type GitFile = {
-  path: string;
-  orig_path: string | null;
-  index: string;
-  worktree: string;
-  conflicted: boolean;
-};
-
-export type GitStatus = {
-  root: string;
-  branch: string | null;
-  upstream: string | null;
-  ahead: number;
-  behind: number;
-  files: GitFile[];
-};
 
 /* --------------------------------- cesty ---------------------------------- */
 

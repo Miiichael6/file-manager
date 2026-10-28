@@ -4,7 +4,9 @@ import { Dialog } from "../../../../shared/ui/Dialog";
 import { fileSystem } from "../../../../shared/application/ports";
 import { errorText, useT } from "../../../../shared/i18n/index";
 import * as storage from "../../../../shared/infrastructure/storage";
-import { diffLines, foldDiff, splitLines, type DiffRow } from "../../domain/textDiff";
+import { diffLines, foldDiff, splitLines } from "../../domain/textDiff";
+import type { DiffRow } from "../../domain/textDiff.types";
+import type { Loaded } from "./CompareDialog.types";
 
 /*
  * MI-FORK: comparar dos archivos de texto (menú contextual con dos archivos
@@ -14,8 +16,6 @@ import { diffLines, foldDiff, splitLines, type DiffRow } from "../../domain/text
 
 /** Como la vista previa de texto: más de 1 MB no se compara. */
 const MAX_BYTES = 1024 * 1024;
-
-type Loaded = { a: string; b: string; truncated: boolean };
 
 function rowStyle(row: DiffRow): React.CSSProperties | undefined {
   if (row.type === "add") return { background: "var(--git-diff-add)" };

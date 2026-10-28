@@ -8,14 +8,7 @@ import { TagDots } from "../../../tags/ui/TagDots";
 import { GitBadge } from "../../../git/ui/GitBadge"; // MI-FORK: Git integrado.
 import { InfoVideoPlayer } from "../../../preview/ui/InfoVideoPlayer"; // MI-FORK
 import { dragItemsFor, endDrag, startEntryDrag } from "../../../file-list/application/dnd";
-import {
-  dropPropsFor,
-  selectMods,
-  useFolderDrop,
-  useStableCallback,
-  type DropInto,
-  type FolderDropHandlers,
-} from "../../../file-list/application/rowDnd";
+import { dropPropsFor, selectMods, useFolderDrop, useStableCallback } from "../../../file-list/application/rowDnd";
 import { sameEntry } from "../../../file-list/application/rows";
 import { useGlassInsets } from "../../../theme/application/glass";
 import { useRubberBand } from "../../../file-list/application/rubberBand";
@@ -27,9 +20,10 @@ import { TAG_HEX, tagLabel } from "../../../tags/application/tags";
 import { cancelFolderStats, folderStats, getFileProperties, getMediaInfo, type MediaInfo } from "../../../../shared/application/fileops";
 import { entryOpacity, formatItemCount, formatModified, formatSize, kindLabel, previewKind } from "../../../../shared/domain/format";
 import { failure, formatNumber, useT } from "../../../../shared/i18n/index";
-import type { Column, ColumnsApi } from "../../application/columns";
-import type { FileEntry, FileProperties, FolderStats, SelectMods, TagColor, TagMap } from "../../../../shared/domain/types";
+import type { Column } from "../../application/columns.types";
+import type { FileEntry, FileProperties, FolderStats, SelectMods } from "../../../../shared/domain/types";
 import { useDisplayNames } from "../../../file-list/application/extensions";
+import type { ColumnPaneProps, ColumnViewProps, InfoPanelProps, RowHandlers, RowProps } from "./ColumnView.types";
 
 /** Výška řádku a horní okraj sloupce (py-1) — virtualizace i gumička z nich počítají. */
 const ROW_HEIGHT = 24;
@@ -38,28 +32,6 @@ const PANE_PADDING = 4;
 const PANE_WIDTH = 240;
 
 /* ---------------------------------- řádek ---------------------------------- */
-
-type RowHandlers = {
-  select: (entry: FileEntry, mods?: SelectMods) => void;
-  open: (entry: FileEntry) => void;
-  contextMenu: (entry: FileEntry, selected: boolean, x: number, y: number) => void;
-  dragItems: (entry: FileEntry) => ReturnType<typeof dragItemsFor>;
-  renameSubmit: (entry: FileEntry, name: string) => void;
-  renameCancel: () => void;
-  drop: FolderDropHandlers;
-};
-
-type RowProps = {
-  entry: FileEntry;
-  top: number;
-  selected: boolean;
-  cut: boolean;
-  renaming: boolean;
-  dropTarget: boolean;
-  windowFocused: boolean;
-  tags: TagColor[];
-  handlers: RowHandlers;
-};
 
 /** Řádek sloupce. Memoizovaný — klik překreslí jen starý a nový výběr. */
 const ColumnRow = memo(
@@ -133,37 +105,6 @@ const ColumnRow = memo(
 );
 
 /* --------------------------------- sloupec -------------------------------- */
-
-type ColumnPaneProps = {
-  column: Column;
-  /** Položky k vykreslení — po případném filtru, proto ne column.entries. */
-  entries: FileEntry[];
-  index: number;
-  isFocused: boolean;
-  windowFocused: boolean;
-  onSelect: (columnIndex: number, entry: FileEntry, mods?: SelectMods) => void;
-  onOpen: (columnIndex: number, entry: FileEntry) => void;
-  onDropInto: DropInto;
-  onBandStart: (columnIndex: number, additive: boolean) => void;
-  onBandSelect: (columnIndex: number, paths: string[]) => void;
-  onFocus: (columnIndex: number) => void;
-  onContextMenu?: (entry: FileEntry, x: number, y: number) => void;
-  cutPaths: Set<string>;
-  renamingPath: string | null;
-  onRenameSubmit: (entry: FileEntry, name: string) => void;
-  onRenameCancel: () => void;
-  tags: TagMap;
-  onClearSelection: (index: number) => void;
-  /** Sloupec, který se právě zahazuje — jen dohrává odchod, nereaguje. */
-  exiting?: boolean;
-  /** Jak doscrollovat na výběr posunutý klávesnicí — "smooth" jen pro
-   *  PgUp/PgDn. Sdílený ref; sloupec si hodnotu po použití vrátí na "auto". */
-  scrollBehavior: { current: ScrollBehavior };
-  /** Kam byl sloupec odscrollovaný (sdílená paměť view, klíč index/cesta).
-   *  Odcházející kopie z ní převezme pozici, ať při zhasínání neskočí nahoru. */
-  scrollMemory: Map<string, number>;
-  memoryKey: string;
-};
 
 function ColumnPane({
   column,
@@ -338,14 +279,6 @@ function InfoRow({ label, children }: { label: string; children: React.ReactNode
     </div>
   );
 }
-
-type InfoPanelProps = {
-  entry: FileEntry;
-  onOpen: (entry: FileEntry) => void;
-  tags: TagMap;
-  /** MI-FORK: klik na náhled obrázku otevře velký náhled (mezerník). */
-  onPreview?: () => void;
-};
 
 /** MI-FORK: id pro zrušení výpočtu velikosti složky (odděleně od Vlastností). */
 let nextInfoStatsId = 1_000_000;
@@ -614,22 +547,6 @@ export function InfoPanel({ entry, onOpen, tags, onPreview }: InfoPanelProps) {
   );
 }
 /* -------------------------------- column view ------------------------------ */
-
-type ColumnViewProps = {
-  api: ColumnsApi;
-  windowFocused: boolean;
-  onOpenFile: (entry: FileEntry) => void;
-  cutPaths: Set<string>;
-  renamingPath: string | null;
-  onRenameSubmit: (entry: FileEntry, name: string) => void;
-  onRenameCancel: () => void;
-  onContextMenu?: (entry: FileEntry, x: number, y: number) => void;
-  tags: TagMap;
-  /** Menu, dialog nebo přejmenování drží fokus u sebe. Po jejich zavření se
-   *  fokus vrací sloupcům — jinak by šipky byly mrtvé do dalšího kliku. */
-  suspended: boolean;
-  onDropInto: DropInto;
-};
 
 export function ColumnView({
   api,

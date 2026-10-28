@@ -2,16 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { isValidFileName, stemLength } from "../../../../shared/application/fileops";
 import { useDisplayNames } from "../../application/extensions";
-import type { FileEntry } from "../../../../shared/domain/types";
-
-type RenameInputProps = {
-  entry: FileEntry;
-  onSubmit: (entry: FileEntry, name: string) => void;
-  onCancel: () => void;
-  /** row = řádek seznamu a sloupce, icon = název pod ikonou (na střed). */
-  variant?: "row" | "icon";
-};
-
+import type { RenameInputProps } from "./RenameInput.types";
 export function RenameInput({ entry, onSubmit, onCancel, variant = "row" }: RenameInputProps) {
   const centered = variant === "icon";
   const names = useDisplayNames();

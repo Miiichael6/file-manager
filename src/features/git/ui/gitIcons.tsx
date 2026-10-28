@@ -1,4 +1,5 @@
 import { ArrowDown, ArrowUp, FileDiff, GitBranch, GitCommitHorizontal, Minus, Plus, type LucideIcon } from "lucide-react";
+import type { GitIconName } from "./gitIcons.types";
 
 /**
  * Ikony gitu na jednom místě — stejná ikona v kontextovém menu, v paletě,
@@ -13,8 +14,6 @@ export const GIT_ICONS = {
   commit: GitCommitHorizontal,
   diff: FileDiff,
 } satisfies Record<string, LucideIcon>;
-
-export type GitIconName = keyof typeof GIT_ICONS;
 
 /** Ikona do menu (16 px slot `.fw-menu-icon`, stejně jako ostatní položky). */
 export function gitMenuIcon(name: GitIconName) {

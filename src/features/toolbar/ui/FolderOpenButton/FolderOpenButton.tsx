@@ -3,10 +3,10 @@ import { ChevronDown } from "lucide-react";
 
 import { ContextMenu } from "../../../../shared/ui/ContextMenu";
 import { statPaths } from "../../../../shared/application/fileops";
-import type { MessageKey } from "../../../../shared/i18n/index";
 import { useT } from "../../../../shared/i18n/index";
 import "./folder-open.css";
 import { defaultFolderApp, folderAppIcon, folderOpenWithMenu, openFolderWith, useFolderApps } from "../../application/folderApps";
+import type { Props } from "./FolderOpenButton.types";
 
 /*
  * MI-FORK: botón de la barra «Abrir carpeta con». Clic en el icono = abrir la
@@ -15,13 +15,6 @@ import { defaultFolderApp, folderAppIcon, folderOpenWithMenu, openFolderWith, us
  * en carpetas con .git (un repositorio) y si hay algún editor instalado o
  * elegido antes.
  */
-
-type Props = {
-  /** Carpeta actual; null = no hay carpeta real (etiquetas, búsqueda, Papelera). */
-  path: string | null;
-  /** runOperation de App.tsx (aviso de error traducido). */
-  run: (label: MessageKey, action: () => Promise<unknown>) => void;
-};
 
 export function FolderOpenButton({ path, run }: Props) {
   const t = useT();

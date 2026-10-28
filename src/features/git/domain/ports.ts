@@ -1,4 +1,4 @@
-import type { GitStatus } from "./git";
+import type { GitStatus } from "./git.types";
 
 export type GitDiff = { text: string; truncated: boolean };
 

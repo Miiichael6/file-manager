@@ -8,20 +8,13 @@ import { TagDots } from "../../../tags/ui/TagDots";
 import { GitBadge } from "../../../git/ui/GitBadge"; // MI-FORK: Git integrado.
 import { entryOpacity } from "../../../../shared/domain/format";
 import { dragItemsFor, endDrag, startEntryDrag } from "../../application/dnd";
-import {
-  dropPropsFor,
-  selectMods,
-  useFolderDrop,
-  useStableCallback,
-  type DropInto,
-  type FolderDropHandlers,
-} from "../../application/rowDnd";
+import { dropPropsFor, selectMods, useFolderDrop, useStableCallback } from "../../application/rowDnd";
 import { sameEntry } from "../../application/rows";
 import { useGlassInsets } from "../../../theme/application/glass";
 import { tagsOf } from "../../../../shared/infrastructure/storage";
-import type { ViewHandleRef } from "../../application/viewHandle";
-import type { FileEntry, SelectMods, TagColor, TagMap } from "../../../../shared/domain/types";
+import type { FileEntry } from "../../../../shared/domain/types";
 import { useDisplayNames } from "../../application/extensions";
+import type { CellHandlers, CellProps, IconViewProps } from "./IconView.types";
 
 /** Geometrie mřížky (musí sedět s tím, co buňka vykreslí): buňka 96 × 118,
  *  mezery 16 / 24, okraj plochy 20. Virtualizace i gumička z ní počítají. */
@@ -37,29 +30,6 @@ function columnsFor(width: number): number {
 }
 
 /* ---------------------------------- buňka ---------------------------------- */
-
-type CellHandlers = {
-  select: (entry: FileEntry, mods: SelectMods) => void;
-  open: (entry: FileEntry) => void;
-  contextMenu: (entry: FileEntry, x: number, y: number) => void;
-  dragItems: (entry: FileEntry) => ReturnType<typeof dragItemsFor>;
-  renameSubmit: (entry: FileEntry, name: string) => void;
-  renameCancel: () => void;
-  drop: FolderDropHandlers;
-};
-
-type CellProps = {
-  entry: FileEntry;
-  /** Smí se ptát shellu na náhled videa / PDF (prvních 200 ve složce). */
-  shellPreview: boolean;
-  selected: boolean;
-  cut: boolean;
-  renaming: boolean;
-  dropTarget: boolean;
-  windowFocused: boolean;
-  tags: TagColor[];
-  handlers: CellHandlers;
-};
 
 /** Jedna ikona. Memoizovaná — klik překreslí jen starý a nový výběr. */
 const IconCell = memo(
@@ -155,28 +125,6 @@ const IconCell = memo(
 );
 
 /* --------------------------------- mřížka ---------------------------------- */
-
-type IconViewProps = {
-  entries: FileEntry[];
-  selectedPaths: Set<string>;
-  cutPaths: Set<string>;
-  windowFocused: boolean;
-  renamingPath: string | null;
-  onRenameSubmit: (entry: FileEntry, name: string) => void;
-  onRenameCancel: () => void;
-  onSelect: (entry: FileEntry, mods: SelectMods) => void;
-  onOpen: (entry: FileEntry) => void;
-  onContextMenu?: (entry: FileEntry, x: number, y: number) => void;
-  onDropInto: DropInto;
-  tags: TagMap;
-  /** Posouvaný kontejner (drží ho App) — virtualizace podle něj měří. */
-  scrollRef: React.RefObject<HTMLDivElement | null>;
-  /** Ovládání výpisu pro App (posun na položku, gumička, klávesnice). */
-  handleRef: ViewHandleRef;
-  /** Počáteční posun (návrat Zpět). Virtualizace si při připojení scroller
-   *  sama nastaví na svou pozici — bez tohohle by ho vrátila na začátek. */
-  initialOffset?: number;
-};
 
 export function IconView({
   entries,

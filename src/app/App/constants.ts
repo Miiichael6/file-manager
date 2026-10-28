@@ -1,6 +1,6 @@
 import type { TerminalId } from "../../shared/application/fileops";
-import type { SortKey } from "../../shared/domain/format";
-import type { MessageKey } from "../../shared/i18n/index";
+import type { SortKey } from "../../shared/domain/format.types";
+import type { MessageKey } from "../../shared/i18n/index.types";
 import type { ViewMode } from "../../shared/domain/types";
 
 /** Užší okno rozdělení schová (stav zůstává a vrátí se po zvětšení). */

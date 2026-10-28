@@ -1,5 +1,5 @@
 import { invoke } from "../../../shared/infrastructure/fileops";
-import type { GitStatus } from "../domain/git";
+import type { GitStatus } from "../domain/git.types";
 import type { GitDiff, GitRepository } from "../domain/ports";
 
 /** Adaptér GitRepository nad commandy git.rs. */

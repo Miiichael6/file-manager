@@ -1,15 +1,7 @@
 import * as storage from "../../../shared/infrastructure/storage";
 import { TAG_COLORS, tagLabel, TAG_HEX } from "../../../features/tags/application/tags";
 import { type MenuItem } from "../../../shared/ui/ContextMenu";
-import type { TagMap } from "../../../shared/domain/types";
-import { type FileEntry } from "../../../shared/domain/types";
-
-export type BuildToolbarTagItemsDeps = {
-  targetEntries: FileEntry[];
-  tags: TagMap;
-  changeTags: (paths: string[], action: () => Promise<void>) => void;
-};
-
+import type { BuildToolbarTagItemsDeps } from "./buildToolbarTagItems.types";
 export function buildToolbarTagItems(deps: BuildToolbarTagItemsDeps): MenuItem[] | null {
   const {
     targetEntries,

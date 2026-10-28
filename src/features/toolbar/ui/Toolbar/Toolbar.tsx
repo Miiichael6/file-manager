@@ -22,32 +22,15 @@ import { FolderIcon } from "../../../../shared/ui/icons";
 import { FOLDER_COLORS, folderColorVars, setFolderColor, useFolderColor } from "../../../sidebar/application/folderColor"; // MI-FORK
 import { useShellIntegration } from "../../application/shellIntegration"; // MI-FORK
 import "./nav-capsule.css"; // MI-FORK
-import type { CommandId, Command, Commands } from "../../../command-palette/domain/commands";
-import { useT, type MessageKey } from "../../../../shared/i18n/index";
+import type { CommandId, Command } from "../../../command-palette/domain/commands.types";
+import { useT } from "../../../../shared/i18n/index";
+import type { MessageKey } from "../../../../shared/i18n/index.types";
 import type { ViewMode } from "../../../../shared/domain/types";
+import type { IconButtonProps, ToolbarMenu, ToolbarProps } from "./Toolbar.types";
 
 /** Všechny ikony toolbaru stejně velké a stejně silné (i v přepínači zobrazení a u Nový). */
 const TOOL_ICON_SIZE = 16;
 const TOOL_ICON_STROKE = 1.75;
-
-type IconButtonProps = {
-  Icon: LucideIcon;
-  label: string;
-  active?: boolean;
-  disabled?: boolean;
-  onClick?: () => void;
-  /** Tlačítka otevírající menu potřebují mousedown — viz komentář u "Více". */
-  onMouseDown?: (event: React.MouseEvent<HTMLButtonElement>) => void;
-  /** Třída na samotnou ikonu, kvůli animaci uvnitř nehybného tlačítka. */
-  iconClassName?: string;
-  /** Nedostupná akce s vysvětlením ("Vyberte soubor") v tooltipu a po kliknutí
-   *  v hlášce (onUnavailable). Vzhled zůstává plný jako u ostatních nástrojů;
-   *  obyčejné `disabled` by tooltip nedovolilo — vypnutý button nedostává myš. */
-  unavailable?: string;
-  onUnavailable?: (message: string) => void;
-  /** Otevírá menu — kontextové menu ho při kliknutí mimo sebe nechá být. */
-  menuTrigger?: boolean;
-};
 
 function IconButton({
   Icon,
@@ -130,43 +113,6 @@ function ViewSwitcher({ mode, onChange }: { mode: ViewMode; onChange: (mode: Vie
   );
 }
 
-type ToolbarProps = {
-  folderName: string;
-  /** Skutečná cesta pro tooltip záhlaví; null v tag view a výsledcích hledání. */
-  folderPath: string | null;
-  /** Malá ikona před názvem — stejná jako u složky v sidebaru. */
-  folderIcon: React.ReactNode;
-  viewMode: ViewMode;
-  onViewModeChange: (mode: ViewMode) => void;
-  query: string;
-  onQueryChange: (query: string) => void;
-  /** Enter v poli — filtr aktuální složky se povýší na rekurzivní hledání. */
-  onSearchSubmit: () => void;
-  /** ↓ v poli hledání — přesun do výsledků. */
-  onSearchArrowDown: () => void;
-  searchRef: React.RefObject<HTMLInputElement | null>;
-  /** Položky menu Seřadit / Sdílet / Štítky — sestavuje je App, zná výběr. */
-  sortItems: MenuItem[];
-  shareItems: MenuItem[];
-  /** null = nic není vybrané, tlačítko Štítky je vypnuté. */
-  tagItems: MenuItem[] | null;
-  /** Menu tlačítka Nový (Složka, Textový dokument, typy z registru); null = nejde (tag view, hledání). */
-  newItems: MenuItem[] | null;
-  /** Zvýšení čísla otevře menu Nový — příkaz newItem z palety a klávesnice. */
-  newMenuRequest: number;
-  /** Registr příkazů (commands.ts) — tlačítka i menu Více z něj berou akce,
-   *  stav i zkratky, takže se s klávesnicí a paletou nerozejdou. */
-  commands: Commands;
-  /** Otevřené menu musí App znát kvůli globálním zkratkám (modalOpen). */
-  onMenuOpenChange: (open: boolean) => void;
-  /** Krátká hláška nad status barem (klik na nedostupné Štítky). */
-  onNotice: (message: string) => void;
-  /** MI-FORK: botón «Abrir carpeta con» (src/mi-fork/FolderOpenButton.tsx). */
-  openWith?: React.ReactNode;
-  /** MI-FORK: botones de Git (src/mi-fork/GitToolbarButtons.tsx); solo en un repositorio. */
-  gitTools?: React.ReactNode;
-};
-
 /** Položka menu z příkazu registru — název, zkratka a stav z jednoho místa. */
 export function commandMenuItem(command: Command, label?: string): MenuItem & { type: "item" } {
   return {
@@ -178,8 +124,6 @@ export function commandMenuItem(command: Command, label?: string): MenuItem & { 
     onSelect: command.run,
   };
 }
-
-type ToolbarMenu = "new" | "sort" | "share" | "tags" | "more";
 
 export function Toolbar({
   folderName,

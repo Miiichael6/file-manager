@@ -2,22 +2,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { canDropInto, droppedPaths, endDrag, getDrag, isExternalFileDrag, useDrag } from "./dnd";
 import type { FileEntry, SelectMods } from "../../../shared/domain/types";
+import type { DropInto, FolderDropHandlers } from "./rowDnd.types";
 
 /** Ctrl+klik přepíná položku, Shift+klik vybírá rozsah od kotvy. */
 export function selectMods(event: { ctrlKey: boolean; metaKey: boolean; shiftKey: boolean }): SelectMods {
   return { toggle: event.ctrlKey || event.metaKey, range: event.shiftKey };
 }
-
-/** Cíl pro pouštění do složky: přesun, s Ctrl kopie. */
-export type DropInto = (folder: string, paths: string[], copy: boolean) => void;
-
-/** Handlery přetažení pro řádek složky. Stabilní identita — řádky jsou
- *  memoizované a nové funkce při každém renderu by memo rozbily. */
-export type FolderDropHandlers = {
-  over: (entry: FileEntry, event: React.DragEvent) => void;
-  leave: (entry: FileEntry, event: React.DragEvent) => void;
-  drop: (entry: FileEntry, event: React.DragEvent) => void;
-};
 
 /**
  * Složky ve výpisu jako cíle přetažení. Sdílí ho Icon, List i Column View —

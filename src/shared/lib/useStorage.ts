@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 
-import { getSnapshot, subscribe, type Snapshot } from "../infrastructure/storage";
+import { getSnapshot, subscribe } from "../infrastructure/storage";
+import type { Snapshot } from "../infrastructure/storage.types";
 
 /**
  * Persistentní nastavení jako React stav. Snapshot je neměnný a novou identitu

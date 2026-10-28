@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { motionMs } from "../../../shared/lib/motion";
+import type { Notice } from "./useNotice.types";
 
 /** Jak dlouho hláška zůstane, než sama odjede. */
 const TOAST_VISIBLE_MS = 2000;
-
-export type Notice = { text: string; sticky: boolean; detail?: string };
 
 /**
  * Hláška nad status barem. `sticky` = chyba, visí do kliknutí / Escape.

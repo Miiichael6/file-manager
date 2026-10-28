@@ -10,22 +10,10 @@ import { errorDetail, listRecycleBin, type RecycleEntry } from "../../../../shar
 import { failure, useT } from "../../../../shared/i18n/index";
 import type { FileEntry } from "../../../../shared/domain/types";
 import { useDisplayNames } from "../../../file-list/application/extensions";
+import type { RecycleBinViewProps, SortKey } from "./RecycleBinView.types";
 
 /** Název, Původní umístění, Datum smazání, Velikost. */
 const GRID_TEMPLATE = "minmax(0, 1.2fr) minmax(0, 1.4fr) 140px 80px";
-
-type SortKey = "name" | "original" | "deleted" | "size";
-
-type RecycleBinViewProps = {
-  windowFocused: boolean;
-  /** Roste po každé souborové operaci; obsah Koše se pak načte znovu. */
-  refreshToken: number;
-  /** Ať status bar hlásí počet položek Koše, ne podkladové složky. */
-  onCountChange: (count: number) => void;
-  onRestore: (items: RecycleEntry[]) => void;
-  onPurge: (items: RecycleEntry[]) => void;
-  onEmpty: () => void;
-};
 
 /** Položka Koše jako FileEntry — kvůli ikoně ze shellu. */
 function asEntry(item: RecycleEntry): FileEntry {

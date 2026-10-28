@@ -1,31 +1,11 @@
-import { useCallback, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
+import { useCallback } from "react";
 
 import { motionMs } from "../../../shared/lib/motion";
-import type { SortKey } from "../../../shared/domain/format";
-import type { ViewMode } from "../../../shared/domain/types";
 import { useStableCallback } from "../../file-list/application/rowDnd";
-import type { Panel } from "../../navigation/application/panel";
 import { forgetTreeTab } from "../../sidebar/application/folderTree";
-import { blankSnapshot, newTab, tabFace, type Tab, type TabSnapshot } from "./browser";
-
-type Options = {
-  tabs: Tab[];
-  setTabs: Dispatch<SetStateAction<Tab[]>>;
-  activeTabId: number;
-  setActiveTabId: Dispatch<SetStateAction<number>>;
-  /** applyTab pro efekt startu, který běží dřív, než je funkce definovaná. */
-  applyTabRef: MutableRefObject<(tab: Tab) => void>;
-  panels: readonly [Panel, Panel];
-  splitOn: boolean;
-  setSplitOn: Dispatch<SetStateAction<boolean>>;
-  activePanel: 0 | 1;
-  setActivePanel: Dispatch<SetStateAction<0 | 1>>;
-  setOverlayPreview: (value: null) => void;
-  setQuickLookOpen: Dispatch<SetStateAction<boolean>>;
-  viewMode: ViewMode;
-  sortKey: SortKey;
-  sortDirection: "asc" | "desc";
-};
+import { blankSnapshot, newTab, tabFace } from "./browser";
+import type { Tab, TabSnapshot } from "./browser.types";
+import type { Options } from "./useTabActions.types";
 
 /** Operace nad záložkami: přepnutí, otevření, zavření, rozdělení, oddělení. */
 export function useTabActions({
@@ -247,8 +227,6 @@ export function useTabActions({
     const tab = number === 9 ? openTabs[openTabs.length - 1] : openTabs[number - 1];
     if (tab) switchTab(tab.id);
   });
-
-
 
   return {
     applyTab,

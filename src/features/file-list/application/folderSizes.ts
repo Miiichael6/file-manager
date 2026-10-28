@@ -2,6 +2,7 @@ import { useEffect, useSyncExternalStore } from "react";
 
 import { folderSizes } from "./ports";
 import type { FileEntry } from "../../../shared/domain/types";
+import type { Size } from "./folderSizes.types";
 
 /*
  * MI-FORK: tamaño de las carpetas en la columna Tamaño de la vista Lista
@@ -9,8 +10,6 @@ import type { FileEntry } from "../../../shared/domain/types";
  * una carpeta tras otra, y se guarda en memoria por ruta. Si la carpeta
  * cambia de fecha (entró o salió algo directamente en ella), se recalcula.
  */
-
-type Size = { bytes: number; done: boolean; modified: number };
 
 const sizes = new Map<string, Size>();
 const listeners = new Map<string, Set<() => void>>();

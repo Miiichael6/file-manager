@@ -1,5 +1,5 @@
 import * as storage from "../../shared/infrastructure/storage";
-import type { TransparencyStrength } from "../../shared/infrastructure/storage";
+import type { TransparencyStrength } from "../../shared/infrastructure/storage.types";
 import type { FileEntry } from "../../shared/domain/types";
 
 /**

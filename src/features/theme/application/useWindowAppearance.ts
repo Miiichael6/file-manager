@@ -2,10 +2,10 @@ import { useCallback, useEffect, useState } from "react";
 import { flushSync } from "react-dom";
 
 import * as storage from "../../../shared/infrastructure/storage";
-import type { TransparencyStrength } from "../../../shared/infrastructure/storage";
 import { applyMotion, motionEnabled } from "../../../shared/lib/motion";
 import type { Theme } from "../../../shared/domain/types";
-import { applyTheme, resolveTheme, systemTheme, watchSystemTheme, type ThemePreference } from "./theme";
+import { applyTheme, resolveTheme, systemTheme, watchSystemTheme } from "./theme";
+import type { ThemePreference } from "./theme.types";
 import {
   applyWindowBackdrop,
   acrylicSupported,
@@ -14,12 +14,7 @@ import {
   windowBackdrop,
 } from "./glass";
 import { windowChrome } from "./ports";
-
-type Options = {
-  themePreference: ThemePreference;
-  windowTransparency: boolean;
-  transparencyStrength: TransparencyStrength;
-};
+import type { Options } from "./useWindowAppearance.types";
 
 /**
  * Vzhled okna: téma (vč. sledování režimu Windows), průhlednost / Acrylic,
@@ -159,7 +154,6 @@ export function useWindowAppearance({ themePreference, windowTransparency, trans
       stop();
     };
   }, [ready, windowTransparency]);
-
 
   return { theme, changeTheme, toggleTheme, ready, acrylicAvailable, blurAllowed };
 }

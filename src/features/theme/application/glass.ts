@@ -1,8 +1,9 @@
 import { createContext, useContext } from "react";
-import type { TransparencyStrength } from "../../../shared/infrastructure/storage";
+import type { TransparencyStrength } from "../../../shared/infrastructure/storage.types";
 import type { WindowBackdrop } from "../domain/ports";
 import { windowChrome } from "./ports";
 import { syncWindowBackground } from "./theme";
+import type { GlassInsets } from "./glass.types";
 
 /*
  * Vzhled „sklo" (od 1.5 základní): titulek, toolbar, záložky a status bar
@@ -107,9 +108,6 @@ export const GLASS_TOP = 109;
 export const GLASS_STATUS = 22;
 export const GLASS_UPDATE_BAR = 26;
 export const GLASS_QUICK = 24;
-
-/** O kolik posouvaný obsah začíná pod lištou nahoře a končí nad status barem. */
-export type GlassInsets = { top: number; bottom: number };
 
 /** Views ho potřebují do virtualizace (scrollMargin, hit test, stránkování). */
 export const GlassInsetsContext = createContext<GlassInsets>({ top: GLASS_TOP, bottom: GLASS_STATUS });

@@ -18,9 +18,7 @@ import type { TerminalId } from "../domain/fileops";
 import type { FavoriteSection, FileEntry } from "../domain/types";
 import { invoke } from "./fileops";
 import * as storage from "./storage";
-
-type DirListing = { entries: FileEntry[]; more: boolean };
-type DirChunk = { token: number; entries: FileEntry[]; done: boolean };
+import type { DirChunk, DirListing } from "./tauriShared.types";
 
 /** Adaptér FileSystem nad commandy main.rs. */
 export const tauriFileSystem: FileSystem = {

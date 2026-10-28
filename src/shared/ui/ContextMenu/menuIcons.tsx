@@ -39,7 +39,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import type { MessageKey, Translate } from "../../i18n/index";
+import type { MessageKey, Translate } from "../../i18n/index.types";
 import type { MenuItem } from "./";
 
 const ICONS: [MessageKey, LucideIcon][] = [

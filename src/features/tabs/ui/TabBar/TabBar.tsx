@@ -4,43 +4,12 @@ import { Columns2, Plus, X } from "lucide-react";
 
 import { FolderIcon, folderDisplayName } from "../../../../shared/ui/icons";
 import { specialFolderGlyph } from "../../../sidebar/domain/specialFolders";
-import type { Command } from "../../../command-palette/domain/commands";
 import { useT } from "../../../../shared/i18n/index";
 import { canDropInto, droppedPaths, EMPTY_DRAG_IMAGE, endDrag, getDrag, isExternalFileDrag } from "../../../file-list/application/dnd";
-import type { DropInto } from "../../../file-list/application/rowDnd";
 import { breadcrumbs } from "../../../../shared/domain/format";
 import { parentPath } from "../../../../shared/application/fileops";
 import { motionMs } from "../../../../shared/lib/motion";
-
-export type TabItem = {
-  id: number;
-  path: string | null;
-  /** MI-FORK: rozdělená záložka — složky levého a pravého panelu. */
-  panes?: [string | null, string | null];
-  /** Aktivní panel rozdělené záložky. */
-  activePane?: 0 | 1;
-  closing: boolean;
-  /** Právě otevřená — vjede animací. */
-  fresh: boolean;
-};
-
-type TabBarProps = {
-  tabs: TabItem[];
-  activeId: number;
-  windowFocused: boolean;
-  onSelect: (id: number) => void;
-  onClose: (id: number) => void;
-  /** Přetažení záložky na místo jiného ouška — `index` je pozice v poli záložek. */
-  onReorder: (id: number, index: number) => void;
-  /** Položky (i soubory z Průzkumníku) puštěné na záložku — přesun do její složky. */
-  onDropInto: DropInto;
-  /** Příkaz Nová záložka z registru — + za posledním ouškem, totéž co Ctrl+T. */
-  newTab: Command;
-  /** MI-FORK: tažené ouško (null = konec tažení) — App podle něj ukáže zóny rozdělení nad panely. */
-  onTabDrag?: (id: number | null) => void;
-  /** MI-FORK: pravý klik na ouško — menu záložky. */
-  onTabMenu?: (id: number, x: number, y: number) => void;
-};
+import type { TabBarProps } from "./TabBar.types";
 
 /** Typ dat taženého ouška — odliší ho od tažení souborů. */
 export const TAB_MIME = "application/x-finder-win-tab";

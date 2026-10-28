@@ -1,6 +1,7 @@
 import { getVersion } from "@tauri-apps/api/app";
 
 import * as storage from "../../../shared/infrastructure/storage";
+import type { AvailableUpdate } from "./updates.types";
 
 /**
  * Kontrola nové verze: nejvýš jednou denně jeden GET na GitHub API, nic víc
@@ -21,8 +22,6 @@ function isReleasePage(url: string): boolean {
 }
 
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
-
-export type AvailableUpdate = { version: string; url: string };
 
 /** "1.10.0" > "1.9.2" — po číslech, ne jako text. Přípona za pomlčkou se ignoruje. */
 export function isNewerVersion(candidate: string, current: string): boolean {

@@ -4,13 +4,13 @@ import { Dialog } from "../../../../shared/ui/Dialog";
 import { GitDiffView } from "../GitDiffView";
 import { GitLetter } from "../GitBadge";
 import { errorText, useT } from "../../../../shared/i18n/index";
-import { absolutePath, isStaged, isUnstaged, stateOf, type GitFile, type GitStatus } from "../../domain/git";
+import { absolutePath, isStaged, isUnstaged, stateOf } from "../../domain/git";
+import type { GitFile, GitStatus } from "../../domain/git.types";
 import { gitCommit, gitPull, gitPush, gitStage, gitUnstage } from "../../application/gitActions";
 import { GIT_ICONS } from "../gitIcons";
+import type { Selected } from "./GitDialog.types";
 
 const { panel: BranchIcon, stage: StageIcon, unstage: UnstageIcon, pull: PullIcon, push: PushIcon, commit: CommitIcon } = GIT_ICONS;
-
-type Selected = { path: string; staged: boolean; untracked: boolean } | null;
 
 /** Jeden seznam souborů (Připraveno / Změny) s tlačítkem pro přesun do druhého. */
 function FileList(props: {

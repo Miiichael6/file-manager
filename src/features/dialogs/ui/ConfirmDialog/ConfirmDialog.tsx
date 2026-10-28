@@ -1,19 +1,6 @@
 import { Dialog } from "../../../../shared/ui/Dialog";
 import { useT } from "../../../../shared/i18n/index";
-
-export type ConfirmRequest = {
-  title: string;
-  message: string;
-  /** Text potvrzovacího tlačítka ("Smazat trvale", "Vymazat"). */
-  confirmLabel: string;
-  /** Nevratná akce — tlačítko je červené. */
-  danger?: boolean;
-  onConfirm: () => void;
-};
-
-type ConfirmDialogProps = ConfirmRequest & {
-  onClose: () => void;
-};
+import type { ConfirmDialogProps } from "./ConfirmDialog.types";
 
 /**
  * Potvrzení nevratné akce. U nebezpečné akce má fokus Zrušit a Enter ji

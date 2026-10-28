@@ -7,8 +7,9 @@ import { errorText, t as translate, useT } from "../../../../shared/i18n/index";
 import { tagsOf } from "../../../../shared/infrastructure/storage";
 import { TAG_HEX, tagLabel } from "../../../tags/application/tags";
 import { useStorage } from "../../../../shared/lib/useStorage";
-import type { FileEntry, FileProperties, FolderStats } from "../../../../shared/domain/types";
+import type { FileProperties, FolderStats } from "../../../../shared/domain/types";
 import { useDisplayNames } from "../../../file-list/application/extensions";
+import type { PropertiesDialogProps } from "./PropertiesDialog.types";
 
 /** Identita výpočtu velikosti — napříč dialogy, proto modulová. */
 let nextStatsId = 1;
@@ -30,11 +31,6 @@ function folderSummary(stats: FolderStats): string {
   const suffix = stats.done ? "" : " …";
   return `${atLeast(formatSize(stats.bytes, false))} · ${atLeast(formatItemCount(count))}${suffix}`;
 }
-
-type PropertiesDialogProps = {
-  entry: FileEntry;
-  onClose: () => void;
-};
 
 export function PropertiesDialog({ entry, onClose }: PropertiesDialogProps) {
   const names = useDisplayNames();

@@ -1,6 +1,8 @@
 import { formatNumber, getLocale, t } from "../i18n/index";
-import { fileType, type PreviewKind } from "./filetypes";
+import { fileType } from "./filetypes";
+import type { PreviewKind } from "./filetypes.types";
 import type { FileEntry } from "./types";
+import type { Crumb, SortDirection, SortKey } from "./format.types";
 
 const SIZE_UNITS = ["B", "KB", "MB", "GB", "TB"] as const;
 
@@ -92,8 +94,6 @@ export function formatItemCount(count: number): string {
   return t("items.count", { count });
 }
 
-export type Crumb = { label: string; path: string };
-
 /**
  * Kořen a zbytek cesty. Kořen je disk ("C:\") nebo síťový share
  * ("\\server\share") — share se nedá rozseknout, "\\server" sám o sobě
@@ -170,9 +170,6 @@ export function compareNames(a: string, b: string): number {
   }
   return collator.compare(a, b);
 }
-
-export type SortKey = "name" | "modified" | "size" | "kind";
-export type SortDirection = "asc" | "desc";
 
 export function sortEntries(
   entries: FileEntry[],

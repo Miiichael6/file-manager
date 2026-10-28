@@ -1,16 +1,7 @@
 import { CircleAlert, CircleCheck, X } from "lucide-react";
 
 import { t } from "../../../../shared/i18n/index";
-import type { Notice } from "../../application/useNotice";
-
-type Props = {
-  notice: Notice;
-  expanded: boolean;
-  closing: boolean;
-  onClose: () => void;
-  onToggleDetail: () => void;
-};
-
+import type { Props } from "./Toast.types";
 /** Hláška plave nad status barem. Vnější obal centruje, vnitřní animuje —
  *  keyframes přepisují transform, takže by centrování translateX sežraly. */
 export function Toast({ notice, expanded, closing, onClose, onToggleDetail }: Props) {

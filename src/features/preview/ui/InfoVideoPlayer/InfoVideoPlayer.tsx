@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { fileUrls } from "../../../../shared/application/ports";
 import {
   Maximize,
@@ -16,6 +16,7 @@ import {
 
 import { useT } from "../../../../shared/i18n/index";
 import "./info-video.css";
+import type { Props } from "./InfoVideoPlayer.types";
 
 /*
  * MI-FORK: reproductor del panel de información. Controles propios en lugar
@@ -57,19 +58,6 @@ function clock(seconds: number): string {
   const secs = String(total % 60).padStart(2, "0");
   return hours > 0 ? `${hours}:${String(minutes).padStart(2, "0")}:${secs}` : `${minutes}:${secs}`;
 }
-
-type Props = {
-  path: string;
-  /** Proporción del video ("1920 / 1080"): la caja la tiene desde el primer
-   *  fotograma, sin esperar a los metadatos (si no, <video> mide 150 px de alto
-   *  y la caja crece un momento). */
-  ratio: string;
-  /** Miniatura encima hasta que hay imagen — sin destello negro. */
-  cover: ReactNode;
-  /** Audio: la carátula se queda arriba y los controles fijos debajo
-   *  (sin pantalla completa ni imagen en imagen). */
-  audio?: boolean;
-};
 
 export function InfoVideoPlayer({ path, ratio, cover, audio = false }: Props) {
   const t = useT();

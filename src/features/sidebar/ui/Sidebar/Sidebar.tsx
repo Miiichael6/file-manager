@@ -1,13 +1,12 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, Folder, Trash2 } from "lucide-react";
 
-
 import { ContextMenu, type MenuItem } from "../../../../shared/ui/ContextMenu";
 import { fileVisual, sidebarIcon, sidebarIconColor, sidebarLabel } from "../../../../shared/ui/icons";
 import { openDevice, openInExplorer, openTerminal, openWith, parentPath } from "../../../../shared/application/fileops";
 import { formatRelative } from "../../../../shared/domain/format";
-import { failure, useT, type MessageKey } from "../../../../shared/i18n/index";
-import type { ConfirmRequest } from "../../../dialogs/ui/ConfirmDialog";
+import { failure, useT } from "../../../../shared/i18n/index";
+import type { MessageKey } from "../../../../shared/i18n/index.types";
 import { isTypingTarget } from "../../../../shared/lib/dom";
 import {
   canDropInto,
@@ -19,30 +18,21 @@ import {
   startDrag,
   useDrag,
 } from "../../../file-list/application/dnd";
-import type { DropInto } from "../../../file-list/application/rowDnd";
 import * as storage from "../../../../shared/infrastructure/storage";
 import { TAG_COLORS, TAG_HEX, tagLabel } from "../../../tags/application/tags";
 import { useStorage } from "../../../../shared/lib/useStorage";
-import type {
-  CustomFavorite,
-  FavoriteEntry,
-  FavoriteSection,
-  RecentEntry,
-  RecentKind,
-  SectionId,
-  TagColor,
-} from "../../../../shared/domain/types";
+import type { CustomFavorite, FavoriteSection, RecentEntry, RecentKind, SectionId, TagColor } from "../../../../shared/domain/types";
 import { useDisplayNames } from "../../../file-list/application/extensions";
 // MI-FORK: árbol de carpetas y Git en el sidebar.
 import { dirWatcher, textClipboard } from "../../../../shared/application/ports";
 import { FolderTree, TreeToggle, handleTreeKey } from "../FolderTree";
 import { GitBadge } from "../../../git/ui/GitBadge";
 import * as tree from "../../application/folderTree";
-import type { FileEntry } from "../../../../shared/domain/types";
 import "../FolderTree/folder-tree.css";
 import { DriveDonut, driveUsageText, useDriveUsage } from "../../../drives/ui/DriveUsage";
 // MI-FORK: secciones propias en el sidebar.
 import * as sidebarGroups from "../../application/sidebarGroups";
+import type { CustomFavoritesProps, HeadingControl, RecentsProps, SidebarMenu, SidebarProps, TagsSectionProps } from "./Sidebar.types";
 
 /** Nedávných se ukládá 20, ale sidebar by z nich neúměrně narostl. */
 const RECENTS_SHOWN = 10;
@@ -53,36 +43,6 @@ const CUSTOM_ID = "custom";
 const GROUP_PREFIX = "group:";
 const RECENTS_ID = "recents";
 const TAGS_ID = "tags";
-
-type SidebarProps = {
-  sections: FavoriteSection[];
-  currentPath: string | null;
-  windowFocused: boolean;
-  onNavigate: (path: string) => void;
-  /** Otevře složku v nové záložce (prostřední tlačítko myši). */
-  onOpenTab: (path: string) => void;
-  /** Otevře soubor v systému (klik na nedávný soubor). */
-  onOpenFile: (path: string, name: string) => void;
-  /** Naviguje do rodičovské složky a označí v ní tuhle položku. */
-  onReveal: (path: string) => void;
-  activeTag: TagColor | null;
-  onSelectTag: (color: TagColor) => void;
-  /** Koš — poslední řádek sekce Zařízení; ikona podle počtu položek. */
-  trashActive: boolean;
-  trashCount: number;
-  onOpenTrash: () => void;
-  /** MI-FORK: Papelera en una pestaña nueva (botón central). */
-  onOpenTrashTab: () => void;
-  /** Položky (nebo soubory z Průzkumníku) puštěné na složku v sidebaru. */
-  onDropInto: DropInto;
-  /** Chyby (Průzkumník, Terminál, schránka) — do stejné hlášky jako v App. */
-  onError: (message: string) => void;
-  /** Potvrzení nevratné akce — dialog drží App, ať je jediný v aplikaci. */
-  onConfirm: (request: ConfirmRequest) => void;
-  /** MI-FORK: árbol — archivos ocultos y pestaña activa (cada una recuerda sus nodos). */
-  showHidden: boolean;
-  tabId: number;
-};
 
 /* -------------------------- sdílené stavební díly -------------------------- */
 
@@ -121,13 +81,6 @@ function writeCollapsed(ids: Set<string>) {
     // Bez úložiště se sbalení prostě nezapamatuje.
   }
 }
-
-/** Nadpis a pravý klik na něj — sdílí ho všechny sekce. */
-type HeadingControl = {
-  collapsed: boolean;
-  onToggle: () => void;
-  onContextMenu: (x: number, y: number) => void;
-};
 
 function SectionHeading({
   children,
@@ -265,23 +218,6 @@ function LabelInput({
 }
 
 /* --------------------------- MOJE OBLÍBENÉ -------------------------------- */
-
-type CustomFavoritesProps = {
-  items: CustomFavorite[];
-  currentPath: string | null;
-  windowFocused: boolean;
-  onActivate: (item: CustomFavorite) => void;
-  onContextMenu: (item: CustomFavorite, x: number, y: number) => void;
-  renamingPath: string | null;
-  onRenameSubmit: (path: string, label: string) => void;
-  onRenameCancel: () => void;
-  onOpenTab: (path: string) => void;
-  heading: HeadingControl;
-  /** MI-FORK: sección propia (undefined = «Acceso rápido»), título y si se ve vacía. */
-  group: string | undefined;
-  title: React.ReactNode;
-  alwaysVisible?: boolean;
-};
 
 function CustomFavorites({
   items,
@@ -613,17 +549,6 @@ function EntryIcon({
   );
 }
 
-type RecentsProps = {
-  items: RecentEntry[];
-  currentPath: string | null;
-  windowFocused: boolean;
-  onActivate: (entry: RecentEntry) => void;
-  onContextMenu: (entry: RecentEntry, x: number, y: number) => void;
-  onOpenTab: (path: string) => void;
-  heading: HeadingControl;
-  leaving: string | null;
-};
-
 function Recents({
   items,
   leaving,
@@ -698,15 +623,6 @@ function Recents({
 
 /* --------------------------------- TAGY ----------------------------------- */
 
-type TagsSectionProps = {
-  counts: Map<TagColor, number>;
-  activeTag: TagColor | null;
-  windowFocused: boolean;
-  onSelectTag: (color: TagColor) => void;
-  onContextMenu: (color: TagColor, x: number, y: number) => void;
-  heading: HeadingControl;
-};
-
 function TagsSection({
   counts,
   activeTag,
@@ -759,19 +675,6 @@ function TagsSection({
 }
 
 /* -------------------------------- sidebar --------------------------------- */
-
-type SidebarMenu =
-  | { kind: "favorite"; x: number; y: number; item: CustomFavorite }
-  | { kind: "recent"; x: number; y: number; entry: RecentEntry }
-  /** Položka ze sekcí od backendu (Downloads, iCloud, Zařízení …). */
-  | { kind: "section"; x: number; y: number; item: FavoriteEntry }
-  | { kind: "tag"; x: number; y: number; color: TagColor }
-  /** Nadpis sekce — sbalit/rozbalit, u Nedávných i vymazat. */
-  | { kind: "heading"; x: number; y: number; id: string }
-  /** Prázdný stav nebo volná plocha pod poslední sekcí. */
-  | { kind: "background"; x: number; y: number }
-  /** MI-FORK: fila del árbol de carpetas. */
-  | { kind: "tree"; x: number; y: number; entry: FileEntry };
 
 export function Sidebar({
   sections,

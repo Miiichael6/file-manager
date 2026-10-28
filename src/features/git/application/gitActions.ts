@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 
-import type { GitStatus } from "../domain/git";
+import type { GitStatus } from "../domain/git.types";
 import { gitRootFor, repoStatus, setRepoStatus, useGitVersion } from "./gitStore";
 import { gitRepository } from "./ports";
+import type { DiffState } from "./gitActions.types";
 
 /** Načítání stavu repa a akce nad ním (port GitRepository). Stav sám drží gitStore.ts. */
 
@@ -77,8 +78,6 @@ export const gitFetch = (root: string) => run(root, repo().fetch(root));
 export const gitCheckout = (root: string, branch: string) => run(root, repo().checkout(root, branch));
 /** Místní větve, naposledy použité první. */
 export const gitBranches = (root: string) => repo().branches(root);
-
-type DiffState = { text: string | null; truncated: boolean; error: unknown };
 
 /**
  * Diff souboru (git.rs `git_diff`); `text: null` = načítá se. Po změně stavu

@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { drives } from "../../application/ports";
 import type { DriveUsage } from "../../domain/ports";
 import { formatSize } from "../../../../shared/domain/format";
-import type { Translate } from "../../../../shared/i18n/index";
+import type { Translate } from "../../../../shared/i18n/index.types";
 import * as storage from "../../../../shared/infrastructure/storage";
 import "./drive-usage.css";
 

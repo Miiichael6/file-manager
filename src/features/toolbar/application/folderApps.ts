@@ -3,7 +3,7 @@ import { AppWindow } from "lucide-react";
 
 import type { MenuItem } from "../../../shared/ui/ContextMenu";
 import { settingsStore, shellImages } from "../../../shared/application/ports";
-import type { MessageKey } from "../../../shared/i18n/index";
+import type { MessageKey } from "../../../shared/i18n/index.types";
 import type { FolderApp } from "../domain/ports";
 import { folderApps } from "./ports";
 

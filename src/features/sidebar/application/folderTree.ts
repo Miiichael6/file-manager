@@ -5,6 +5,7 @@ import { parentPath } from "../../../shared/application/fileops";
 import { compareNames } from "../../../shared/domain/format";
 import type { FileEntry } from "../../../shared/domain/types";
 import * as storage from "../../../shared/infrastructure/storage";
+import type { Saved, TreeChildren, TreeRow } from "./folderTree.types";
 
 /*
  * MI-FORK: árbol de carpetas del sidebar (components/FolderTree.tsx).
@@ -13,11 +14,6 @@ import * as storage from "../../../shared/infrastructure/storage";
  * ruta. Qué nodos están expandidos va por pestaña y se guarda en settings.json
  * (clave propia `miTree`), igual que folderColor.ts, sin tocar lib/storage.ts.
  */
-
-export type TreeChildren = { status: "loading" } | { status: "ready"; entries: FileEntry[] } | { status: "error" };
-
-/** Fila del árbol aplanado (sin la raíz, que la pinta el sidebar). */
-export type TreeRow = { entry: FileEntry; depth: number };
 
 /** `*` expande como mucho tantas carpetas — node_modules no debe colgar la app. */
 const EXPAND_ALL_LIMIT = 400;
@@ -320,8 +316,6 @@ export function forgetTreeTab(id: number) {
 }
 
 /* ------------------------------ persistencia ------------------------------ */
-
-type Saved = { showFiles: boolean; tabs: string[][] };
 
 /** Orden de las pestañas tal como las guarda App (índice = pestaña restaurada). */
 let tabOrder: number[] = [];

@@ -2,8 +2,9 @@ import { useMemo, useSyncExternalStore } from "react";
 
 import { explorerExtensions } from "./ports";
 import * as storage from "../../../shared/infrastructure/storage";
-import type { ExtensionMode } from "../../../shared/infrastructure/storage";
+import type { ExtensionMode } from "../../../shared/infrastructure/storage.types";
 import type { FileEntry } from "../../../shared/domain/types";
+import type { DisplayNames } from "./extensions.types";
 
 /*
  * Zobrazení přípon jako v Průzkumníku. Rozhoduje pravidlo přípony z registru
@@ -91,15 +92,6 @@ export function displayName(name: string, isDir: boolean, mode: ExtensionMode, r
   }
   return hides(known, mode) ? name.slice(0, name.length - extension.length - 1) : name;
 }
-
-export type DisplayNames = {
-  /** Název položky výpisu. */
-  entry: (entry: FileEntry) => string;
-  /** Holý název (nedávné soubory, Koš, dialogy). */
-  name: (name: string, isDir?: boolean) => string;
-  /** Skrývá se u položky přípona? (přejmenování ji pak doplní zpátky) */
-  hidesExtension: (entry: FileEntry) => boolean;
-};
 
 /** Funkce pro zobrazení názvů; nová identita při změně volby nebo pravidel. */
 export function useDisplayNames(): DisplayNames {

@@ -35,10 +35,12 @@ import {
   useFileThumbnail,
   useVisible,
 } from "../../lib/fileIcons";
-import { fileType, type FileGroup } from "../../domain/filetypes";
+import { fileType } from "../../domain/filetypes";
+import type { FileGroup } from "../../domain/filetypes.types";
 import { namedFolder, specialFolderGlyph } from "../../../features/sidebar/domain/specialFolders";
 import { t, useT } from "../../i18n/index";
 import type { FavoriteEntry, FileEntry, SectionId } from "../../domain/types";
+import type { FileVisual } from "./icons.types";
 
 /**
  * Jantarová složka (blízko složky Windows 11): tmavší zadní deska se
@@ -74,8 +76,6 @@ export function FolderIcon({ size = 64, glyph }: { size?: number; glyph?: string
 }
 
 /* ----------------------------- ikony souborů ------------------------------ */
-
-type FileVisual = { Icon: LucideIcon; tint: string };
 
 /** Obecná ikona podle skupiny z lib/filetypes.ts — ukazuje se, dokud nedorazí
  *  ikona ze shellu, a zůstane, když ji shell nedá. Barvy jsou tokeny. */

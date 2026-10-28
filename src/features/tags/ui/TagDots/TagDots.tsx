@@ -1,15 +1,8 @@
 import { useLocale } from "../../../../shared/i18n/index";
 import { TAG_HEX, tagLabel } from "../../application/tags";
-import type { TagColor } from "../../../../shared/domain/types";
-
+import type { TagDotsProps } from "./TagDots.types";
 /** Víc než tři puntíky se do řádku nevejdou, zbytek shrne tečkami. */
 const MAX_DOTS = 3;
-
-type TagDotsProps = {
-  colors: TagColor[];
-  /** Průměr puntíku v px — 8 v icon a list view, 6 v column view. */
-  size?: number;
-};
 
 export function TagDots({ colors, size = 8 }: TagDotsProps) {
   // Řádky výpisu jsou memo — názvy barev v tooltipu se přeloží i bez nich.

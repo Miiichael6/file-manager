@@ -2,6 +2,7 @@ import { useMemo } from "react";
 
 import { errorText, useT } from "../../../../shared/i18n/index";
 import { useGitDiff } from "../../application/gitActions";
+import type { GitDiffViewProps } from "./GitDiffView.types";
 
 /** Nad tolik řádků se diff nevykresluje celý — DOM by zbytečně rostl. */
 const MAX_LINES = 5000;
@@ -17,15 +18,6 @@ function lineStyle(line: string): React.CSSProperties | undefined {
   }
   return undefined;
 }
-
-type GitDiffViewProps = {
-  root: string;
-  /** Absolutní cesta souboru. */
-  path: string;
-  untracked: boolean;
-  /** Jen změny v indexu (co půjde do commitu); jinak vše proti HEAD. */
-  staged?: boolean;
-};
 
 /**
  * Unified diff jednoho souboru: přidané řádky zeleně, odebrané červeně.

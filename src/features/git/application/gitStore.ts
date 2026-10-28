@@ -1,6 +1,8 @@
 import { useSyncExternalStore } from "react";
 
-import { PRIORITY, absolutePath, keyOf, stateOf, type GitFile, type GitState, type GitStatus } from "../domain/git";
+import { PRIORITY, absolutePath, keyOf, stateOf } from "../domain/git";
+import type { GitFile, GitState, GitStatus } from "../domain/git.types";
+import type { RepoIndex } from "./gitStore.types";
 
 /**
  * Sdílený stav git podle kořene repa — oba panely i všechny řádky se ptají na
@@ -12,15 +14,6 @@ function stronger(a: GitState | undefined, b: GitState): GitState {
   if (a === undefined) return b;
   return PRIORITY.indexOf(a) <= PRIORITY.indexOf(b) ? a : b;
 }
-
-type RepoIndex = {
-  status: GitStatus;
-  rootKey: string;
-  /** Stav přímo podle cesty (i nesledované/ignorované složky jako celek). */
-  byPath: Map<string, GitState>;
-  /** Shrnutí pro nadřazené složky změněných souborů (bez ignorovaných). */
-  dirs: Map<string, GitState>;
-};
 
 function buildIndex(status: GitStatus): RepoIndex {
   const rootKey = keyOf(status.root);

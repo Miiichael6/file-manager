@@ -5,31 +5,19 @@ import { EmptyState } from "../../../../shared/ui/EmptyState";
 import { sidebarIcon, sidebarLabel } from "../../../../shared/ui/icons";
 import { formatSize } from "../../../../shared/domain/format";
 import { useT } from "../../../../shared/i18n/index";
-import type { FavoriteSection } from "../../../../shared/domain/types";
 import { useDriveUsage } from "../DriveUsage";
 import "./computer-view.css";
+import type { ComputerViewProps, Level } from "./ComputerView.types";
 
 /** Hasta el 80 % de uso la barra es azul, hasta el 92 % ámbar y a partir de ahí roja. */
 const WARN_RATIO = 0.8;
 const FULL_RATIO = 0.92;
-
-type Level = "ok" | "warn" | "full";
 
 function levelFor(ratio: number): Level {
   if (ratio >= FULL_RATIO) return "full";
   if (ratio >= WARN_RATIO) return "warn";
   return "ok";
 }
-
-type ComputerViewProps = {
-  sections: FavoriteSection[];
-  /** Ahora mismo no cambia el aspecto; se deja por coherencia con las otras vistas. */
-  windowFocused: boolean;
-  onOpen: (path: string) => void;
-  onOpenTab: (path: string) => void;
-  /** Para que la barra de estado cuente unidades y no la carpeta de debajo. */
-  onCountChange: (count: number) => void;
-};
 
 export function ComputerView({ sections, windowFocused, onOpen, onOpenTab, onCountChange }: ComputerViewProps) {
   const t = useT();

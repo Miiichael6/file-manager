@@ -2,56 +2,20 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { CornerDownLeft, FileSearch, Search, Zap } from "lucide-react";
 
 import { FolderIcon, folderDisplayName } from "../../../../shared/ui/icons";
-import type { Command } from "../../domain/commands";
+import type { Command } from "../../domain/commands.types";
 import { breadcrumbs } from "../../../../shared/domain/format";
 import { useT } from "../../../../shared/i18n/index";
 import { TAG_COLORS, TAG_HEX, tagLabel } from "../../../tags/application/tags";
 import type { TagColor } from "../../../../shared/domain/types";
-import { gitCommandIcon } from "../../../git/ui/gitIcons"; // MI-FORK: ikony příkazů gitu.
+import { gitCommandIcon } from "../../../git/ui/gitIcons";
+import type { Category, CommandPaletteProps, PaletteFolder, Result } from "./CommandPalette.types"; // MI-FORK: ikony příkazů gitu.
 
 /**
  * Paleta příkazů (Ctrl+K), jako Spotlight / Raycast: složky, akce a štítky
  * v jednom seznamu. Hledání je vlastní fuzzy shoda — žádná knihovna.
  */
 
-/** Složka nabízená paletou a odkud se vzala. */
-export type PaletteFolder = { path: string; source: "favorite" | "recent" | "tab" | "subfolder" };
-
-type Category = "all" | "folders" | "actions" | "tags";
 const CATEGORIES: Category[] = ["all", "folders", "actions", "tags"];
-
-type Result = {
-  key: string;
-  category: Exclude<Category, "all"> | "files";
-  title: string;
-  detail?: string;
-  shortcut?: string;
-  icon: React.ReactNode;
-  score: number;
-  run: () => void;
-};
-
-/** Akce mimo registr příkazů, které vznikají za běhu (typy z menu Nový). */
-export type PaletteAction = { key: string; title: string; icon: React.ReactNode; run: () => void };
-
-type CommandPaletteProps = {
-  commands: Command[];
-  /** Hledají se jen podle zadaného textu, do prázdného pole se nenabízejí. */
-  extraActions?: PaletteAction[];
-  folders: PaletteFolder[];
-  /** Nedávné složky pro prázdné pole (nejnovější první). */
-  recentFolders: string[];
-  /** Kolikrát se který příkaz spustil (settings.json). */
-  usage: Record<string, number>;
-  onClose: () => void;
-  onOpenFolder: (path: string) => void;
-  /** Text, který vypadá jako cesta (C:\…, \\server, ~) — přímý skok. */
-  onGoToPath: (text: string) => void;
-  onSelectTag: (color: TagColor) => void;
-  /** Enter bez výsledku: rekurzivní hledání souborů v aktuální složce. */
-  onSearchFiles: (query: string) => void;
-  onRunCommand: (command: Command) => void;
-};
 
 /* ----------------------------- fuzzy scorer ------------------------------ */
 

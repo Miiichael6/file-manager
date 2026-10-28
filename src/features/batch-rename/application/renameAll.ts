@@ -1,6 +1,6 @@
 import { renamePath } from "../../../shared/application/fileops";
 import * as storage from "../../../shared/infrastructure/storage";
-import type { Renamed } from "../domain/batchRename";
+import type { Renamed } from "../domain/batchRename.types";
 
 /* MI-FORK: ejecución del renombrado por lotes (el cálculo está en domain/batchRename.ts). */
 

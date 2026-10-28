@@ -4,33 +4,9 @@ import { createPortal } from "react-dom";
 import { Check, ChevronsUpDown, Minus, Plus, Search } from "lucide-react";
 
 import { useT } from "../../../../shared/i18n/index";
-import {
-  DATE_OPS,
-  DATE_UNITS,
-  FIELDS,
-  KINDS,
-  NAME_OPS,
-  SIZE_OPS,
-  SIZE_UNITS,
-  kindFormats,
-  newRow,
-  type CriterionField,
-  type CriterionRow,
-  type KindId,
-} from "../../domain/searchCriteria";
-
-/** Místo, kde se dá hledat — složka, odkud hledání začalo, domov, disky. */
-export type SearchLocation = { path: string; label: string };
-
-type SearchCriteriaBarProps = {
-  root: string;
-  /** Text z toolbaru — bez kritérií z něj vznikne řádek „Název obsahuje". */
-  query: string;
-  criteria: CriterionRow[];
-  locations: SearchLocation[];
-  /** Tlačítko Hledat (nebo Enter v poli) — kritéria a místo platí až teď. */
-  onApply: (root: string, criteria: CriterionRow[]) => void;
-};
+import { DATE_OPS, DATE_UNITS, FIELDS, KINDS, NAME_OPS, SIZE_OPS, SIZE_UNITS, kindFormats, newRow } from "../../domain/searchCriteria";
+import type { CriterionField, CriterionRow, KindId } from "../../domain/searchCriteria.types";
+import type { SearchCriteriaBarProps } from "./SearchCriteriaBar.types";
 
 /**
  * Lišta rozšířeného hledání nad výsledky: řádky „pole – podmínka – hodnota",

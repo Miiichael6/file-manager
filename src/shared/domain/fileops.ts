@@ -1,4 +1,4 @@
-import type { BackendError } from "./backendError";
+import type { BackendError } from "./backendError.types";
 import type { OpResult } from "./types";
 
 /** Typy výsledků souborových operací (Rust main.rs, fileop.rs, recycle.rs). */

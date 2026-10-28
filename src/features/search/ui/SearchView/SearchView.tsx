@@ -5,33 +5,15 @@ import { SearchX } from "lucide-react";
 import { ResultsView } from "../ResultsView";
 import { cancelSearch, searchRecursive } from "../../../../shared/application/fileops";
 import { failure, useT } from "../../../../shared/i18n/index";
-import { compileCriteria, type CriterionRow } from "../../domain/searchCriteria";
+import { compileCriteria } from "../../domain/searchCriteria";
 import type { FileEntry } from "../../../../shared/domain/types";
+import type { SearchViewProps } from "./SearchView.types";
 
 /** Identita hledání pro backend — napříč všemi SearchView, proto modulová. */
 let nextSearchId = 1;
 
 /** Strop pro jedno hledání. Víc řádků stejně nikdo neprojde a průchod by rostl. */
 export const MAX_RESULTS = 500;
-
-type SearchViewProps = {
-  /** Složka, od které se prohledává dolů. */
-  root: string;
-  query: string;
-  /** Kritéria rozšířeného hledání; bez nich se hledá jen podle `query`. */
-  criteria?: CriterionRow[];
-  windowFocused: boolean;
-  selectedPath: string | null;
-  onSelectionChange: (entry: FileEntry | null) => void;
-  onOpen: (entry: FileEntry) => void;
-  /** Pravý klik — stejné menu jako u běžné položky. */
-  onContextMenu: (entry: FileEntry, x: number, y: number) => void;
-  /** Roste po každé souborové operaci; výsledky se pak načtou znovu. */
-  refreshToken: number;
-  showHidden: boolean;
-  /** Ať status bar hlásí počet výsledků, ne obsah podkladové složky. */
-  onCountChange: (count: number) => void;
-};
 
 /** Rekurzivní hledání od `root`. Vykresluje ResultsView. */
 export function SearchView({

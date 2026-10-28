@@ -1,8 +1,6 @@
 import type { Theme } from "../../../shared/domain/types";
 import { windowChrome } from "./ports";
-
-/** Vzhled z menu Více: světlý, tmavý, nebo podle Windows (prefers-color-scheme). */
-export type ThemePreference = "light" | "dark" | "system";
+import type { ThemePreference } from "./theme.types";
 
 /**
  * Zrcadlo volby v localStorage — jen kvůli prvnímu vykreslení (main.tsx),

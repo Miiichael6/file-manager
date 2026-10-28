@@ -2,9 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { shellImages } from "../application/ports";
 
 import type { FileEntry } from "../domain/types";
-
-/** Velikosti, které umí backend (get_file_icon). */
-export type IconSize = 32 | 64 | 128;
+import type { Cached, IconSize, Pending, ThumbnailSize } from "./fileIcons.types";
 
 /** Přípony s vlastní ikonou v souboru — klíčují se cestou, ne příponou.
  *  Stejná sada jako OWN_ICON_EXTENSIONS v main.rs. */
@@ -19,9 +17,6 @@ const CACHE_BYTES = 16 * 1024 * 1024;
 /** Kolik požadavků na shell běží naráz — ať složka s tisíci .exe nezahltí backend. */
 const MAX_IN_FLIGHT = 6;
 
-/** "none" = shell ikonu nedal (timeout, chyba) — zůstává obecná ikona. */
-type Cached = string | "none";
-
 /** LRU přes pořadí vložení v Map: přístup položku přesune na konec. */
 const cache = new Map<string, Cached>();
 /** Součet délek řetězců v cache (data URL je base64, délka ≈ bajty). */
@@ -29,14 +24,6 @@ let cacheBytes = 0;
 const queue: (() => void)[] = [];
 let inFlight = 0;
 
-/** Rozjetý požadavek na jednu ikonu. Sdílí ho všechny řádky se stejným klíčem;
- *  když všichni odejdou dřív, než se dostal na řadu, z fronty se vyřadí. */
-type Pending = {
-  promise: Promise<Cached | null>;
-  subscribers: number;
-  /** Vyřadí požadavek z fronty; false = už běží (dojede a uloží se). */
-  cancel: () => boolean;
-};
 const pending = new Map<string, Pending>();
 
 function cacheKey(entry: FileEntry, size: IconSize): string {
@@ -236,9 +223,6 @@ export function iconRequestSize(css: number): IconSize {
 }
 
 /* ------------------------------ náhledy obsahu ------------------------------ */
-
-/** Velikosti náhledů, které umí backend (get_file_thumbnail). */
-export type ThumbnailSize = 64 | 128 | 256;
 
 /** Videa a PDF — náhled od Windows thumbnail handleru (snímek, první strana). */
 const VIDEO_EXTENSIONS = new Set(["mp4", "mov", "mkv", "webm", "avi", "m4v", "wmv"]);

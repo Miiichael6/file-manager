@@ -1,34 +1,11 @@
-import { useCallback, useEffect, type Dispatch, type SetStateAction } from "react";
-import type { Panel } from "../../navigation/application/panel";
-import type { PanelSearch } from "../../search/domain/searchCriteria";
+import { useCallback, useEffect } from "react";
 import * as storage from "../../../shared/infrastructure/storage";
-import { type MessageKey, failure } from "../../../shared/i18n/index";
+import { failure } from "../../../shared/i18n/index";
+import type { MessageKey } from "../../../shared/i18n/index.types";
 import { textClipboard } from "../../../shared/application/ports";
 import { errorDetail, clipboardWriteFiles, clipboardHasFiles, clipboardReadFiles, parentPath, statPaths, type OnConflict, copyPath, movePath, needsAdmin, transferElevated, type ItemFailure, clipboardClear } from "../../../shared/application/fileops";
-import { type FileEntry, type StatResult, type OpResult, type Clipboard, type TagColor } from "../../../shared/domain/types";
-import { type ConflictRequest, type ConflictAnswer } from "../../dialogs/ui/ConflictDialog";
-import { type UndoOp } from "../../history/application/undo";
-
-type UseClipboardTransferOptions = {
-  setNotice: (text: string | null, detail?: string) => void;
-  setClipboard: Dispatch<SetStateAction<Clipboard | null>>;
-  targetEntries: FileEntry[];
-  setClipboardHasItems: Dispatch<SetStateAction<boolean>>;
-  askConflict: (request: ConflictRequest) => Promise<ConflictAnswer | null>;
-  runBatch: <T>(label: MessageKey, items: T[], action: (item: T) => Promise<unknown>) => Promise<{ ok: number; failed: number; }>;
-  record: (op: UndoOp) => void;
-  noteSkippedLinks: (count: number) => void;
-  askAdmin: (paths: string[], retry: () => void) => void;
-  runOperation: (label: MessageKey, action: () => Promise<unknown>) => Promise<void>;
-  reportFailures: (label: MessageKey, failed: ItemFailure[], count: number) => void;
-  currentDir: string | null;
-  clipboard: Clipboard | null;
-  otherPanel: Panel | null;
-  search: PanelSearch | null;
-  tagFilter: TagColor | null;
-  trashView: boolean;
-};
-
+import { type FileEntry, type StatResult, type OpResult } from "../../../shared/domain/types";
+import type { UseClipboardTransferOptions } from "./useClipboardTransfer.types";
 export function useClipboardTransfer({
   setNotice,
   setClipboard,

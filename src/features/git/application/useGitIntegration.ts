@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 
-import type { CommandHandler } from "../../command-palette/domain/commands";
+import type { CommandHandler } from "../../command-palette/domain/commands.types";
 import type { MenuItem } from "../../../shared/ui/ContextMenu";
 import { errorDetail } from "../../../shared/application/fileops";
 import { errorText, useT } from "../../../shared/i18n/index";
@@ -9,19 +9,7 @@ import { isStaged, isUnstaged } from "../domain/git";
 import { gitPull, gitPush, gitStage, gitUnstage, useGitRepo } from "./gitActions";
 import { gitFileFor } from "./gitStore";
 import { gitMenuIcon } from "../ui/gitIcons";
-
-export type GitCommandId = "gitPanel" | "gitStage" | "gitUnstage" | "gitPull" | "gitPush";
-
-type Options = {
-  /** Složka aktivního panelu. */
-  dir: string | null;
-  /** Mění se s obsahem výpisu — změna na disku obnoví i stav gitu. */
-  token: unknown;
-  /** Vybrané položky (cíle příkazů Stage / Unstage). */
-  targets: FileEntry[];
-  setNotice: (text: string | null, detail?: string) => void;
-  showInfo: (text: string) => void;
-};
+import type { GitCommandId, Options } from "./useGitIntegration.types";
 
 /** Které z položek jde přidat do indexu / z něj vyndat. Složky bere git celé. */
 function split(entries: FileEntry[]) {

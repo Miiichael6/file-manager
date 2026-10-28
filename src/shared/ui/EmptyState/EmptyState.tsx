@@ -1,10 +1,4 @@
-import type { LucideIcon } from "lucide-react";
-
-type EmptyStateProps = {
-  Icon: LucideIcon;
-  title: string;
-  hint?: string;
-};
+import type { EmptyStateProps } from "./EmptyState.types";
 
 /**
  * Prázdná plocha s vysvětlením — prázdná složka, hledání bez výsledků, štítek

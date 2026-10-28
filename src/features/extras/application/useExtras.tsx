@@ -1,17 +1,20 @@
 import { useCallback, useState } from "react";
 
-import type { CommandHandler } from "../../command-palette/domain/commands";
+import type { CommandHandler } from "../../command-palette/domain/commands.types";
 import type { MenuItem } from "../../../shared/ui/ContextMenu";
 import { parentPath } from "../../../shared/application/fileops";
 import { archives } from "./ports";
-import { useT, type MessageKey } from "../../../shared/i18n/index";
+import { useT } from "../../../shared/i18n/index";
+import type { MessageKey } from "../../../shared/i18n/index.types";
 import type { FileEntry } from "../../../shared/domain/types";
-import type { UndoOp } from "../../history/application/undo";
 import { BatchRenameDialog } from "../../batch-rename/ui/BatchRenameDialog";
-import { targetOf, type Preview, type Renamed } from "../../batch-rename/domain/batchRename";
+import { targetOf } from "../../batch-rename/domain/batchRename";
+import type { Preview, Renamed } from "../../batch-rename/domain/batchRename.types";
 import { renameAll } from "../../batch-rename/application/renameAll";
 import { CompareDialog } from "../../compare/ui/CompareDialog";
-import { GROUP_BY, setExtrasSetting, useExtrasSettings, type GroupBy } from "./extrasSettings";
+import { GROUP_BY, setExtrasSetting, useExtrasSettings } from "./extrasSettings";
+import type { GroupBy } from "./extrasSettings.types";
+import type { ActionItem, ExtrasCommandId, NestedSubmenu, Options } from "./useExtras.types";
 
 /*
  * MI-FORK: extras de PENDIENTES §8 para App — ZIP, renombrar varios, comparar
@@ -19,30 +22,12 @@ import { GROUP_BY, setExtrasSetting, useExtrasSettings, type GroupBy } from "./e
  * Git: App solo engancha los comandos, las entradas de menú y `dialogs`.
  */
 
-export type ExtrasCommandId = "batchRename" | "compareFiles" | "compressZip" | "extractZip";
-
-type Options = {
-  /** Selección (o la entrada bajo el ratón) del panel activo. */
-  targets: FileEntry[];
-  /** Todo lo que hay en la carpeta actual (choques al renombrar). */
-  siblings: FileEntry[];
-  runOperation: (label: MessageKey, action: () => Promise<unknown>) => Promise<void>;
-  record: (op: UndoOp) => void;
-  requestSelect: (dir: string, path: string) => void;
-  showInfo: (text: string) => void;
-};
-
 const GROUP_LABEL: Record<GroupBy, MessageKey> = {
   none: "extras.groupBy.none",
   kind: "extras.groupBy.kind",
   date: "extras.groupBy.date",
   size: "extras.groupBy.size",
 };
-
-type SubmenuItem = Extract<MenuItem, { type: "submenu" }>;
-/** Vale tanto en un menú como dentro de un submenú. */
-type NestedSubmenu = { type: "submenu"; label: string; items: SubmenuItem["items"] };
-type ActionItem = Extract<MenuItem, { type: "item" }>;
 
 const isZip = (entry: FileEntry) => !entry.is_dir && entry.name.toLowerCase().endsWith(".zip");
 
