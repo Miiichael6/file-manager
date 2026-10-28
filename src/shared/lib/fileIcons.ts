@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { invoke as tauriInvoke } from "@tauri-apps/api/core";
-import { invoke } from "../infrastructure/fileops";
+import { shellImages } from "../application/ports";
 
 import type { FileEntry } from "../domain/types";
 
@@ -101,7 +100,7 @@ function runQueued<T>(task: () => Promise<T>): { promise: Promise<T | null>; can
 
 /** Ikona pro řádek. `release` řekne, že ji řádek už nechce (odjel z obrazovky). */
 function loadIcon(entry: FileEntry, size: IconSize): { promise: Promise<Cached | null>; release: () => void } {
-  return loadShellImage(cacheKey(entry, size), () => invoke<string>("get_file_icon", { path: entry.path, size }));
+  return loadShellImage(cacheKey(entry, size), () => shellImages.get().fileIcon(entry.path, size));
 }
 
 /**
@@ -281,10 +280,7 @@ export function useFileThumbnail(entry: FileEntry, size: ThumbnailSize, enabled 
       return;
     }
     let active = true;
-    // Surový invoke: chyba musí dorazit s klíčem (timeout se nepamatuje).
-    const request = loadShellImage(key, () =>
-      tauriInvoke<string>("get_file_thumbnail", { path: entry.path, size }),
-    );
+    const request = loadShellImage(key, () => shellImages.get().thumbnail(entry.path, size));
     void request.promise.then((result) => {
       if (active && result !== null) setLoaded({ key, value: result });
     });

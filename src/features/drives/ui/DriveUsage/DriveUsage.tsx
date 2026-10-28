@@ -1,12 +1,13 @@
 // MI-FORK: dona de ocupación junto a cada unidad del sidebar («Disco local (C:)»).
 import { useEffect, useState } from "react";
-import { invoke } from "../../../../shared/infrastructure/fileops";
+import { drives } from "../../application/ports";
+import type { DriveUsage } from "../../domain/ports";
 import { formatSize } from "../../../../shared/domain/format";
 import type { Translate } from "../../../../shared/i18n/index";
 import * as storage from "../../../../shared/infrastructure/storage";
 import "./drive-usage.css";
 
-export type DriveUsage = { path: string; total: number; free: number };
+export type { DriveUsage };
 
 /** Al 90 % la dona pasa a rojo, como la barra de Este equipo en el Explorador. */
 const FULL_RATIO = 0.9;
@@ -27,7 +28,9 @@ export function useDriveUsage(paths: string[]): (path: string) => DriveUsage | u
     }
     let alive = true;
     const load = () =>
-      void invoke<DriveUsage[]>("drive_usage", { paths })
+      void drives
+        .get()
+        .usage(paths)
         .then((result) => alive && setUsage(result))
         .catch(() => undefined);
     load();

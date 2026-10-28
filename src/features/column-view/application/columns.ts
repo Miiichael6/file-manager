@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { invoke } from "../../../shared/infrastructure/fileops";
+import { fileSystem } from "../../../shared/application/ports";
 import { sortEntries, type SortDirection, type SortKey } from "../../../shared/domain/format";
 import { errorText, failure } from "../../../shared/i18n/index";
 import { samePath } from "../../../shared/infrastructure/storage";
@@ -210,10 +210,7 @@ export function useColumns(
         });
 
       try {
-        const entries = await invoke<FileEntry[]>("list_dir", {
-          path,
-          showHidden: showHiddenRef.current,
-        });
+        const entries = await fileSystem.get().listDir(path, showHiddenRef.current);
         apply((column) => {
           const first = selectFirst ? (shown(entries, index)[0]?.path ?? null) : null;
           return {
@@ -276,7 +273,9 @@ export function useColumns(
       ]);
     };
 
-    invoke<FileEntry[]>("list_dir", { path: rootPath, showHidden: showHiddenRef.current })
+    fileSystem
+      .get()
+      .listDir(rootPath, showHiddenRef.current)
       .then((entries) => finish(entries, null))
       .catch((err: unknown) => finish([], errorText(err)));
   }, [enabled, rootPath]);
@@ -290,7 +289,7 @@ export function useColumns(
 
     void Promise.all(
       chain.map((column) =>
-        invoke<FileEntry[]>("list_dir", { path: column.path, showHidden: showHiddenRef.current }).then(
+        fileSystem.get().listDir(column.path, showHiddenRef.current).then(
           (entries) => ({ entries, error: null as string | null }),
           (err: unknown) => ({ entries: [] as FileEntry[], error: errorText(err) as string | null }),
         ),
@@ -455,10 +454,9 @@ export function useColumns(
 
     void Promise.all(
       snapshot.map((column) =>
-        invoke<FileEntry[]>("list_dir", {
-          path: column.path,
-          showHidden: showHiddenRef.current,
-        })
+        fileSystem
+          .get()
+          .listDir(column.path, showHiddenRef.current)
           .then((entries) => ({ entries, error: null }))
           .catch((err: unknown) => ({ entries: null, error: errorText(err) })),
       ),

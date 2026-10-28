@@ -2,7 +2,8 @@ import { useCallback, useState } from "react";
 
 import type { CommandHandler } from "../../command-palette/domain/commands";
 import type { MenuItem } from "../../../shared/ui/ContextMenu";
-import { invoke, parentPath } from "../../../shared/infrastructure/fileops";
+import { parentPath } from "../../../shared/infrastructure/fileops";
+import { archives } from "./ports";
 import { useT, type MessageKey } from "../../../shared/i18n/index";
 import type { FileEntry } from "../../../shared/domain/types";
 import type { UndoOp } from "../../history/application/undo";
@@ -69,7 +70,11 @@ export function useExtras({ targets, siblings, runOperation, record, requestSele
       if (dir === null) return;
       void runOperation("extras.op.zip", async () => {
         showInfo(t("extras.zip.compressing"));
-        const path = await invoke<string>("zip_create", { paths: entries.map((e) => e.path), dir, name: zipName(entries) });
+        const path = await archives.get().create(
+          entries.map((e) => e.path),
+          dir,
+          zipName(entries),
+        );
         requestSelect(dir, path);
         showInfo(t("extras.zip.done"));
       });
@@ -83,7 +88,7 @@ export function useExtras({ targets, siblings, runOperation, record, requestSele
       if (dir === null) return;
       void runOperation("extras.op.unzip", async () => {
         showInfo(t("extras.zip.extracting"));
-        const path = await invoke<string>("zip_extract", { path: entry.path });
+        const path = await archives.get().extract(entry.path);
         requestSelect(dir, path);
         showInfo(t("extras.zip.extracted"));
       });

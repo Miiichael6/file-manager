@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { convertFileSrc } from "@tauri-apps/api/core";
 import DOMPurify from "dompurify";
 import { marked } from "marked";
 import { Music, X } from "lucide-react";
 
 import { SmallEntryIcon, fileVisual } from "../../../../shared/ui/icons";
-import { invoke } from "../../../../shared/infrastructure/fileops";
+import { fileSystem, fileUrls, shellLauncher } from "../../../../shared/application/ports";
 import { formatSize, kindLabel, previewKind, type PreviewKind } from "../../../../shared/domain/format";
 import { errorText, useT } from "../../../../shared/i18n/index";
 import { motionMs } from "../../../../shared/lib/motion";
@@ -76,10 +75,9 @@ function useTextContent(entry: FileEntry, kind: PreviewKind): TextState {
     let cancelled = false;
     setState({ ...NO_TEXT, loading: true });
 
-    invoke<{ text: string; truncated: boolean }>("read_text_file", {
-      path: entry.path,
-      maxBytes: MAX_PREVIEW_BYTES,
-    })
+    fileSystem
+      .get()
+      .readText(entry.path, MAX_PREVIEW_BYTES)
       .then(({ text, truncated }) => {
         if (!cancelled) setState({ loading: false, content: text, truncated, error: null });
       })
@@ -182,7 +180,7 @@ function MarkdownPreview({ entry, state }: { entry: FileEntry; state: TextState 
       return;
     }
     if (/^(https?:|mailto:)/i.test(href)) {
-      invoke("open_file", { path: href }).catch(() => undefined);
+      shellLauncher.get().open(href).catch(() => undefined);
     }
   }
 
@@ -206,7 +204,7 @@ function PreviewBody({ entry, state }: { entry: FileEntry; state: TextState }) {
   const names = useDisplayNames();
   const t = useT();
   const kind = previewKind(entry);
-  const source = convertFileSrc(entry.path);
+  const source = fileUrls.get().assetUrl(entry.path);
 
   switch (kind) {
     case "image":

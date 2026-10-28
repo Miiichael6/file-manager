@@ -1,10 +1,20 @@
-import { convertFileSrc } from "@tauri-apps/api/core";
+import { convertFileSrc, invoke as tauriInvoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { homeDir } from "@tauri-apps/api/path";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { getStore } from "@tauri-apps/plugin-store";
 
-import type { FileSystem, FileUrls, SettingsStore, ShellImages, TextClipboard } from "../domain/ports";
-import type { FileEntry } from "../domain/types";
+import type {
+  DirWatcher,
+  FileSystem,
+  FileUrls,
+  SettingsStore,
+  ShellImages,
+  ShellLauncher,
+  SystemPlaces,
+  TextClipboard,
+} from "../domain/ports";
+import type { FavoriteSection, FileEntry } from "../domain/types";
 import { invoke } from "./fileops";
 import * as storage from "./storage";
 
@@ -40,6 +50,8 @@ export const tauriFileSystem: FileSystem = {
 
 export const tauriShellImages: ShellImages = {
   fileIcon: (path, size) => invoke<string>("get_file_icon", { path, size }),
+  // Surový invoke: chyba musí dorazit s klíčem (timeout se nepamatuje).
+  thumbnail: (path, size) => tauriInvoke<string>("get_file_thumbnail", { path, size }),
 };
 
 const STORE_FILE = "settings.json";
@@ -63,3 +75,20 @@ export const tauriSettingsStore: SettingsStore = {
 export const tauriTextClipboard: TextClipboard = { writeText };
 
 export const tauriFileUrls: FileUrls = { assetUrl: (path) => convertFileSrc(path) };
+
+export const tauriShellLauncher: ShellLauncher = {
+  open: (path) => invoke("open_file", { path }),
+  openReleasePage: (url) => invoke("open_release_page", { url }),
+};
+
+export const tauriSystemPlaces: SystemPlaces = {
+  favorites: () => invoke<FavoriteSection[]>("get_favorites"),
+  onDrivesChanged: (handler) => listen("drives-changed", () => handler()),
+  homeDir,
+  explorerShowsHidden: () => invoke<boolean>("explorer_shows_hidden"),
+};
+
+export const tauriDirWatcher: DirWatcher = {
+  watch: (paths, generation) => invoke("watch_dirs", { paths, generation }),
+  onChange: (handler) => listen("dir-changed", () => handler()),
+};

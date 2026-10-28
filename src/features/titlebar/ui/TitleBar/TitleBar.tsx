@@ -1,17 +1,15 @@
-import { listen } from "@tauri-apps/api/event";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useEffect, useState } from "react";
 
 import appIcon from "../../../../assets/icon.png";
 import { useT } from "../../../../shared/i18n/index";
+import { windowControls } from "../../application/ports";
+import type { SnapButtonState } from "../../domain/ports";
 
 /** Glyfy Segoe Fluent Icons (Windows 11); Segoe MDL2 Assets (Windows 10) má stejné kódy. */
 const GLYPH_MINIMIZE = "\uE921";
 const GLYPH_MAXIMIZE = "\uE922";
 const GLYPH_RESTORE = "\uE923";
 const GLYPH_CLOSE = "\uE8BB";
-
-const appWindow = getCurrentWindow();
 
 type CaptionButtonProps = {
   glyph: string;
@@ -48,9 +46,10 @@ function CaptionButton({ glyph, label, onClick, className = "", tooltip = true }
 export function TitleBar({ windowFocused }: { windowFocused: boolean }) {
   const t = useT();
   const [maximized, setMaximized] = useState(false);
-  const [snapState, setSnapState] = useState<"none" | "hover" | "pressed">("none");
+  const [snapState, setSnapState] = useState<SnapButtonState>("none");
 
   useEffect(() => {
+    const appWindow = windowControls.get();
     let alive = true;
     const sync = () =>
       void appWindow.isMaximized().then((value) => {
@@ -59,7 +58,7 @@ export function TitleBar({ windowFocused }: { windowFocused: boolean }) {
     sync();
     const unlisteners = [
       appWindow.onResized(sync),
-      listen<"none" | "hover" | "pressed">("snap-button", (event) => setSnapState(event.payload)),
+      appWindow.onSnapButton(setSnapState),
     ];
     return () => {
       alive = false;
@@ -85,20 +84,20 @@ export function TitleBar({ windowFocused }: { windowFocused: boolean }) {
         <CaptionButton
           glyph={GLYPH_MINIMIZE}
           label={t("window.minimize")}
-          onClick={() => void appWindow.minimize()}
+          onClick={() => void windowControls.get().minimize()}
         />
         <CaptionButton
           glyph={maximized ? GLYPH_RESTORE : GLYPH_MAXIMIZE}
           label={maximized ? t("window.restore") : t("window.maximize")}
           tooltip={false}
           className={snapState === "none" ? "" : `is-${snapState}`}
-          onClick={() => void appWindow.toggleMaximize()}
+          onClick={() => void windowControls.get().toggleMaximize()}
         />
         <CaptionButton
           glyph={GLYPH_CLOSE}
           label={t("common.close")}
           className="fw-caption-close"
-          onClick={() => void appWindow.close()}
+          onClick={() => void windowControls.get().close()}
         />
       </div>
     </div>

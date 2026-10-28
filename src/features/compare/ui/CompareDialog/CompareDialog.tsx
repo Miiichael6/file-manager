@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { Dialog } from "../../../../shared/ui/Dialog";
-import { invoke } from "../../../../shared/infrastructure/fileops";
+import { fileSystem } from "../../../../shared/application/ports";
 import { errorText, useT } from "../../../../shared/i18n/index";
 import * as storage from "../../../../shared/infrastructure/storage";
 import { diffLines, foldDiff, splitLines, type DiffRow } from "../../domain/textDiff";
@@ -31,7 +31,7 @@ export function CompareDialog({ left, right, onClose }: { left: string; right: s
   useEffect(() => {
     let alive = true;
     const read = (path: string) =>
-      invoke<{ text: string; truncated: boolean }>("read_text_file", { path, maxBytes: MAX_BYTES });
+      fileSystem.get().readText(path, MAX_BYTES);
     Promise.all([read(left), read(right)]).then(
       ([a, b]) => alive && setLoaded({ a: a.text, b: b.text, truncated: a.truncated || b.truncated }),
       (err: unknown) => alive && setError(err),

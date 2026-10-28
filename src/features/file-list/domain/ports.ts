@@ -20,8 +20,8 @@ export interface FolderSizes {
 export interface NativeDrag {
   /** Spustí nativní OLE drag s cestami (tlačítko myši je dole). */
   start(paths: string[]): Promise<void>;
-  /** Konec nativního tažení, ať drop přišel kamkoli. */
-  onEnd(handler: () => void): Promise<() => void>;
+  /** Konec nativního tažení, ať drop přišel kamkoli; `effect` = "copy" | "move" | "none". */
+  onEnd(handler: (effect: string) => void): Promise<() => void>;
   /** Cesty k souborům puštěným zvenku, podle id zprávy z webview. */
   onExternalDrop(handler: (drop: { id: number; paths: string[] }) => void): Promise<() => void>;
 }

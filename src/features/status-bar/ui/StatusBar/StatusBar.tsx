@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Check, Copy, Eye, EyeOff, Image, Info } from "lucide-react";
-import { invoke } from "../../../../shared/infrastructure/fileops";
+import { fileSystem } from "../../../../shared/application/ports";
 import { folderDisplayName } from "../../../../shared/ui/icons";
 import { breadcrumbs, formatFreeSpace, formatItemCount } from "../../../../shared/domain/format";
 import { useT } from "../../../../shared/i18n/index";
@@ -45,7 +45,7 @@ function PathInput({
 
     // Navigovat se dá jen tam, kam jde vypsat obsah — jinak zůstane input otevřený.
     try {
-      await invoke("can_list_dir", { path: target });
+      await fileSystem.get().canList(target);
       finished.current = true;
       onDone();
       onNavigate(target);

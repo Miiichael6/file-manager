@@ -1,6 +1,5 @@
 import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import { listen } from "@tauri-apps/api/event";
 import { FolderOpen, Monitor, PanelLeft, PanelRight, Plus, Search, SearchX, Trash2, X } from "lucide-react";
 
 
@@ -44,7 +43,6 @@ import {
   getExtensionIcon,
   listShellNew,
   duplicatePath,
-  invoke,
   deletePaths,
   errorDetail,
   failureDetail,
@@ -69,7 +67,8 @@ import {
   breadcrumbs,
 } from "../../shared/domain/format";
 import { errorText, failure, languageSetting, t, useLocale, type MessageKey } from "../../shared/i18n/index";
-import { homeDir } from "@tauri-apps/api/path";
+import { dirWatcher, fileSystem, shellLauncher, systemPlaces } from "../../shared/application/ports";
+import { nativeDrag } from "../../features/file-list/application/ports";
 import { canDropInto, draggedFolder, droppedPaths, endDrag, getDrag, isExternalFileDrag, useDrag } from "../../features/file-list/application/dnd";
 import { isTypingTarget } from "../../shared/lib/dom";
 import {
@@ -469,7 +468,9 @@ export default function App() {
         setShowHidden(saved);
         return;
       }
-      invoke<boolean>("explorer_shows_hidden")
+      systemPlaces
+        .get()
+        .explorerShowsHidden()
         .then(setShowHidden)
         .catch(() => setShowHidden(false));
     });
@@ -591,7 +592,7 @@ export default function App() {
   navCurrentRef.current = nav.current;
 
   useEffect(() => {
-    const favorites = invoke<FavoriteSection[]>("get_favorites");
+    const favorites = systemPlaces.get().favorites();
     favorites.then(setSections).catch((err: unknown) => setError(failure("op.sidebar", err)));
 
     // Záložky z minulého spuštění — jen ty, jejichž složka pořád jde otevřít.
@@ -601,7 +602,7 @@ export default function App() {
       const checked = await Promise.all(
         items.map((item) =>
           Promise.race([
-            invoke("can_list_dir", { path: item.path }).then(
+            fileSystem.get().canList(item.path).then(
               () => true,
               () => false,
             ),
@@ -614,7 +615,7 @@ export default function App() {
       const seconds = await Promise.all(
         checked.map((item) =>
           item?.second
-            ? invoke("can_list_dir", { path: item.second.path }).then(
+            ? fileSystem.get().canList(item.second.path).then(
                 () => true,
                 () => false,
               )
@@ -666,8 +667,10 @@ export default function App() {
   // Připojený nebo odpojený disk (USB, síťový) se v sidebaru ukáže hned.
   // Tady se už nenaviguje — uživatel zůstává, kde je.
   useEffect(() => {
-    const unlisten = listen("drives-changed", () => {
-      invoke<FavoriteSection[]>("get_favorites")
+    const unlisten = systemPlaces.get().onDrivesChanged(() => {
+      systemPlaces
+        .get()
+        .favorites()
         .then(setSections)
         .catch(() => undefined);
     });
@@ -699,9 +702,10 @@ export default function App() {
   useEffect(() => {
     const paths = watchedKey === "" ? [] : watchedKey.split("\n");
     watchGeneration.current += 1;
-    invoke("watch_dirs", { paths, generation: watchGeneration.current }).catch(
-      (err: unknown) => setNotice(failure("op.watch", err), errorDetail(err)),
-    );
+    dirWatcher
+      .get()
+      .watch(paths, watchGeneration.current)
+      .catch((err: unknown) => setNotice(failure("op.watch", err), errorDetail(err)));
   }, [watchedKey]);
 
   // Změnu na disku (nový soubor z prohlížeče, smazání v Průzkumníku…) ukáže
@@ -714,11 +718,11 @@ export default function App() {
         if (target.search === null) target.refresh();
       }
     };
-    const unlisten = listen("dir-changed", refreshVisible);
+    const unlisten = dirWatcher.get().onChange(refreshVisible);
     // Přesun tažením ven (Průzkumník, Shift) — položky zmizí hned, nečeká se
     // na watcher. Cílovou složku neznáme, takže do Zpět se to nezapíše.
-    const unlistenDrag = listen<{ effect: string }>("native-drag-end", ({ payload }) => {
-      if (payload.effect === "move") refreshVisible();
+    const unlistenDrag = nativeDrag.get().onEnd((effect) => {
+      if (effect === "move") refreshVisible();
     });
     return () => {
       void unlisten.then((stop) => stop());
@@ -728,7 +732,9 @@ export default function App() {
 
   /** Jediná cesta k otevření souboru — proto se nedávné zapisují právě tady. */
   const openFile = useCallback((entry: FileEntry) => {
-    invoke("open_file", { path: entry.path })
+    shellLauncher
+      .get()
+      .open(entry.path)
       // Zapisuje se až po úspěchu — jinak by se do nedávných dostaly i soubory,
       // které se otevřít nepodařilo.
       .then(() => storage.addRecent(entry.path, entry.name, "file"))
@@ -1763,10 +1769,10 @@ export default function App() {
   const goToTypedPath = useCallback(
     async (text: string) => {
       let path = text.trim().replace(/\//g, "\\");
-      if (/^~([\\]|$)/.test(path)) path = (await homeDir()).replace(/\\$/, "") + path.slice(1);
+      if (/^~([\\]|$)/.test(path)) path = (await systemPlaces.get().homeDir()).replace(/\\$/, "") + path.slice(1);
       if (/^[a-z]:$/i.test(path)) path += "\\";
       try {
-        await invoke("can_list_dir", { path });
+        await fileSystem.get().canList(path);
         navigate(path);
       } catch (err: unknown) {
         // Soubor: otevře se složka, ve které leží, a označí se v ní.
@@ -2487,7 +2493,7 @@ export default function App() {
             type="button"
             className="fw-update-link"
             onClick={() =>
-              invoke("open_release_page", { url: update.url }).catch((err: unknown) =>
+              shellLauncher.get().openReleasePage(update.url).catch((err: unknown) =>
                 setNotice(failure("op.openRelease", err), errorDetail(err)),
               )
             }

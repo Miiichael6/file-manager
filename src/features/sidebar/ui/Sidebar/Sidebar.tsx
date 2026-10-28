@@ -1,7 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, Folder, Trash2 } from "lucide-react";
 
-import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 
 import { ContextMenu, type MenuItem } from "../../../../shared/ui/ContextMenu";
 import { fileVisual, sidebarIcon, sidebarIconColor, sidebarLabel } from "../../../../shared/ui/icons";
@@ -35,7 +34,7 @@ import type {
 } from "../../../../shared/domain/types";
 import { useDisplayNames } from "../../../file-list/application/extensions";
 // MI-FORK: árbol de carpetas y Git en el sidebar.
-import { listen } from "@tauri-apps/api/event";
+import { dirWatcher, textClipboard } from "../../../../shared/application/ports";
 import { FolderTree, TreeToggle, handleTreeKey } from "../FolderTree";
 import { GitBadge } from "../../../git/ui/GitBadge";
 import * as tree from "../../application/folderTree";
@@ -837,7 +836,7 @@ export function Sidebar({
   // Cambios en disco (el watcher vigila la carpeta actual).
   useEffect(() => {
     if (currentPath === null || !tree.TREE_ENABLED) return;
-    const unlisten = listen("dir-changed", () => tree.refreshLoaded([currentPath]));
+    const unlisten = dirWatcher.get().onChange(() => tree.refreshLoaded([currentPath]));
     return () => void unlisten.then((stop) => stop());
   }, [currentPath]);
   /** Coloca de nuevo la placa de selección (el árbol pinta filas al hacer scroll). */
@@ -1006,7 +1005,7 @@ export function Sidebar({
       type: "item",
       label: t("menu.copyPath"),
       onSelect: () => {
-        writeText(path).catch((err: unknown) => onError(failure("op.copyPath", err)));
+        textClipboard.get().writeText(path).catch((err: unknown) => onError(failure("op.copyPath", err)));
       },
     });
 

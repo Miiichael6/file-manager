@@ -1,5 +1,5 @@
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
-import { convertFileSrc } from "@tauri-apps/api/core";
+import { fileUrls } from "../../../../shared/application/ports";
 import {
   Maximize,
   Minimize,
@@ -237,7 +237,7 @@ export function InfoVideoPlayer({ path, ratio, cover, audio = false }: Props) {
     >
       <video
         ref={videoRef}
-        src={convertFileSrc(path)}
+        src={fileUrls.get().assetUrl(path)}
         autoPlay
         loop={loop}
         onClick={toggle}

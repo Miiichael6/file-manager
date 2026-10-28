@@ -1,4 +1,4 @@
-import type { FileEntry } from "./types";
+import type { FavoriteSection, FileEntry } from "./types";
 
 /** Sdílené porty — rozhraní, která používá víc funkcí aplikace. */
 
@@ -29,6 +29,8 @@ export interface FileSystem {
 export interface ShellImages {
   /** Ikona souboru nebo .exe v dané velikosti (px). */
   fileIcon(path: string, size: number): Promise<string>;
+  /** Náhled ze shellu ("none" = typ náhled nemá); chyba přijde jako surové {key, args}. */
+  thumbnail(path: string, size: number): Promise<string>;
 }
 
 /** Vlastní klíče v settings.json (mimo typované nastavení storage.ts). */
@@ -41,6 +43,32 @@ export interface SettingsStore {
 /** Textová schránka systému. */
 export interface TextClipboard {
   writeText(text: string): Promise<void>;
+}
+
+/** Otevírání přes shell Windows (výchozí aplikace, prohlížeč). */
+export interface ShellLauncher {
+  /** Soubor ve výchozí aplikaci, odkaz (https:, mailto:) v prohlížeči. */
+  open(path: string): Promise<void>;
+  /** Stránka vydání na GitHubu (Rust ověří, že jde o ni). */
+  openReleasePage(url: string): Promise<void>;
+}
+
+/** Hlídání změn ve složkách (watcher v main.rs). */
+export interface DirWatcher {
+  /** Nahradí hlídané složky; `generation` zahodí zpožděné události starého volání. */
+  watch(paths: string[], generation: number): Promise<void>;
+  /** Něco se v hlídané složce změnilo; vrací, jak přestat poslouchat. */
+  onChange(handler: () => void): Promise<() => void>;
+}
+
+/** Místa systému: sekce sidebaru (známé složky, jednotky), domovská složka, volby Průzkumníku. */
+export interface SystemPlaces {
+  favorites(): Promise<FavoriteSection[]>;
+  /** Připojení nebo odpojení jednotky. */
+  onDrivesChanged(handler: () => void): Promise<() => void>;
+  homeDir(): Promise<string>;
+  /** Průzkumník ukazuje skryté soubory (výchozí stav pro aplikaci). */
+  explorerShowsHidden(): Promise<boolean>;
 }
 
 /** Adresa, přes kterou webview načte místní soubor (obrázek, video, PDF). */

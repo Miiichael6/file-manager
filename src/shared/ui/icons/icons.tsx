@@ -1,5 +1,5 @@
 import { useCallback, useId, useRef, useState } from "react";
-import { convertFileSrc } from "@tauri-apps/api/core";
+import { fileUrls } from "../../application/ports";
 import {
   AppWindow,
   ArrowUpRight,
@@ -198,7 +198,7 @@ function Thumbnail({ entry, size, contain = false }: { entry: FileEntry; size: n
       {visible ? (
         <img
           ref={imageRef}
-          src={convertFileSrc(entry.path)}
+          src={fileUrls.get().assetUrl(entry.path)}
           alt=""
           draggable={false}
           decoding="async"

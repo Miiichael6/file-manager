@@ -23,6 +23,6 @@ export const tauriFolderSizes: FolderSizes = {
 /** Adaptér NativeDrag nad native_drag.rs a external_drop.rs. */
 export const tauriNativeDrag: NativeDrag = {
   start: (paths) => invoke("start_native_drag", { paths }),
-  onEnd: (handler) => listen("native-drag-end", () => handler()),
+  onEnd: (handler) => listen<{ effect: string }>("native-drag-end", ({ payload }) => handler(payload.effect)),
   onExternalDrop: (handler) => listen<{ id: number; paths: string[] }>("external-drop", ({ payload }) => handler(payload)),
 };
