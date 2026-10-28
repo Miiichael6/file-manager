@@ -20,6 +20,14 @@ import { windowChrome } from "../../features/theme/application/ports";
 import { tauriWindowChrome } from "../../features/theme/infrastructure/tauriWindowChrome";
 import { folderApps, shellIntegration } from "../../features/toolbar/application/ports";
 import { tauriFolderApps, tauriShellIntegration } from "../../features/toolbar/infrastructure/tauriToolbar";
+import { jumpList } from "../../features/navigation/application/ports";
+import { tauriJumpList } from "../../features/navigation/infrastructure/tauriJumpList";
+import { explorerExtensions, folderSizes, nativeDrag } from "../../features/file-list/application/ports";
+import {
+  tauriExplorerExtensions,
+  tauriFolderSizes,
+  tauriNativeDrag,
+} from "../../features/file-list/infrastructure/tauriFileList";
 
 function composeApp(): void {
   fileSystem.provide(tauriFileSystem);
@@ -32,6 +40,10 @@ function composeApp(): void {
   windowChrome.provide(tauriWindowChrome);
   folderApps.provide(tauriFolderApps);
   shellIntegration.provide(tauriShellIntegration);
+  jumpList.provide(tauriJumpList);
+  explorerExtensions.provide(tauriExplorerExtensions);
+  folderSizes.provide(tauriFolderSizes);
+  nativeDrag.provide(tauriNativeDrag);
 }
 
 composeApp();

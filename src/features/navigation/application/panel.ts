@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { listen } from "@tauri-apps/api/event";
 
 import { useBrowserState, type TabSnapshot } from "../../tabs/application/browser";
 import { useColumns } from "../../column-view/application/columns";
-import { invoke, parentPath } from "../../../shared/infrastructure/fileops";
+import { parentPath } from "../../../shared/infrastructure/fileops";
+import { fileSystem } from "../../../shared/application/ports";
 import { sortEntries, type SortKey } from "../../../shared/domain/format";
 import { errorText, useLocale } from "../../../shared/i18n/index";
 import { motionMs } from "../../../shared/lib/motion";
@@ -23,10 +23,6 @@ import { groupEntries } from "../../file-list/application/grouping";
  * s tím aktivním. Sdílené věci — sidebar, schránka, Zpět, záložky, dialogy —
  * zůstávají v App.
  */
-
-/** Odpověď `list_dir_stream` a jeho dávky (`dir-chunk`). */
-type DirListing = { entries: FileEntry[]; more: boolean };
-type DirChunk = { token: number; entries: FileEntry[]; done: boolean };
 
 /** Zpoždění filtru výpisu za psaním do pole hledání. */
 const FILTER_DEBOUNCE_MS = 100;
@@ -267,7 +263,9 @@ export function usePanel({ slot, showHidden, setNotice }: PanelOptions) {
     const path = nav.current;
 
     // Volné místo ukazuje status bar ve všech režimech.
-    invoke<number>("get_disk_free_space", { path })
+    fileSystem
+      .get()
+      .diskFreeSpace(path)
       .then((bytes) => {
         if (requestId.current === id) setFreeSpace(bytes);
       })
@@ -329,22 +327,8 @@ export function usePanel({ slot, showHidden, setNotice }: PanelOptions) {
       }
     };
 
-    // Dávky můžou předběhnout odpověď — posluchač se musí registrovat první.
-    const pendingChunks: DirChunk[] = [];
-    let listed = false;
-    const unlisten = listen<DirChunk>("dir-chunk", ({ payload }) => {
-      if (payload.token !== id) return;
-      if (!listed) pendingChunks.push(payload);
-      else received(payload.entries, payload.done);
-    });
-
-    unlisten
-      .then(() => invoke<DirListing>("list_dir_stream", { path, showHidden, token: id, slot }))
-      .then((result) => {
-        listed = true;
-        received(result.entries, !result.more);
-        for (const chunk of pendingChunks) received(chunk.entries, chunk.done);
-      })
+    const stream = fileSystem.get().listDirStream({ path, showHidden, token: id, slot }, received);
+    stream.finished
       .catch((err: unknown) => {
         if (requestId.current !== id) return;
         done = true;
@@ -361,7 +345,7 @@ export function usePanel({ slot, showHidden, setNotice }: PanelOptions) {
 
     return () => {
       cancelAnimationFrame(frame);
-      void unlisten.then((stop) => stop());
+      stream.stop();
       if (!done) setStreamingCount(null);
     };
   }, [nav.current, refreshToken, showHidden, viewMode]);

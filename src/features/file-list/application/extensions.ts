@@ -1,6 +1,6 @@
 import { useMemo, useSyncExternalStore } from "react";
-import { invoke } from "@tauri-apps/api/core";
 
+import { explorerExtensions } from "./ports";
 import * as storage from "../../../shared/infrastructure/storage";
 import type { ExtensionMode } from "../../../shared/infrastructure/storage";
 import type { FileEntry } from "../../../shared/domain/types";
@@ -44,7 +44,7 @@ function subscribe(listener: () => void): () => void {
 
 /** Znovu přečte nastavení Průzkumníku (start, návrat do okna). */
 export async function refreshExplorerExtensions(): Promise<void> {
-  const hides = await invoke<boolean>("explorer_hides_extensions").catch(() => true);
+  const hides = await explorerExtensions.get().hidesKnown().catch(() => true);
   if (hides !== hideKnown) {
     hideKnown = hides;
     changed();
@@ -59,7 +59,7 @@ function requestRule(extension: string): void {
     const batch = [...pending];
     pending.clear();
     flush = null;
-    const result = await invoke<number[]>("extension_rules", { extensions: batch }).catch(() => null);
+    const result = await explorerExtensions.get().rules(batch).catch(() => null);
     if (!result) return;
     batch.forEach((ext, index) => rules.set(ext, result[index] ?? 0));
     changed();

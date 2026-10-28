@@ -1,8 +1,7 @@
 import { useSyncExternalStore } from "react";
-import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
 
 import { pathKey } from "../../../shared/infrastructure/storage";
+import { nativeDrag } from "./ports";
 
 /**
  * Sdílený stav právě probíhajícího tažení.
@@ -77,7 +76,7 @@ export const NATIVE_DRAG_OUT = true;
 /** Posluchač konce nativního tažení — payload se uklidí, i když drop nepřišel k nám. */
 let nativeDragEnd: Promise<unknown> | null = null;
 function ensureNativeDragEnd(): Promise<unknown> {
-  nativeDragEnd ??= listen("native-drag-end", () => endDrag()).catch((err: unknown) => {
+  nativeDragEnd ??= nativeDrag.get().onEnd(() => endDrag()).catch((err: unknown) => {
     nativeDragEnd = null;
     throw err;
   });
@@ -101,7 +100,7 @@ export function startEntryDrag(items: DragItem[], event: { dataTransfer: DataTra
   emit();
   const paths = items.map((item) => item.path);
   ensureNativeDragEnd()
-    .then(() => invoke("start_native_drag", { paths }))
+    .then(() => nativeDrag.get().start(paths))
     .catch(() => endDrag());
 }
 
@@ -189,10 +188,10 @@ function ensureDropListener(): Promise<unknown> {
   if (dropListener === null && lastFailure !== null && Date.now() - lastFailure.at < RETRY_MS) {
     return Promise.reject(lastFailure.error);
   }
-  dropListener ??= listen<{ id: number; paths: string[] }>("external-drop", ({ payload }) => {
-    const resolve = pendingDrops.get(payload.id);
-    pendingDrops.delete(payload.id);
-    resolve?.(payload.paths);
+  dropListener ??= nativeDrag.get().onExternalDrop((drop) => {
+    const resolve = pendingDrops.get(drop.id);
+    pendingDrops.delete(drop.id);
+    resolve?.(drop.paths);
   }).then(
     (unlisten) => {
       lastFailure = null;

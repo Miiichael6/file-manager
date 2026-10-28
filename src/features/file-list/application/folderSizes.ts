@@ -1,7 +1,6 @@
 import { useEffect, useSyncExternalStore } from "react";
-import { Channel } from "@tauri-apps/api/core";
 
-import { invoke } from "../../../shared/infrastructure/fileops";
+import { folderSizes } from "./ports";
 import type { FileEntry } from "../../../shared/domain/types";
 
 /*
@@ -12,7 +11,6 @@ import type { FileEntry } from "../../../shared/domain/types";
  */
 
 type Size = { bytes: number; done: boolean; modified: number };
-type Message = { path: string; bytes: number; done: boolean };
 
 const sizes = new Map<string, Size>();
 const listeners = new Map<string, Set<() => void>>();
@@ -51,14 +49,18 @@ export function useComputeFolderSizes(entries: FileEntry[], enabled: boolean) {
 
     const modified = new Map(pending.map((entry) => [keyOf(entry.path), entry.modified]));
     const requestId = nextRequest++;
-    const channel = new Channel<Message>();
-    channel.onmessage = ({ path, bytes, done }) => {
+    const onSize = ({ path, bytes, done }: { path: string; bytes: number; done: boolean }) => {
       sizes.set(keyOf(path), { bytes, done, modified: modified.get(keyOf(path)) ?? 0 });
       notify(path);
     };
-    void invoke("folder_sizes", { paths: pending.map((entry) => entry.path), requestId, onSize: channel }).catch(
-      () => undefined,
-    );
-    return () => void invoke("cancel_folder_sizes", { requestId }).catch(() => undefined);
+    void folderSizes
+      .get()
+      .compute(
+        pending.map((entry) => entry.path),
+        requestId,
+        onSize,
+      )
+      .catch(() => undefined);
+    return () => void folderSizes.get().cancel(requestId).catch(() => undefined);
   }, [entries, enabled]);
 }

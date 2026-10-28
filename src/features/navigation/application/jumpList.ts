@@ -1,8 +1,10 @@
 import { useEffect, useRef } from "react";
-import { listen } from "@tauri-apps/api/event";
 
-import { invoke } from "../../../shared/infrastructure/fileops";
 import { useT } from "../../../shared/i18n/index";
+import { jumpList } from "./ports";
+import type { Launch } from "../domain/ports";
+
+export type { Launch };
 
 /*
  * MI-FORK: lista de saltos de la barra de tareas (src-tauri/src/mi_fork.rs).
@@ -14,9 +16,6 @@ import { useT } from "../../../shared/i18n/index";
  * ya abierta, como evento `mi-open-folder`; en ambos casos se abre en una
  * pestaña nueva, con el archivo indicado seleccionado.
  */
-
-/** Carpeta que abrir y, si se pidió un archivo o `--select`, el elemento que seleccionar. */
-export type Launch = { path: string; select: string | null };
 
 /** Cambios seguidos (arrastrar para reordenar) no reescriben la lista en cada paso. */
 const WRITE_DELAY = 500;
@@ -38,14 +37,14 @@ export function useJumpList(currentDir: string | null, folders: string[], openTa
   useEffect(() => {
     const timer = window.setTimeout(() => {
       const paths = key === "" ? [] : key.split("\n");
-      void invoke("set_jump_list", { category, paths }).catch(() => undefined);
+      void jumpList.get().set(category, paths).catch(() => undefined);
     }, WRITE_DELAY);
     return () => window.clearTimeout(timer);
   }, [category, key]);
 
   // Carpeta de la lista con la app ya abierta (tauri-plugin-single-instance).
   useEffect(() => {
-    const unlisten = listen<Launch>("mi-open-folder", (event) => openTabRef.current(event.payload));
+    const unlisten = jumpList.get().onOpenFolder((launch) => openTabRef.current(launch));
     return () => {
       void unlisten.then((fn) => fn());
     };
@@ -56,7 +55,9 @@ export function useJumpList(currentDir: string | null, folders: string[], openTa
   useEffect(() => {
     if (currentDir === null || started.current) return;
     started.current = true;
-    void invoke<Launch | null>("startup_launch")
+    void jumpList
+      .get()
+      .startupLaunch()
       .then((launch) => {
         if (launch) openTabRef.current(launch);
       })

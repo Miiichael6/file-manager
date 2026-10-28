@@ -2,10 +2,27 @@ import type { FileEntry } from "./types";
 
 /** Sdílené porty — rozhraní, která používá víc funkcí aplikace. */
 
+/** Požadavek na výpis po dávkách; `token` odliší dávky souběžných výpisů. */
+export type DirStreamRequest = { path: string; showHidden: boolean; token: number; slot: number };
+
+/** Běžící výpis po dávkách: `finished` doběhne po odpovědi (chyba = výpis selhal). */
+export type DirStream = { finished: Promise<void>; stop(): void };
+
 /** Čtení souborového systému (main.rs). */
 export interface FileSystem {
   /** Celý výpis složky najednou (sloupce, strom); hlavní výpis jde proudem přes panel. */
   listDir(path: string, showHidden: boolean): Promise<FileEntry[]>;
+  /**
+   * Výpis po dávkách: dávky chodí do `onBatch` v pořadí (první = odpověď,
+   * pak zbytek); `last` = výpis je kompletní.
+   */
+  listDirStream(request: DirStreamRequest, onBatch: (entries: FileEntry[], last: boolean) => void): DirStream;
+  /** Volné místo na svazku složky (bajty). */
+  diskFreeSpace(path: string): Promise<number>;
+  /** Jde obsah složky vypsat? Chyba = ne (s důvodem). */
+  canList(path: string): Promise<void>;
+  /** Začátek textového souboru (náhled, porovnání). */
+  readText(path: string, maxBytes: number): Promise<{ text: string; truncated: boolean }>;
 }
 
 /** Obrázky ze shellu Windows (data URL, s cache na disku v Rustu). */

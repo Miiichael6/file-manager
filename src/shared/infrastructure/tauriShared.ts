@@ -1,4 +1,5 @@
 import { convertFileSrc } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { getStore } from "@tauri-apps/plugin-store";
 
@@ -7,9 +8,34 @@ import type { FileEntry } from "../domain/types";
 import { invoke } from "./fileops";
 import * as storage from "./storage";
 
+type DirListing = { entries: FileEntry[]; more: boolean };
+type DirChunk = { token: number; entries: FileEntry[]; done: boolean };
+
 /** Adaptér FileSystem nad commandy main.rs. */
 export const tauriFileSystem: FileSystem = {
   listDir: (path, showHidden) => invoke<FileEntry[]>("list_dir", { path, showHidden }),
+  listDirStream: ({ path, showHidden, token, slot }, onBatch) => {
+    // Dávky dir-chunk můžou předběhnout odpověď — posluchač se registruje první
+    // a dávky před odpovědí čekají, aby pořadí sedělo.
+    const pending: DirChunk[] = [];
+    let listed = false;
+    const unlisten = listen<DirChunk>("dir-chunk", ({ payload }) => {
+      if (payload.token !== token) return;
+      if (!listed) pending.push(payload);
+      else onBatch(payload.entries, payload.done);
+    });
+    const finished = unlisten
+      .then(() => invoke<DirListing>("list_dir_stream", { path, showHidden, token, slot }))
+      .then((result) => {
+        listed = true;
+        onBatch(result.entries, !result.more);
+        for (const chunk of pending) onBatch(chunk.entries, chunk.done);
+      });
+    return { finished, stop: () => void unlisten.then((stop) => stop()) };
+  },
+  diskFreeSpace: (path) => invoke<number>("get_disk_free_space", { path }),
+  canList: (path) => invoke("can_list_dir", { path }),
+  readText: (path, maxBytes) => invoke<{ text: string; truncated: boolean }>("read_text_file", { path, maxBytes }),
 };
 
 export const tauriShellImages: ShellImages = {
