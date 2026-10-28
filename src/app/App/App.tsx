@@ -65,7 +65,6 @@ import {
   openInExplorer,
   availableTerminals,
   openTerminal,
-  openWith,
   parentPath,
   renamePath,
   statPaths,
@@ -76,8 +75,6 @@ import {
 } from "../../shared/infrastructure/fileops";
 import {
   breadcrumbs,
-  formatItemCount,
-  type SortKey,
 } from "../../shared/domain/format";
 import { errorText, failure, languageSetting, t, useLocale, type MessageKey } from "../../shared/i18n/index";
 import { homeDir } from "@tauri-apps/api/path";
@@ -94,22 +91,26 @@ import {
 import { refreshExplorerExtensions, useDisplayNames } from "../../features/file-list/application/extensions";
 import { applyMotion, smoothIfAllowed } from "../../shared/lib/motion";
 import * as storage from "../../shared/infrastructure/storage";
-import { folderOpenWithMenu, useFolderApps } from "../../features/toolbar/application/folderApps";
+import { useFolderApps } from "../../features/toolbar/application/folderApps";
 import { FolderOpenButton } from "../../features/toolbar/ui/FolderOpenButton"; // MI-FORK
 import { GitToolbarButtons } from "../../features/toolbar/ui/GitToolbarButtons"; // MI-FORK
 import { TerminalButton } from "../../features/toolbar/ui/TerminalButton"; // MI-FORK
 import { useJumpList, type Launch } from "../../features/navigation/application/jumpList"; // MI-FORK
 import { setTreeTabOrder } from "../../features/sidebar/application/folderTree"; // MI-FORK: árbol por pestaña
-import { TAG_COLORS, TAG_HEX, tagLabel } from "../../features/tags/application/tags";
+import { TAG_HEX, tagLabel } from "../../features/tags/application/tags";
 import { useStableCallback } from "../../features/file-list/application/rowDnd";
 import { FolderDragGhost } from "../../features/file-list/ui/FolderDragGhost";
 import { usePanel, type Panel } from "../../features/navigation/application/panel";
 
+import { buildToolbarSortItems } from "./menus/buildToolbarSortItems";
+import { buildToolbarShareItems } from "./menus/buildToolbarShareItems";
+import { buildToolbarTagItems } from "./menus/buildToolbarTagItems";
+import { buildContextMenuItems } from "./menus/buildContextMenuItems";
 import { useRecycleBin } from "../../features/recycle-bin/application/useRecycleBin";
 import { useTabActions } from "../../features/tabs/application/useTabActions";
 import { useNotice } from "../../features/notifications/application/useNotice";
 import { Toast } from "../../features/notifications/ui/Toast";
-import { SPLIT_MIN_WIDTH, VIEW_LABELS, SORT_LABELS, TERMINAL_LABELS } from "./constants";
+import { SPLIT_MIN_WIDTH, TERMINAL_LABELS } from "./constants";
 import { folderEntry, strengthCommand } from "./helpers";
 import { Placeholder } from "./Placeholder";
 import type { MainMenu, PanelFunctions } from "./types";
@@ -126,7 +127,6 @@ import type {
   OpResult,
   StatResult,
   TagColor,
-  ViewMode,
 } from "../../shared/domain/types";
 
 export default function App() {
@@ -1908,391 +1908,7 @@ export default function App() {
     [terminals, openTerminalAt],
   );
 
-  const menuItems = useMemo((): MenuItem[] => {
-    if (menu === null) return [];
-
-    const copyPathItem = (path: string, label = t("menu.copyPath")): MenuItem => ({
-      type: "item",
-      label,
-      onSelect: () => copyText(path, "op.copyPath"),
-    });
-
-    if (menu.kind === "tab") {
-      const target = openTabs.find((tab) => tab.id === menu.id);
-      const isSplit = menu.id === activeTabId ? splitOn : target?.split === true && target.second !== undefined;
-      return [
-        {
-          type: "item",
-          label: t("split.separate"),
-          shortcut: menu.id === activeTabId ? "Ctrl+Shift+E" : undefined,
-          disabled: !isSplit,
-          onSelect: () => separateTab(menu.id),
-        },
-        { type: "separator" },
-        {
-          type: "item",
-          label: t("tabs.close"),
-          shortcut: menu.id === activeTabId ? "Ctrl+W" : undefined,
-          disabled: openTabs.length <= 1,
-          onSelect: () => closeTab(menu.id),
-        },
-        {
-          type: "item",
-          label: t("tabs.closeOthers"),
-          disabled: openTabs.length <= 1,
-          onSelect: () => closeOtherTabs(menu.id),
-        },
-      ];
-    }
-
-    if (menu.kind === "status") {
-      return [
-        copyPathItem(menu.dir, t("menu.copyCurrentPath")),
-        { type: "item", label: t("menu.editPath"), shortcut: "Ctrl+L", onSelect: () => setPathEditing(true) },
-      ];
-    }
-
-    if (menu.kind === "quicklook") {
-      const { entry } = menu;
-
-      return [
-        { type: "item", label: t("menu.open"), onSelect: () => openFile(entry) },
-        // MI-FORK: «Abrir con…» también desde la vista previa.
-        {
-          type: "item",
-          label: t("menu.openWith"),
-          onSelect: () => void runOperation("op.openWith", () => openWith(entry.path)),
-        },
-        {
-          type: "item",
-          label: t("menu.openInExplorer"),
-          onSelect: () => revealInExplorer(entry.path),
-        },
-        { type: "separator" },
-        copyPathItem(entry.path),
-      ];
-    }
-
-    if (menu.kind === "background") {
-      const { dir } = menu;
-      const dirIsFavorite = favorites.some((item) => storage.samePath(item.path, dir));
-
-      return [
-        { type: "submenu", label: t("menu.new"), items: newMenuEntries(dir) },
-        { type: "separator" },
-        {
-          type: "item",
-          label: t("menu.paste"),
-          shortcut: "Ctrl+V",
-          disabled: !clipboardHasItems,
-          onSelect: () => paste(dir),
-        },
-        { type: "separator" },
-        folderOpenWithMenu(dir, folderApps, t, (label, action) => void runOperation(label, action), false), // MI-FORK
-        {
-          type: "item",
-          label: t("menu.openInExplorer"),
-          onSelect: () => revealInExplorer(dir),
-        },
-        {
-          type: "item",
-          label: t("menu.openInTerminal"),
-          onSelect: () => openTerminalAt(dir),
-          shiftItems: terminalItems(dir),
-        },
-        copyPathItem(dir),
-        { type: "separator" },
-        {
-          type: "submenu",
-          label: t("menu.view"),
-          items: [
-            ...(Object.keys(VIEW_LABELS) as ViewMode[]).map(
-              (mode): MenuItem & { type: "item" } => ({
-                type: "item",
-                label: t(VIEW_LABELS[mode]),
-                checked: viewMode === mode,
-                onSelect: () => changeViewMode(mode),
-              }),
-            ),
-            { type: "separator" },
-            {
-              type: "item",
-              label: t("menu.hiddenFiles"),
-              shortcut: "Ctrl+Shift+.",
-              checked: showHidden === true,
-              onSelect: toggleHidden,
-            },
-            extras.folderSizesItem(), // MI-FORK
-          ],
-        },
-        {
-          type: "submenu",
-          label: t("menu.sortBy"),
-          items: [
-            ...(Object.keys(SORT_LABELS) as SortKey[]).map(
-              (key): MenuItem & { type: "item" } => ({
-                type: "item",
-                label: t(SORT_LABELS[key]),
-                checked: sortKey === key,
-                onSelect: () => setSortKey(key),
-              }),
-            ),
-            { type: "separator" },
-            {
-              type: "item",
-              label: t("sort.ascending"),
-              checked: sortDirection === "asc",
-              onSelect: () => setSortDirection("asc"),
-            },
-            {
-              type: "item",
-              label: t("sort.descending"),
-              checked: sortDirection === "desc",
-              onSelect: () => setSortDirection("desc"),
-            },
-            // MI-FORK: «Agrupar por ▸» (solo la vista Lista agrupa).
-            ...(viewMode === "list" ? [{ type: "separator" as const }, extras.groupByMenu()] : []),
-          ],
-        },
-        { type: "separator" },
-        {
-          type: "item",
-          label: t("menu.selectAll"),
-          shortcut: "Ctrl+A",
-          // V column view výběr celé složky neexistuje, řádky jsou po jednom.
-          disabled: isColumnView || visibleEntries.length === 0,
-          onSelect: selectAll,
-        },
-        { type: "item", label: t("menu.refresh"), shortcut: "F5", onSelect: refresh },
-        // Bez tohohle šlo do sidebaru dostat jen složku, kterou uživatel vidí
-        // ve výpisu — tu, ve které zrovna stojí, nijak.
-        {
-          type: "item",
-          label: dirIsFavorite ? t("menu.removeFromFavorites") : t("menu.addToFavorites"),
-          onSelect: () => {
-            if (dirIsFavorite) void storage.removeFavorite(dir);
-            else
-              void storage.addFavorite({
-                label: storage.lastSegment(dir),
-                path: dir,
-                icon: "Folder",
-                type: "folder",
-              });
-          },
-        },
-        { type: "separator" },
-        {
-          type: "item",
-          label: t("menu.folderProperties"),
-          onSelect: () => setPropertiesFor(folderEntry(dir)),
-        },
-      ];
-    }
-
-    const { entry, overlay } = menu;
-    // Ve výsledcích hledání a v tag view míří všechno jen na položku pod myší.
-    const targets = overlay ? [entry] : targetEntries;
-    const count = targets.length;
-    // Operace pro jednu položku nemají u víceřádkového výběru co dělat —
-    // přejmenovat pět souborů jedním inputem nejde a Vlastnosti by ukázaly jedny.
-    const single = count <= 1;
-    const isFavorite = favorites.some((item) => storage.samePath(item.path, entry.path));
-    const entryTags = storage.tagsOf(tags, entry.path);
-    // Vložit z výsledků hledání míří do té složky (nebo do složky toho souboru),
-    // na kterou uživatel klikl — podkladová složka pod výsledky není vidět.
-    const pasteTarget = overlay ? (entry.is_dir ? entry.path : parentPath(entry.path)) : undefined;
-
-    // null = položka, která se v tomhle menu nehodí (náhled u složky, oblíbené
-    // u souboru). Vyfiltruje se až nakonec, aby se seznam dal psát lineárně.
-    // Tagy celého výběru: barva je "zapnutá", když ji mají všechny položky.
-    const targetPaths = targets.map((item) => item.path);
-    const sharedTags = TAG_COLORS.filter((color) =>
-      targetPaths.every((path) => storage.tagsOf(tags, path).includes(color)),
-    );
-    const anyTags = targetPaths.some((path) => storage.tagsOf(tags, path).length > 0);
-
-    const items: (MenuItem | null)[] = [
-      // Menu nad výběrem víc položek řekne rovnou, na kolik míří.
-      single ? null : { type: "header", label: formatItemCount(count) },
-      {
-        type: "item",
-        label: t("menu.open"),
-        shortcut: "Enter",
-        // open() by soubor označil v podkladové složce, kde vůbec není.
-        onSelect: () => (overlay ? openFromResults(entry) : open(entry)),
-      },
-      entry.is_dir
-        ? { type: "item", label: t("menu.openInNewTab"), onSelect: () => openTab(entry.path) }
-        : null,
-      // Výsledky hledání a tag view jsou rozcestník — odtud se položka odkrývá
-      // v její složce (dřív to dělal jeden klik).
-      overlay && parentPath(entry.path) !== null
-        ? {
-            type: "item",
-            label: t("menu.showInFolder"),
-            onSelect: () => reveal(entry.path),
-          }
-        : null,
-      entry.is_dir
-        ? null
-        : {
-            type: "item",
-            label: t("menu.quickLook"),
-            shortcut: "Space",
-            onSelect: () => (overlay ? setOverlayPreview(entry) : previewEntry(entry)),
-          },
-      entry.is_dir
-        ? folderOpenWithMenu(entry.path, folderApps, t, (label, action) => void runOperation(label, action), !single) // MI-FORK
-        : {
-            type: "item",
-            label: t("menu.openWith"),
-            disabled: !single,
-            onSelect: () => {
-              void runOperation("op.openWith", () => openWith(entry.path));
-            },
-          },
-      { type: "separator" },
-      {
-        type: "item",
-        label: t("menu.openInExplorer"),
-        disabled: !single,
-        onSelect: () => revealInExplorer(entry.path),
-      },
-      {
-        type: "item",
-        label: t("menu.openInTerminal"),
-        disabled: !single,
-        onSelect: () => openTerminalAt(entry.path),
-        shiftItems: terminalItems(entry.path),
-      },
-      // Do "Moje oblíbené" smí složka i soubor: klik na složku tam naviguje,
-      // klik na soubor ho otevře v systémové aplikaci.
-      {
-        type: "item",
-        label: isFavorite ? t("menu.removeFromFavorites") : t("menu.addToFavorites"),
-        disabled: !single,
-        onSelect: () => {
-          if (isFavorite) void storage.removeFavorite(entry.path);
-          else
-            void storage.addFavorite({
-              label: names.entry(entry),
-              path: entry.path,
-              icon: "Folder",
-              type: entry.is_dir ? "folder" : "file",
-            });
-        },
-      },
-      { type: "separator" },
-      {
-        type: "item",
-        label: t("menu.rename"),
-        shortcut: "F2",
-        disabled: !single,
-        // Výsledky hledání nemají inline přejmenování — odkryje se položka v její
-        // složce a přejmenování se otevře až tam.
-        onSelect: () => {
-          if (overlay) reveal(entry.path, true);
-          else setRenamingPath(entry.path);
-        },
-      },
-      {
-        type: "item",
-        label: t("menu.duplicate"),
-        shortcut: "Ctrl+D",
-        disabled: !single,
-        onSelect: () => duplicateEntry(entry, !overlay),
-      },
-      { type: "separator" },
-      {
-        type: "item",
-        label: single ? t("menu.copy") : t("menu.copyCount", { count }),
-        shortcut: "Ctrl+C",
-        onSelect: () => copyToClipboard("copy", targets),
-      },
-      {
-        type: "item",
-        label: single ? t("menu.cut") : t("menu.cutCount", { count }),
-        shortcut: "Ctrl+X",
-        onSelect: () => copyToClipboard("cut", targets),
-      },
-      {
-        type: "item",
-        label: t("menu.paste"),
-        shortcut: "Ctrl+V",
-        disabled: !clipboardHasItems || pasteTarget === null,
-        onSelect: () => paste(pasteTarget ?? undefined),
-      },
-      otherDir === null || overlay ? null : { type: "separator" },
-      otherDir === null || overlay
-        ? null
-        : { type: "item", label: t("split.copyToOther"), shortcut: "F5", onSelect: () => transferToOther("copy", targets) },
-      otherDir === null || overlay
-        ? null
-        : { type: "item", label: t("split.moveToOther"), shortcut: "F6", onSelect: () => transferToOther("cut", targets) },
-      { type: "separator" },
-      {
-        type: "item",
-        label: single ? t("menu.copyPath") : t("menu.copyPaths"),
-        // U výběru se kopírují všechny cesty po řádcích — tak je vezme každý editor.
-        onSelect: () =>
-          copyText(
-            single ? entry.path : targets.map((item) => item.path).join("\r\n"),
-            single ? "op.copyPath" : "op.copyPaths",
-          ),
-      },
-      {
-        type: "item",
-        label: single ? t("menu.copyName") : t("menu.copyNames"),
-        onSelect: () =>
-          copyText(
-            single ? entry.name : targets.map((item) => item.name).join("\r\n"),
-            single ? "op.copyName" : "op.copyNames",
-          ),
-      },
-      { type: "separator" },
-      {
-        type: "item",
-        label: single ? t("menu.delete") : t("menu.deleteCount", { count }),
-        shortcut: "Delete",
-        danger: true,
-        onSelect: () => deleteEntries(targets),
-      },
-      { type: "separator" },
-      {
-        type: "tags",
-        label: t("menu.tags"),
-        active: single ? entryTags : sharedTags,
-        // U výběru se barva přidá všem (nebo všem odebere, když ji mají všichni).
-        onToggle: (color) =>
-          single
-            ? changeTags([entry.path], () => storage.toggleTag(entry.path, color))
-            : changeTags(targetPaths, () => storage.setTag(targetPaths, color, !sharedTags.includes(color))),
-      },
-      !anyTags
-        ? null
-        : {
-            type: "item",
-            label: t("menu.removeTags"),
-            onSelect: () =>
-              changeTags(targetPaths, async () => {
-                for (const path of targetPaths) await storage.clearTags(path);
-              }),
-          },
-      // MI-FORK: ZIP, renombrar varios, comparar.
-      ...extras.menuItems(targets),
-      // MI-FORK: Git integrado (Stage / Unstage).
-      ...git.menuItems(targets),
-      { type: "separator" },
-      {
-        type: "item",
-        label: t("menu.properties"),
-        disabled: !single,
-        onSelect: () => setPropertiesFor(entry),
-      },
-    ];
-
-    return items.filter((item): item is MenuItem => item !== null);
-  }, [
+  const menuItems = useMemo((): MenuItem[] => buildContextMenuItems({ menu, copyText, openTabs, activeTabId, splitOn, separateTab, closeTab, closeOtherTabs, setPathEditing, openFile, runOperation, revealInExplorer, favorites, newMenuEntries, clipboardHasItems, paste, folderApps, openTerminalAt, terminalItems, viewMode, changeViewMode, showHidden, toggleHidden, extras, sortKey, setSortKey, sortDirection, setSortDirection, isColumnView, visibleEntries, selectAll, refresh, setPropertiesFor, targetEntries, tags, openFromResults, open, openTab, reveal, setOverlayPreview, previewEntry, names, setRenamingPath, duplicateEntry, copyToClipboard, otherDir, transferToOther, deleteEntries, changeTags, git }), [
     menu,
     tabs, // MI-FORK: menu záložky
     activeTabId,
@@ -2342,34 +1958,7 @@ export default function App() {
 
   /* ------------------------- menu tlačítek toolbaru ------------------------ */
 
-  const toolbarSortItems = useMemo(
-    (): MenuItem[] => [
-      ...(Object.keys(SORT_LABELS) as SortKey[]).map(
-        (key): MenuItem => ({
-          type: "item",
-          label: t(SORT_LABELS[key]),
-          checked: sortKey === key,
-          onSelect: () => setSortKey(key),
-        }),
-      ),
-      { type: "separator" },
-      {
-        type: "item",
-        label: t("sort.ascending"),
-        checked: sortDirection === "asc",
-        onSelect: () => setSortDirection("asc"),
-      },
-      {
-        type: "item",
-        label: t("sort.descending"),
-        checked: sortDirection === "desc",
-        onSelect: () => setSortDirection("desc"),
-      },
-      // MI-FORK: «Agrupar por ▸» en la vista Lista.
-      ...(viewMode === "list" ? [{ type: "separator" as const }, extras.groupByMenu()] : []),
-    ],
-    [sortKey, sortDirection, locale, viewMode, extras.groupByMenu],
-  );
+  const toolbarSortItems = useMemo((): MenuItem[] => buildToolbarSortItems({ sortKey, setSortKey, sortDirection, setSortDirection, viewMode, extras }), [sortKey, sortDirection, locale, viewMode, extras.groupByMenu]);
 
   /** Zpět / Znovu na začátku menu Více — s názvem operace, jako ve Finderu. */
   /* -------------------------------- příkazy -------------------------------- */
@@ -2595,51 +2184,11 @@ export default function App() {
     [targetEntries, currentDir],
   );
 
-  const toolbarShareItems = useMemo((): MenuItem[] => {
-    const single = sharePaths.length === 1;
-    const text = sharePaths.join("\r\n");
-
-    return [
-      {
-        type: "item",
-        label: single ? t("menu.copyPath") : t("menu.copyPaths"),
-        disabled: sharePaths.length === 0,
-        onSelect: () => copyText(text, single ? "op.copyPath" : "op.copyPaths"),
-      },
-      {
-        type: "item",
-        label: t("menu.copyFiles"),
-        disabled: sharePaths.length === 0,
-        // Jako soubory (CF_HDROP) — vloží je Průzkumník i příloha v mailu.
-        onSelect: () => putOnClipboard(sharePaths, "copy"),
-      },
-      { type: "separator" },
-      {
-        type: "item",
-        label: t("menu.openInExplorer"),
-        disabled: sharePaths.length === 0,
-        onSelect: () => revealInExplorer(sharePaths[0]),
-      },
-    ];
-  }, [sharePaths, copyText, putOnClipboard, revealInExplorer, locale]);
+  const toolbarShareItems = useMemo((): MenuItem[] => buildToolbarShareItems({ sharePaths, copyText, putOnClipboard, revealInExplorer }), [sharePaths, copyText, putOnClipboard, revealInExplorer, locale]);
 
   // Štítky výběru: barva je zaškrtnutá, když ji mají všechny vybrané položky.
   // Klik ji pak všem odebere, jinak ji přidá všem — jako ve Finderu.
-  const toolbarTagItems = useMemo((): MenuItem[] | null => {
-    if (targetEntries.length === 0) return null;
-    const paths = targetEntries.map((entry) => entry.path);
-
-    return TAG_COLORS.map((color): MenuItem => {
-      const everywhere = paths.every((path) => storage.tagsOf(tags, path).includes(color));
-      return {
-        type: "item",
-        label: tagLabel(color),
-        dot: TAG_HEX[color],
-        checked: everywhere,
-        onSelect: () => changeTags(paths, () => storage.setTag(paths, color, !everywhere)),
-      };
-    });
-  }, [targetEntries, tags, changeTags, locale]);
+  const toolbarTagItems = useMemo((): MenuItem[] | null => buildToolbarTagItems({ targetEntries, tags, changeTags }), [targetEntries, tags, changeTags, locale]);
 
   // Ikona před názvem v toolbaru: stejná jako u složky v sidebaru, jinak
   // obecná složka; v tag view puntík barvy, ve výsledcích lupa.
