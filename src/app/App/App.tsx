@@ -90,20 +90,15 @@ import { homeDir } from "@tauri-apps/api/path";
 import { canDropInto, draggedFolder, droppedPaths, endDrag, getDrag, isExternalFileDrag, useDrag } from "../../features/file-list/application/dnd";
 import { isTypingTarget } from "../../shared/lib/dom";
 import {
-  applyWindowBackdrop,
   GLASS_STATUS,
   GLASS_TOP,
   GLASS_UPDATE_BAR,
   GLASS_QUICK,
   GlassInsetsContext,
-  systemTransparency,
-  acrylicSupported,
-  watchSystemTransparency,
-  windowBackdrop,
   type GlassInsets,
 } from "../../features/theme/application/glass";
 import { refreshExplorerExtensions, useDisplayNames } from "../../features/file-list/application/extensions";
-import { applyMotion, motionEnabled, motionMs, smoothIfAllowed } from "../../shared/lib/motion";
+import { applyMotion, motionMs, smoothIfAllowed } from "../../shared/lib/motion";
 import * as storage from "../../shared/infrastructure/storage";
 import { folderOpenWithMenu, useFolderApps } from "../../features/toolbar/application/folderApps";
 import { FolderOpenButton } from "../../features/toolbar/ui/FolderOpenButton"; // MI-FORK
@@ -126,7 +121,7 @@ import { setSpecialFolders } from "../../features/sidebar/domain/specialFolders"
 import { checkForUpdate, type AvailableUpdate } from "../../features/updates/infrastructure/updates";
 import { useStorage } from "../../shared/lib/useStorage";
 import { blankSnapshot, newTab, tabFace, type Tab, type TabSnapshot } from "../../features/tabs/application/browser";
-import { applyTheme, resolveTheme, systemTheme, watchSystemTheme, type ThemePreference } from "../../features/theme/application/theme";
+import { useWindowAppearance } from "../../features/theme/application/useWindowAppearance";
 import { redoOp, trashTimestamp, undoLabel, undoOp, UNDO_LIMIT, type UndoOp } from "../../features/history/application/undo";
 import type {
   Clipboard,
@@ -135,7 +130,6 @@ import type {
   OpResult,
   StatResult,
   TagColor,
-  Theme,
   ViewMode,
 } from "../../shared/domain/types";
 
@@ -211,6 +205,11 @@ export default function App() {
   // Překreslení po přepnutí jazyka; texty se berou z `t`, které čte aktuální locale.
   const locale = useLocale();
   useEffect(() => applyMotion(motion), [motion]);
+  const { theme, changeTheme, toggleTheme, ready, acrylicAvailable } = useWindowAppearance({
+    themePreference,
+    windowTransparency,
+    transparencyStrength,
+  });
 
   // Nainstalované terminály: menu Více → Terminál zbylé zašedí, Shift+klik
   // na „Otevřít v terminálu" nabídne jen tyhle.
@@ -241,12 +240,6 @@ export default function App() {
   }, []);
   /** Zvýšením se otevře menu Nový v toolbaru (příkaz newItem). */
   const [newMenuRequest, setNewMenuRequest] = useState(0);
-
-  // Režim Windows se sleduje za běhu — při volbě „Podle systému" se okno
-  // přebarví hned, jak ho uživatel přepne v Nastavení.
-  const [osTheme, setOsTheme] = useState<Theme>(systemTheme);
-  useEffect(() => watchSystemTheme(() => setOsTheme(systemTheme())), []);
-  const theme: Theme = themePreference === "system" ? osTheme : themePreference;
 
   const [quickLookOpen, setQuickLookOpen] = useState(false);
   /** MI-FORK: panel informací vpravo (ⓘ v liště rychlých přepínačů). */
@@ -509,108 +502,6 @@ export default function App() {
     });
   }, []);
 
-  useEffect(() => applyTheme(theme), [theme]);
-
-  /**
-   * Volba vzhledu (menu Více → Vzhled, paleta). Celé okno se prolne naráz
-   * přes View Transition: snímek starého vzhledu zhasne nad novým, takže
-   * žádná plocha nedobíhá svým tempem. Nový stav musí být v DOM hotový
-   * uvnitř callbacku — proto flushSync (zápis do storage je synchronní,
-   * na disk se dopisuje až potom).
-   */
-  const changeTheme = useCallback(
-    (preference: ThemePreference) => {
-      if (preference === themePreference) return;
-      const next = resolveTheme(preference);
-      const root = document.documentElement;
-      const apply = () => {
-        flushSync(() => void storage.setTheme(preference));
-        applyTheme(next);
-      };
-      if (next === theme) {
-        // Jen jiná volba se stejným výsledkem (tmavý → podle systému v noci).
-        apply();
-        return;
-      }
-      const done = () => root.classList.remove("is-theming");
-
-      root.classList.add("is-theming");
-      const withTransition = document as Document & {
-        startViewTransition?: (update: () => void) => { finished: Promise<void> };
-      };
-      if (withTransition.startViewTransition && motionEnabled()) {
-        withTransition.startViewTransition(apply).finished.finally(done);
-      } else {
-        apply();
-        // Až po vykreslení nového stavu, ať se nic nerozjede dodatečně.
-        requestAnimationFrame(() => requestAnimationFrame(done));
-      }
-    },
-    [theme, themePreference],
-  );
-
-  /** Světlý <-> tmavý (paleta) — nastaví vzhled napevno. */
-  const toggleTheme = useCallback(() => changeTheme(theme === "dark" ? "light" : "dark"), [changeTheme, theme]);
-
-  // Okno startuje skryté (tauri.conf.json). Ukáže se, až je hotový první
-  // render, nastavení (téma je už z localStorage, main.tsx) a písmo — bez
-  // bílého záblesku a bez přeskočení fontu. Když JS spadne, ukáže ho Rust
-  // sám po 1,5 s.
-  const [ready, setReady] = useState(false);
-  // Smí zapnutá Průhlednost rozmazávat (Efekty průhlednosti, Windows 11 22H2+)?
-  const [blurAllowed, setBlurAllowed] = useState(true);
-  // Umí Windows Acrylic vůbec? Jinak menu ani paleta rozmazanou nenabízí.
-  const [acrylicAvailable, setAcrylicAvailable] = useState(false);
-  // Windows bez Acrylicu (10, 11 před 22H2): průhlednost se nenabízí vůbec
-  // a uložená zapnutá se vypne (ostrá průhlednost od 1.6 není).
-  useEffect(() => {
-    void Promise.all([acrylicSupported(), storage.init()]).then(([supported]) => {
-      setAcrylicAvailable(supported);
-      if (!supported && storage.getSnapshot().windowTransparency) void storage.setWindowTransparency(false);
-    });
-  }, []);
-  // Neaktivní okno: Windows Acrylic nahradí plnou výplní — CSS okno předtím
-  // zneprůhlední (index.css, data-inactive), ať nepřeskočí na cizí šedou.
-  // Aktivace z Rustu (WM_NCACTIVATE, snap.rs) — window.blur přijde i při
-  // fokusu do iframe náhledu a onFocusChanged Tauri při aktivaci bez fokusu
-  // ve webview vůbec.
-  useEffect(() => {
-    const root = document.documentElement;
-    const unlisten = listen<boolean>("window-active", ({ payload: active }) =>
-      root.toggleAttribute("data-inactive", !active),
-    );
-    // Výchozí stav (start, reload stránky) — událost chodí jen při změně.
-    void unlisten.then(() =>
-      invoke<boolean>("window_is_active")
-        .then((active) => root.toggleAttribute("data-inactive", !active))
-        .catch(() => undefined),
-    );
-    return () => {
-      void unlisten.then((fn) => fn());
-    };
-  }, []);
-  useEffect(() => {
-    let active = true;
-    Promise.all([storage.init(), document.fonts?.ready, systemTransparency()])
-      // Průhlednost platí už pro první snímek okna — podklad i CSS před ukázáním.
-      .then(([, , blur]) => {
-        if (active) setBlurAllowed(blur);
-        const { windowTransparency: on, transparencyStrength: strength } = storage.getSnapshot();
-        return applyWindowBackdrop(windowBackdrop(on, blur), strength);
-      })
-      .catch(() => undefined)
-      // Volba animací musí platit už pro rozsvícení okna.
-      .then(() => applyMotion(storage.getSnapshot().motion))
-      .then(() => invoke("app_ready"))
-      .catch(() => undefined)
-      .finally(() => {
-        if (active) setReady(true);
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
-
   // Nová verze na GitHubu: nejvýš jednou denně, až když okno stojí.
   const [update, setUpdate] = useState<AvailableUpdate | null>(null);
   useEffect(() => {
@@ -627,32 +518,6 @@ export default function App() {
     };
   }, [ready, updates.check]);
   const updateBarShown = update !== null && updates.check;
-
-  // Průhlednost za běhu: menu, paleta, změna Efektů průhlednosti ve Windows
-  // (chytí ji návrat do okna). Hlídá se jen se zapnutou volbou.
-  useEffect(() => {
-    if (!ready) return;
-    void applyWindowBackdrop(
-      windowBackdrop(windowTransparency, blurAllowed),
-      transparencyStrength,
-    );
-  }, [ready, windowTransparency, blurAllowed, transparencyStrength]);
-  useEffect(() => {
-    if (!ready || !windowTransparency) return;
-    let alive = true;
-    const check = () =>
-      void systemTransparency().then((blur) => {
-        if (alive) setBlurAllowed(blur);
-      });
-    const stop = watchSystemTransparency(check);
-    // Efekty průhlednosti se mohly změnit, zatímco byla volba vypnutá — okno
-    // je už zaostřené, focus nepřijde.
-    check();
-    return () => {
-      alive = false;
-      stop();
-    };
-  }, [ready, windowTransparency]);
 
   // Sklo: lišty leží přes výpis, views o tom vědí kvůli virtualizaci.
   const glassInsets = useMemo<GlassInsets>(
