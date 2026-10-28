@@ -4,7 +4,7 @@ import { ChevronDown, Folder, Trash2 } from "lucide-react";
 
 import { ContextMenu, type MenuItem } from "../../../../shared/ui/ContextMenu";
 import { fileVisual, sidebarIcon, sidebarIconColor, sidebarLabel } from "../../../../shared/ui/icons";
-import { openDevice, openInExplorer, openTerminal, openWith, parentPath } from "../../../../shared/infrastructure/fileops";
+import { openDevice, openInExplorer, openTerminal, openWith, parentPath } from "../../../../shared/application/fileops";
 import { formatRelative } from "../../../../shared/domain/format";
 import { failure, useT, type MessageKey } from "../../../../shared/i18n/index";
 import type { ConfirmRequest } from "../../../dialogs/ui/ConfirmDialog";

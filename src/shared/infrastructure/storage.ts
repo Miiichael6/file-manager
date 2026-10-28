@@ -3,6 +3,8 @@ import { load, type Store } from "@tauri-apps/plugin-store";
 import type { SortDirection, SortKey } from "../domain/format";
 import { readThemeMirror, writeThemeMirror, type ThemePreference } from "../../features/theme/application/theme";
 import type { CustomFavorite, RecentEntry, RecentKind, TagColor, TagMap, ViewMode } from "../domain/types";
+import { lastSegment, pathKey, samePath } from "../domain/paths";
+export { lastSegment, pathKey, samePath } from "../domain/paths";
 
 /**
  * Persistentní nastavení v `settings.json` v app data adresáři (`%APPDATA%\<identifier>`,
@@ -765,30 +767,9 @@ function orderColors(colors: TagColor[]): TagColor[] {
   return TAG_COLORS.filter((color) => colors.includes(color));
 }
 
-/**
- * Jednotný klíč cesty: malá písmena, zpětná lomítka, bez lomítka na konci
- * (kromě kořene disku). Windows velikost písmen nerozlišuje — ručně zadané
- * "c:\users\…" musí najít tytéž tagy jako "C:\Users\…" z výpisu.
- */
-export function pathKey(path: string): string {
-  const key = path.replace(/\//g, "\\").toLowerCase();
-  if (/^[a-z]:\\?$/.test(key)) return `${key.slice(0, 2)}\\`;
-  return key.replace(/\\+$/, "");
-}
-
-export function samePath(a: string, b: string): boolean {
-  return pathKey(a) === pathKey(b);
-}
-
 const NO_TAGS: TagColor[] = [];
 
 /** Barvy položky. Vždy přes tuhle funkci — mapa je klíčovaná pathKey(). */
 export function tagsOf(tags: TagMap, path: string): TagColor[] {
   return tags[pathKey(path)] ?? NO_TAGS;
-}
-
-/** "C:\\Users\\jane\\Downloads" → "Downloads"; kořen disku vrátí "C:". */
-export function lastSegment(path: string): string {
-  const parts = path.split("\\").filter(Boolean);
-  return parts[parts.length - 1] ?? path;
 }

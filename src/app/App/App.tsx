@@ -62,7 +62,7 @@ import {
   trashIsPermanent,
   type ShellNewType,
   type TerminalId,
-} from "../../shared/infrastructure/fileops";
+} from "../../shared/application/fileops";
 import {
   breadcrumbs,
 } from "../../shared/domain/format";

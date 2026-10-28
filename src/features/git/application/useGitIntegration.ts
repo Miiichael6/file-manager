@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 
 import type { CommandHandler } from "../../command-palette/domain/commands";
 import type { MenuItem } from "../../../shared/ui/ContextMenu";
-import { errorDetail } from "../../../shared/infrastructure/fileops";
+import { errorDetail } from "../../../shared/application/fileops";
 import { errorText, useT } from "../../../shared/i18n/index";
 import type { FileEntry } from "../../../shared/domain/types";
 import { isStaged, isUnstaged } from "../domain/git";

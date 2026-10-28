@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from "react";
 
 import { fileSystem, settingsStore } from "../../../shared/application/ports";
-import { parentPath } from "../../../shared/infrastructure/fileops";
+import { parentPath } from "../../../shared/application/fileops";
 import { compareNames } from "../../../shared/domain/format";
 import type { FileEntry } from "../../../shared/domain/types";
 import * as storage from "../../../shared/infrastructure/storage";

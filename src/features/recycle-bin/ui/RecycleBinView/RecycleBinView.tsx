@@ -6,7 +6,7 @@ import { ContextMenu, type MenuItem } from "../../../../shared/ui/ContextMenu";
 import { EmptyState } from "../../../../shared/ui/EmptyState";
 import { SmallEntryIcon } from "../../../../shared/ui/icons";
 import { compareNames, formatModified, formatSize } from "../../../../shared/domain/format";
-import { errorDetail, listRecycleBin, type RecycleEntry } from "../../../../shared/infrastructure/fileops";
+import { errorDetail, listRecycleBin, type RecycleEntry } from "../../../../shared/application/fileops";
 import { failure, useT } from "../../../../shared/i18n/index";
 import type { FileEntry } from "../../../../shared/domain/types";
 import { useDisplayNames } from "../../../file-list/application/extensions";

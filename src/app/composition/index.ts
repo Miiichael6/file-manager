@@ -8,8 +8,11 @@
  */
 import {
   dirWatcher,
+  fileClipboard,
+  fileOperations,
   fileSystem,
   fileUrls,
+  recycleBin,
   settingsStore,
   shellImages,
   shellLauncher,
@@ -26,6 +29,7 @@ import {
   tauriSystemPlaces,
   tauriTextClipboard,
 } from "../../shared/infrastructure/tauriShared";
+import { tauriFileClipboard, tauriFileOperations, tauriRecycleBin } from "../../shared/infrastructure/tauriFileOps";
 import { gitRepository } from "../../features/git/application/ports";
 import { tauriGitRepository } from "../../features/git/infrastructure/tauriGitRepository";
 import { windowChrome } from "../../features/theme/application/ports";
@@ -56,6 +60,9 @@ function composeApp(): void {
   shellLauncher.provide(tauriShellLauncher);
   dirWatcher.provide(tauriDirWatcher);
   systemPlaces.provide(tauriSystemPlaces);
+  fileOperations.provide(tauriFileOperations);
+  fileClipboard.provide(tauriFileClipboard);
+  recycleBin.provide(tauriRecycleBin);
 
   gitRepository.provide(tauriGitRepository);
   windowChrome.provide(tauriWindowChrome);

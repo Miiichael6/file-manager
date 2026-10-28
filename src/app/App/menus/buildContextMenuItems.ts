@@ -1,7 +1,7 @@
 import * as storage from "../../../shared/infrastructure/storage";
 import { t, type MessageKey } from "../../../shared/i18n/index";
 import { type MenuItem } from "../../../shared/ui/ContextMenu";
-import { openWith, parentPath, type TerminalId } from "../../../shared/infrastructure/fileops";
+import { openWith, parentPath, type TerminalId } from "../../../shared/application/fileops";
 import { folderOpenWithMenu } from "../../../features/toolbar/application/folderApps";
 import { VIEW_LABELS, SORT_LABELS } from "../constants";
 import { type ViewMode, type FileEntry } from "../../../shared/domain/types";

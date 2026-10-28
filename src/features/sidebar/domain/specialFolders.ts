@@ -1,4 +1,4 @@
-import { pathKey } from "../../../shared/infrastructure/storage";
+import { pathKey } from "../../../shared/domain/paths";
 import type { FavoriteEntry, FavoriteSection } from "../../../shared/domain/types";
 
 /**

@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Tag } from "lucide-react";
 
 import { ResultsView } from "../../../search/ui/ResultsView";
-import { statPaths } from "../../../../shared/infrastructure/fileops";
+import { statPaths } from "../../../../shared/application/fileops";
 import { useT } from "../../../../shared/i18n/index";
 import * as storage from "../../../../shared/infrastructure/storage";
 import { tagLabel } from "../../application/tags";

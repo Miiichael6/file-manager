@@ -4,7 +4,7 @@ import { EmptyState } from "../../../../shared/ui/EmptyState";
 import { SmallEntryIcon } from "../../../../shared/ui/icons";
 import { TagDots } from "../../../tags/ui/TagDots";
 import { entryOpacity, formatModified, sortEntries } from "../../../../shared/domain/format";
-import { parentPath, relativeParent } from "../../../../shared/infrastructure/fileops";
+import { parentPath, relativeParent } from "../../../../shared/application/fileops";
 import { useT } from "../../../../shared/i18n/index";
 import { tagsOf } from "../../../../shared/infrastructure/storage";
 import { useStorage } from "../../../../shared/lib/useStorage";

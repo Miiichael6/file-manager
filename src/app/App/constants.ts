@@ -1,4 +1,4 @@
-import type { TerminalId } from "../../shared/infrastructure/fileops";
+import type { TerminalId } from "../../shared/application/fileops";
 import type { SortKey } from "../../shared/domain/format";
 import type { MessageKey } from "../../shared/i18n/index";
 import type { ViewMode } from "../../shared/domain/types";

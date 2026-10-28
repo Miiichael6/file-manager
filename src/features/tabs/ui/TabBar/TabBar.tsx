@@ -9,7 +9,7 @@ import { useT } from "../../../../shared/i18n/index";
 import { canDropInto, droppedPaths, EMPTY_DRAG_IMAGE, endDrag, getDrag, isExternalFileDrag } from "../../../file-list/application/dnd";
 import type { DropInto } from "../../../file-list/application/rowDnd";
 import { breadcrumbs } from "../../../../shared/domain/format";
-import { parentPath } from "../../../../shared/infrastructure/fileops";
+import { parentPath } from "../../../../shared/application/fileops";
 import { motionMs } from "../../../../shared/lib/motion";
 
 export type TabItem = {

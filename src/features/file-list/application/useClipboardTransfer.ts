@@ -4,7 +4,7 @@ import type { PanelSearch } from "../../search/domain/searchCriteria";
 import * as storage from "../../../shared/infrastructure/storage";
 import { type MessageKey, failure } from "../../../shared/i18n/index";
 import { textClipboard } from "../../../shared/application/ports";
-import { errorDetail, clipboardWriteFiles, clipboardHasFiles, clipboardReadFiles, parentPath, statPaths, type OnConflict, copyPath, movePath, needsAdmin, transferElevated, type ItemFailure, clipboardClear } from "../../../shared/infrastructure/fileops";
+import { errorDetail, clipboardWriteFiles, clipboardHasFiles, clipboardReadFiles, parentPath, statPaths, type OnConflict, copyPath, movePath, needsAdmin, transferElevated, type ItemFailure, clipboardClear } from "../../../shared/application/fileops";
 import { type FileEntry, type StatResult, type OpResult, type Clipboard, type TagColor } from "../../../shared/domain/types";
 import { type ConflictRequest, type ConflictAnswer } from "../../dialogs/ui/ConflictDialog";
 import { type UndoOp } from "../../history/application/undo";

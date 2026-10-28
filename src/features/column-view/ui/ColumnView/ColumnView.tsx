@@ -24,7 +24,7 @@ import { isTypingTarget } from "../../../../shared/lib/dom";
 import { canShellThumbnail } from "../../../../shared/lib/fileIcons";
 import { motionMs, smoothIfAllowed } from "../../../../shared/lib/motion";
 import { TAG_HEX, tagLabel } from "../../../tags/application/tags";
-import { cancelFolderStats, folderStats, getFileProperties, getMediaInfo, type MediaInfo } from "../../../../shared/infrastructure/fileops";
+import { cancelFolderStats, folderStats, getFileProperties, getMediaInfo, type MediaInfo } from "../../../../shared/application/fileops";
 import { entryOpacity, formatItemCount, formatModified, formatSize, kindLabel, previewKind } from "../../../../shared/domain/format";
 import { failure, formatNumber, useT } from "../../../../shared/i18n/index";
 import type { Column, ColumnsApi } from "../../application/columns";

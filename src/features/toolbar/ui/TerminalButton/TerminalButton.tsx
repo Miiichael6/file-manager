@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { ChevronDown, SquareTerminal } from "lucide-react";
 
 import { ContextMenu, type MenuItem } from "../../../../shared/ui/ContextMenu";
-import { availableTerminals, openTerminal, type TerminalId } from "../../../../shared/infrastructure/fileops";
+import { availableTerminals, openTerminal, type TerminalId } from "../../../../shared/application/fileops";
 import type { MessageKey } from "../../../../shared/i18n/index";
 import { useT } from "../../../../shared/i18n/index";
 import * as storage from "../../../../shared/infrastructure/storage";

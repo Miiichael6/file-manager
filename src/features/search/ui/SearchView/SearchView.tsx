@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { SearchX } from "lucide-react";
 
 import { ResultsView } from "../ResultsView";
-import { cancelSearch, searchRecursive } from "../../../../shared/infrastructure/fileops";
+import { cancelSearch, searchRecursive } from "../../../../shared/application/fileops";
 import { failure, useT } from "../../../../shared/i18n/index";
 import { compileCriteria, type CriterionRow } from "../../domain/searchCriteria";
 import type { FileEntry } from "../../../../shared/domain/types";

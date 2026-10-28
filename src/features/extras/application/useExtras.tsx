@@ -2,13 +2,14 @@ import { useCallback, useState } from "react";
 
 import type { CommandHandler } from "../../command-palette/domain/commands";
 import type { MenuItem } from "../../../shared/ui/ContextMenu";
-import { parentPath } from "../../../shared/infrastructure/fileops";
+import { parentPath } from "../../../shared/application/fileops";
 import { archives } from "./ports";
 import { useT, type MessageKey } from "../../../shared/i18n/index";
 import type { FileEntry } from "../../../shared/domain/types";
 import type { UndoOp } from "../../history/application/undo";
 import { BatchRenameDialog } from "../../batch-rename/ui/BatchRenameDialog";
-import { renameAll, targetOf, type Preview, type Renamed } from "../../batch-rename/domain/batchRename";
+import { targetOf, type Preview, type Renamed } from "../../batch-rename/domain/batchRename";
+import { renameAll } from "../../batch-rename/application/renameAll";
 import { CompareDialog } from "../../compare/ui/CompareDialog";
 import { GROUP_BY, setExtrasSetting, useExtrasSettings, type GroupBy } from "./extrasSettings";
 

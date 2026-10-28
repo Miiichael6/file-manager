@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import { isValidFileName, stemLength } from "../../../../shared/infrastructure/fileops";
+import { isValidFileName, stemLength } from "../../../../shared/application/fileops";
 import { useDisplayNames } from "../../application/extensions";
 import type { FileEntry } from "../../../../shared/domain/types";
 

@@ -3,7 +3,7 @@ import { ChevronRight } from "lucide-react";
 
 import { GitBadge } from "../../../git/ui/GitBadge";
 import { SmallEntryIcon } from "../../../../shared/ui/icons";
-import { parentPath } from "../../../../shared/infrastructure/fileops";
+import { parentPath } from "../../../../shared/application/fileops";
 import { useT } from "../../../../shared/i18n/index";
 import { useDisplayNames } from "../../../file-list/application/extensions";
 import {

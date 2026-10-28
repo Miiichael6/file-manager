@@ -1,10 +1,13 @@
 import { definePort } from "./port";
 import type {
   DirWatcher,
+  FileClipboard,
+  FileOperations,
   FileSystem,
   FileUrls,
   SettingsStore,
   ShellImages,
+  RecycleBin,
   ShellLauncher,
   SystemPlaces,
   TextClipboard,
@@ -19,3 +22,6 @@ export const fileUrls = definePort<FileUrls>("FileUrls");
 export const shellLauncher = definePort<ShellLauncher>("ShellLauncher");
 export const dirWatcher = definePort<DirWatcher>("DirWatcher");
 export const systemPlaces = definePort<SystemPlaces>("SystemPlaces");
+export const fileOperations = definePort<FileOperations>("FileOperations");
+export const fileClipboard = definePort<FileClipboard>("FileClipboard");
+export const recycleBin = definePort<RecycleBin>("RecycleBin");

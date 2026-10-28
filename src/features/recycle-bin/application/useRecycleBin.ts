@@ -8,7 +8,7 @@ import {
   type ItemFailure,
   type RecycleEntry,
   type RecycleState,
-} from "../../../shared/infrastructure/fileops";
+} from "../../../shared/application/fileops";
 import { t, type MessageKey } from "../../../shared/i18n/index";
 import type { ConfirmRequest } from "../../dialogs/ui/ConfirmDialog";
 

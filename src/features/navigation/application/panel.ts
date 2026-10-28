@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useBrowserState, type TabSnapshot } from "../../tabs/application/browser";
 import { useColumns } from "../../column-view/application/columns";
-import { parentPath } from "../../../shared/infrastructure/fileops";
+import { parentPath } from "../../../shared/application/fileops";
 import { fileSystem } from "../../../shared/application/ports";
 import { sortEntries, type SortKey } from "../../../shared/domain/format";
 import { errorText, useLocale } from "../../../shared/i18n/index";

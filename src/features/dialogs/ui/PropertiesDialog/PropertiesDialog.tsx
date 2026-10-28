@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Dialog } from "../../../../shared/ui/Dialog";
 import { LargeEntryIcon } from "../../../../shared/ui/icons";
-import { cancelFolderStats, folderStats, getFileProperties, parentPath } from "../../../../shared/infrastructure/fileops";
+import { cancelFolderStats, folderStats, getFileProperties, parentPath } from "../../../../shared/application/fileops";
 import { formatItemCount, formatModified, formatSize, kindLabel } from "../../../../shared/domain/format";
 import { errorText, t as translate, useT } from "../../../../shared/i18n/index";
 import { tagsOf } from "../../../../shared/infrastructure/storage";

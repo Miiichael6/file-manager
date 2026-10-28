@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { ChevronDown } from "lucide-react";
 
 import { ContextMenu } from "../../../../shared/ui/ContextMenu";
-import { statPaths } from "../../../../shared/infrastructure/fileops";
+import { statPaths } from "../../../../shared/application/fileops";
 import type { MessageKey } from "../../../../shared/i18n/index";
 import { useT } from "../../../../shared/i18n/index";
 import "./folder-open.css";

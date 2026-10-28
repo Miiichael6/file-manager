@@ -9,11 +9,11 @@ import {
   renamePath,
   restoreFromTrash,
   trashIsPermanent,
-} from "../../../shared/infrastructure/fileops";
+} from "../../../shared/application/fileops";
 import { t } from "../../../shared/i18n/index";
 import * as storage from "../../../shared/infrastructure/storage";
 import type { TagColor } from "../../../shared/domain/types";
-import { renameAll } from "../../batch-rename/domain/batchRename"; // MI-FORK: renombrado por lotes.
+import { renameAll } from "../../batch-rename/application/renameAll"; // MI-FORK: renombrado por lotes.
 
 /**
  * Zpět / Znovu. Zásobník drží App (jen v paměti, posledních 50 operací);

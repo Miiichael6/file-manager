@@ -14,6 +14,7 @@ import type {
   SystemPlaces,
   TextClipboard,
 } from "../domain/ports";
+import type { TerminalId } from "../domain/fileops";
 import type { FavoriteSection, FileEntry } from "../domain/types";
 import { invoke } from "./fileops";
 import * as storage from "./storage";
@@ -52,6 +53,7 @@ export const tauriShellImages: ShellImages = {
   fileIcon: (path, size) => invoke<string>("get_file_icon", { path, size }),
   // Surový invoke: chyba musí dorazit s klíčem (timeout se nepamatuje).
   thumbnail: (path, size) => tauriInvoke<string>("get_file_thumbnail", { path, size }),
+  extensionIcon: (extension) => invoke<string>("get_extension_icon", { extension }),
 };
 
 const STORE_FILE = "settings.json";
@@ -79,6 +81,11 @@ export const tauriFileUrls: FileUrls = { assetUrl: (path) => convertFileSrc(path
 export const tauriShellLauncher: ShellLauncher = {
   open: (path) => invoke("open_file", { path }),
   openReleasePage: (url) => invoke("open_release_page", { url }),
+  openInExplorer: (path) => invoke("open_in_explorer", { path }),
+  openWith: (path) => invoke("open_with", { path }),
+  openTerminal: (path, terminal) => invoke("open_terminal", { path, terminal }),
+  availableTerminals: () => invoke<TerminalId[]>("available_terminals"),
+  openDevice: (path) => invoke("open_device", { path }),
 };
 
 export const tauriSystemPlaces: SystemPlaces = {
