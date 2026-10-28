@@ -1,7 +1,7 @@
 import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { listen } from "@tauri-apps/api/event";
-import { CircleAlert, CircleCheck, FolderOpen, Monitor, PanelLeft, PanelRight, Plus, Search, SearchX, Trash2, X } from "lucide-react";
+import { FolderOpen, Monitor, PanelLeft, PanelRight, Plus, Search, SearchX, Trash2, X } from "lucide-react";
 
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 
@@ -105,7 +105,6 @@ import {
 import { refreshExplorerExtensions, useDisplayNames } from "../../features/file-list/application/extensions";
 import { applyMotion, motionEnabled, motionMs, smoothIfAllowed } from "../../shared/lib/motion";
 import * as storage from "../../shared/infrastructure/storage";
-import type { TransparencyStrength } from "../../shared/infrastructure/storage";
 import { folderOpenWithMenu, useFolderApps } from "../../features/toolbar/application/folderApps";
 import { FolderOpenButton } from "../../features/toolbar/ui/FolderOpenButton"; // MI-FORK
 import { GitToolbarButtons } from "../../features/toolbar/ui/GitToolbarButtons"; // MI-FORK
@@ -117,10 +116,12 @@ import { useStableCallback } from "../../features/file-list/application/rowDnd";
 import { FolderDragGhost } from "../../features/file-list/ui/FolderDragGhost";
 import { usePanel, type Panel } from "../../features/navigation/application/panel";
 
-/** Jen funkce panelu (settery, navigace) — viz activeFns. */
-type PanelFunctions = {
-  [K in keyof Panel as Panel[K] extends (...args: never[]) => unknown ? K : never]: Panel[K];
-};
+import { useNotice } from "../../features/notifications/application/useNotice";
+import { Toast } from "../../features/notifications/ui/Toast";
+import { SPLIT_MIN_WIDTH, VIEW_LABELS, SORT_LABELS, TERMINAL_LABELS } from "./constants";
+import { folderEntry, strengthCommand } from "./helpers";
+import { Placeholder } from "./Placeholder";
+import type { MainMenu, PanelFunctions } from "./types";
 import { setSpecialFolders } from "../../features/sidebar/domain/specialFolders";
 import { checkForUpdate, type AvailableUpdate } from "../../features/updates/infrastructure/updates";
 import { useStorage } from "../../shared/lib/useStorage";
@@ -137,85 +138,6 @@ import type {
   Theme,
   ViewMode,
 } from "../../shared/domain/types";
-
-/** Jak dlouho hláška zůstane, než sama odjede. */
-const TOAST_VISIBLE_MS = 2000;
-
-/**
- * Kontextové menu hlavního panelu. Pravý klik na položku a pravý klik na
- * volnou plochu nabízejí jiné věci, ale otevírají se stejnou komponentou.
- */
-type MainMenu =
-  /** `overlay` = položka z výsledků hledání nebo z tag view. Leží mimo výpis
-   *  aktuální složky, takže operace míří jen na ni a ne na výběr pod ní. */
-  | { kind: "entry"; x: number; y: number; entry: FileEntry; overlay: boolean }
-  | { kind: "background"; x: number; y: number; dir: string }
-  | { kind: "status"; x: number; y: number; dir: string }
-  | { kind: "quicklook"; x: number; y: number; entry: FileEntry }
-  /** MI-FORK: ouško záložky. */
-  | { kind: "tab"; x: number; y: number; id: number };
-
-const VIEW_LABELS: Record<ViewMode, MessageKey> = {
-  icon: "view.icons",
-  list: "view.list",
-  column: "view.columns",
-};
-
-const SORT_LABELS: Record<SortKey, MessageKey> = {
-  name: "sort.name",
-  modified: "sort.modified",
-  size: "sort.size",
-  kind: "sort.kind",
-};
-
-/**
- * Syntetická položka pro složku, ve které uživatel stojí. Vlastnosti si stejně
- * všechno dotáhnou z backendu podle cesty, potřebují jen název a `is_dir`.
- */
-function folderEntry(path: string): FileEntry {
-  return {
-    name: storage.lastSegment(path),
-    path,
-    is_dir: true,
-    size: 0,
-    modified: 0,
-    created: 0,
-    extension: null,
-    hidden: false,
-    is_symlink: false,
-  };
-}
-
-/** Užší okno rozdělení schová (stav zůstává a vrátí se po zvětšení). */
-const SPLIT_MIN_WIDTH = 1000;
-
-function Placeholder({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex h-full items-center justify-center p-6 text-center text-[13px] text-secondary">
-      {children}
-    </div>
-  );
-}
-
-/** Popisky terminálů (menu Více → Terminál a podmenu Shift+klik). */
-const TERMINAL_LABELS: Record<TerminalId, MessageKey> = {
-  windowsTerminal: "terminal.windowsTerminal",
-  pwsh: "terminal.pwsh",
-  powershell: "terminal.powershell",
-  cmd: "terminal.cmd",
-};
-
-/** Volba síly průhlednost rovnou zapne — jinak by nebylo nic vidět. */
-function strengthCommand(strength: TransparencyStrength, checked: boolean) {
-  return {
-    checked,
-    run: () => {
-      void storage.setTransparencyStrength(strength);
-      void storage.setWindowTransparency(true);
-    },
-  };
-}
-
 
 export default function App() {
   const names = useDisplayNames();
@@ -239,20 +161,7 @@ export default function App() {
   /** Záložky se do nastavení zapisují až po jejich obnovení při startu. */
   const tabsLoaded = useRef(false);
 
-  /** `sticky` = chyba, visí do kliknutí / Escape. Informace mizí sama — ale
-   *  "nemáte oprávnění" by se za dvě sekundy nedalo dočíst. */
-  const [notice, setNoticeState] = useState<{ text: string; sticky: boolean; detail?: string } | null>(null);
-  /** Rozbalený technický detail hlášky. */
-  const [noticeExpanded, setNoticeExpanded] = useState(false);
-  /** Hláška ještě visí, ale už odjíždí dolů. */
-  const [noticeClosing, setNoticeClosing] = useState(false);
-  /** Chybová hláška (zůstává). Stabilní identita — předává se i do useColumns. */
-  const setNotice = useCallback((text: string | null, detail?: string) => {
-    setNoticeExpanded(false);
-    setNoticeState(text === null ? null : { text, sticky: true, detail });
-  }, []);
-  /** Informativní hláška, sama zmizí. */
-  const showInfo = useCallback((text: string) => setNoticeState({ text, sticky: false }), []);
+  const { notice, expanded: noticeExpanded, closing: noticeClosing, setNotice, showInfo, close: closeNotice, toggleExpanded: toggleNoticeDetail } = useNotice();
   const [confirm, setConfirm] = useState<ConfirmRequest | null>(null);
   /** Otevřený dialog kolize a funkce, která vrátí odpověď čekající operaci. */
   const [conflict, setConflict] = useState<{
@@ -764,34 +673,6 @@ export default function App() {
     );
     main.classList.toggle("is-scrolled", scrolled);
   };
-
-  // Informace se sama sveze dolů po dvou sekundách, chyba zůstává. Časovač
-  // visí na `notice`, takže nová hláška ten starý zruší a odpočet začne znovu.
-  useEffect(() => {
-    if (notice === null) return;
-
-    setNoticeClosing(false);
-    if (notice.sticky) return;
-
-    const startExit = window.setTimeout(() => setNoticeClosing(true), TOAST_VISIBLE_MS);
-    return () => window.clearTimeout(startExit);
-  }, [notice]);
-
-  // Odjezd (automatický, křížkem i Escapem) dohraje animaci a pak hlášku zahodí.
-  useEffect(() => {
-    if (!noticeClosing) return;
-    const remove = window.setTimeout(() => setNoticeState(null), motionMs("--dur-slow"));
-    return () => window.clearTimeout(remove);
-  }, [noticeClosing]);
-
-  useEffect(() => {
-    if (!notice?.sticky) return;
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setNoticeClosing(true);
-    }
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [notice]);
 
   // Chyby zápisu nastavení (oblíbené, tagy) — jinak by skončily jen v konzoli.
   useEffect(
@@ -3889,52 +3770,14 @@ export default function App() {
         onGitClick={() => git.setDialogOpen(true)}
       />
 
-      {/* Hláška plave nad status barem. Vnější obal centruje, vnitřní animuje —
-          keyframes přepisují transform, takže by centrování translateX sežraly. */}
       {notice && (
-        <div
-          className="pointer-events-none fixed inset-x-0 z-40 flex justify-center"
-          style={{ bottom: 32 }}
-        >
-          <div
-            role={notice.sticky ? "alert" : "status"}
-            className={`fw-popover pointer-events-auto flex max-w-[70%] flex-wrap items-center gap-x-2.5 gap-y-1.5 rounded-[8px] px-3 py-2 text-[13px] ${
-              noticeClosing ? "fw-toast-out" : "fw-toast-in"
-            }`}
-          >
-            {/* Chyba (zůstává) červeně, informace / úspěch zeleně. */}
-            {notice.sticky ? (
-              <CircleAlert size={16} strokeWidth={2} className="shrink-0" color="var(--danger)" aria-hidden />
-            ) : (
-              <CircleCheck size={16} strokeWidth={2} className="shrink-0" color="var(--success)" aria-hidden />
-            )}
-            <span className="min-w-0 flex-1 text-primary">{notice.text}</span>
-            {/* Technický detail (kód a text Windows, seznam položek) až na požádání. */}
-            {notice.detail && (
-              <button
-                type="button"
-                aria-expanded={noticeExpanded}
-                onClick={() => setNoticeExpanded((open) => !open)}
-                className="shrink-0 text-[12px] text-secondary underline-offset-2 hover:text-primary hover:underline"
-              >
-                {noticeExpanded ? t("common.hideDetails") : t("common.details")}
-              </button>
-            )}
-            <button
-              type="button"
-              aria-label={t("common.close")}
-              onClick={() => setNoticeClosing(true)}
-              className="shrink-0 text-secondary hover:text-primary"
-            >
-              <X size={12} strokeWidth={2.5} />
-            </button>
-            {notice.detail && noticeExpanded && (
-              <pre className="max-h-40 w-full overflow-auto whitespace-pre-wrap break-words font-mono text-[11px] text-secondary select-text">
-                {notice.detail}
-              </pre>
-            )}
-          </div>
-        </div>
+        <Toast
+          notice={notice}
+          expanded={noticeExpanded}
+          closing={noticeClosing}
+          onClose={closeNotice}
+          onToggleDetail={toggleNoticeDetail}
+        />
       )}
 
       {menu && (
