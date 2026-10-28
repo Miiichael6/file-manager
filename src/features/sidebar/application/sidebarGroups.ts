@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react";
-import { getStore } from "@tauri-apps/plugin-store";
 
+import { settingsStore } from "../../../shared/application/ports";
 import * as storage from "../../../shared/infrastructure/storage";
 import type { CustomFavorite } from "../../../shared/domain/types";
 
@@ -19,7 +19,6 @@ import type { CustomFavorite } from "../../../shared/domain/types";
 export type SidebarGroup = { id: string; name: string };
 
 const KEY = "miSidebarGroups";
-const STORE_FILE = "settings.json";
 
 let current: SidebarGroup[] = [];
 const listeners = new Set<() => void>();
@@ -41,18 +40,14 @@ function apply(value: SidebarGroup[]) {
   for (const listener of listeners) listener();
 }
 
-// storage.init() ya cargó settings.json; getStore devuelve esa misma instancia.
-const loaded = storage.init().then(() => getStore(STORE_FILE));
-
-void loaded
-  .then((store) => store?.get<unknown>(KEY))
-  .then((value) => apply(sanitize(value)))
-  .catch(() => undefined);
+void settingsStore
+  .get()
+  .read(KEY)
+  .then((value) => apply(sanitize(value)));
 
 async function save(value: SidebarGroup[]): Promise<void> {
   apply(value);
-  const store = await loaded.catch(() => null);
-  await store?.set(KEY, value).catch(() => undefined);
+  await settingsStore.get().write(KEY, value);
 }
 
 export function useSidebarGroups(): SidebarGroup[] {

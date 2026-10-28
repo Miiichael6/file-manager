@@ -1,7 +1,6 @@
 import { useSyncExternalStore } from "react";
-import { getStore } from "@tauri-apps/plugin-store";
 
-import * as storage from "../../../shared/infrastructure/storage";
+import { settingsStore } from "../../../shared/application/ports";
 
 /*
  * MI-FORK: anchos de las columnas de la vista Lista (Nombre, Fecha, Tamaño,
@@ -26,12 +25,10 @@ const LIMITS: Record<ResizableColumn, [number, number]> = {
   kind: [48, 600],
 };
 
-const STORE_FILE = "settings.json";
 const KEYS: Record<Pane, string> = { 0: "miListColumns", 1: "miListColumns2" };
 
 const widths: [ColumnWidths, ColumnWidths] = [DEFAULT_WIDTHS, DEFAULT_WIDTHS];
 const listeners = new Set<() => void>();
-const loaded = storage.init().then(() => getStore(STORE_FILE));
 
 function publish(pane: Pane, next: ColumnWidths) {
   widths[pane] = next;
@@ -56,15 +53,12 @@ function parse(value: unknown): ColumnWidths | null {
   };
 }
 
-void loaded
-  .then(async (store) => {
-    if (!store) return;
-    const first = parse(await store.get<unknown>(KEYS[0]));
-    const second = parse(await store.get<unknown>(KEYS[1])) ?? first;
-    if (first) publish(0, first);
-    if (second) publish(1, second);
-  })
-  .catch(() => undefined);
+void Promise.all([settingsStore.get().read(KEYS[0]), settingsStore.get().read(KEYS[1])]).then(([saved0, saved1]) => {
+  const first = parse(saved0);
+  const second = parse(saved1) ?? first;
+  if (first) publish(0, first);
+  if (second) publish(1, second);
+});
 
 export function useColumnWidths(pane: Pane): ColumnWidths {
   return useSyncExternalStore(
@@ -89,5 +83,5 @@ export function setColumnWidth(pane: Pane, column: ResizableColumn, value: numbe
 /** Guarda los anchos actuales (al soltar el tirador, no en cada movimiento). */
 export function saveColumnWidths(pane: Pane) {
   const value = widths[pane];
-  void loaded.then((store) => store?.set(KEYS[pane], value)).catch(() => undefined);
+  void settingsStore.get().write(KEYS[pane], value);
 }

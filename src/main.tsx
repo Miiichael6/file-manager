@@ -1,7 +1,8 @@
+// Kořen kompozice jako první: dosadí adaptéry portů dřív, než se načtou moduly, které je používají.
+import "./app/composition";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./app/App";
-import { composeApp } from "./app/composition";
 import { applyTheme, readThemeMirror, resolveTheme } from "./features/theme/application/theme";
 // Inter přibalený v aplikaci místo Google Fonts: funguje offline a CSP
 // nemusí povolovat cizí domény.
@@ -19,9 +20,6 @@ import "./shared/ui/ContextMenu/menu-style.css";
 import "./features/sidebar/ui/Sidebar/sidebar-flat.css";
 // MI-FORK: umbrales del toolbar con los botones del fork.
 import "./features/toolbar/ui/Toolbar/toolbar-fit.css";
-
-// Adaptéry portů (Tauri) dosadit dřív, než cokoli zavolá aplikační vrstvu.
-composeApp();
 
 // Nastavit třídu ještě před prvním renderem, ať dark uživatel nevidí bílý záblesk.
 applyTheme(resolveTheme(readThemeMirror()));

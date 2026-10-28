@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from "react";
-import { getStore } from "@tauri-apps/plugin-store";
 
-import { invoke, parentPath } from "../../../shared/infrastructure/fileops";
+import { fileSystem, settingsStore } from "../../../shared/application/ports";
+import { parentPath } from "../../../shared/infrastructure/fileops";
 import { compareNames } from "../../../shared/domain/format";
 import type { FileEntry } from "../../../shared/domain/types";
 import * as storage from "../../../shared/infrastructure/storage";
@@ -26,7 +26,6 @@ const EXPAND_ALL_LIMIT = 400;
 export const TREE_ENABLED = false;
 
 const KEY = "miTree";
-const STORE_FILE = "settings.json";
 
 const key = storage.pathKey;
 
@@ -120,7 +119,9 @@ export function loadChildren(path: string, force = false): Promise<void> {
     children.set(k, { status: "loading" });
     emit();
   }
-  const request = invoke<FileEntry[]>("list_dir", { path, showHidden })
+  const request = fileSystem
+    .get()
+    .listDir(path, showHidden)
     .then(
       (entries) => {
         children.set(k, { status: "ready", entries: sortTree(entries) });
@@ -327,10 +328,9 @@ let tabOrder: number[] = [];
 let restored: string[][] = [];
 let ready = false;
 
-const loaded = storage.init().then(() => getStore(STORE_FILE));
-
-void loaded
-  .then((store) => store?.get<unknown>(KEY))
+void settingsStore
+  .get()
+  .read(KEY)
   .then((value) => {
     const saved = value as Partial<Saved> | undefined;
     if (typeof saved?.showFiles === "boolean") showFiles = saved.showFiles;
@@ -377,6 +377,6 @@ function save() {
       showFiles,
       tabs: tabOrder.map((id) => [...(expandedByTab.get(id)?.values() ?? [])]),
     };
-    void loaded.then((store) => store?.set(KEY, value)).catch(() => undefined);
+    void settingsStore.get().write(KEY, value);
   }, 400);
 }

@@ -1,11 +1,11 @@
 import { createElement, useSyncExternalStore } from "react";
 import { AppWindow } from "lucide-react";
-import { getStore } from "@tauri-apps/plugin-store";
 
 import type { MenuItem } from "../../../shared/ui/ContextMenu";
-import { invoke } from "../../../shared/infrastructure/fileops";
+import { settingsStore, shellImages } from "../../../shared/application/ports";
 import type { MessageKey } from "../../../shared/i18n/index";
-import * as storage from "../../../shared/infrastructure/storage";
+import type { FolderApp } from "../domain/ports";
+import { folderApps } from "./ports";
 
 /*
  * MI-FORK: «Abrir con ▸» para carpetas (src-tauri/src/mi_fork.rs).
@@ -15,12 +15,11 @@ import * as storage from "../../../shared/infrastructure/storage";
  * settings.json con la clave propia `miFolderApps` (sin tocar lib/storage.ts).
  */
 
-export type FolderApp = { name: string; path: string };
+export type { FolderApp };
 
 const KEY = "miFolderApps";
 /** Ruta del último .exe usado — el botón de la barra lo ofrece primero. */
 const LAST_KEY = "miFolderAppLast";
-const STORE_FILE = "settings.json";
 
 let detected: FolderApp[] = [];
 let custom: FolderApp[] = [];
@@ -45,7 +44,9 @@ function loadIcon(path: string) {
   const key = path.toLowerCase();
   if (icons.has(key)) return;
   icons.set(key, null);
-  void invoke<string>("get_file_icon", { path, size: 32 })
+  void shellImages
+    .get()
+    .fileIcon(path, 32)
     .then((url) => {
       icons.set(key, url);
       apps = [...apps];
@@ -54,17 +55,18 @@ function loadIcon(path: string) {
     .catch(() => undefined);
 }
 
-const loaded = storage.init().then(() => getStore(STORE_FILE));
-
-void invoke<FolderApp[]>("folder_apps")
+void folderApps
+  .get()
+  .detect()
   .then((found) => {
     detected = found;
     publish();
   })
   .catch(() => undefined);
 
-void loaded
-  .then((store) => store?.get<unknown>(KEY))
+void settingsStore
+  .get()
+  .read(KEY)
   .then((value) => {
     if (!Array.isArray(value)) return;
     custom = value.filter(
@@ -74,8 +76,9 @@ void loaded
   })
   .catch(() => undefined);
 
-void loaded
-  .then((store) => store?.get<unknown>(LAST_KEY))
+void settingsStore
+  .get()
+  .read(LAST_KEY)
   .then((value) => {
     if (typeof value !== "string") return;
     lastUsed = value;
@@ -95,13 +98,12 @@ export function useFolderApps(): FolderApp[] {
 }
 
 export async function openFolderWith(app: FolderApp, path: string): Promise<void> {
-  await invoke<void>("open_folder_with", { app: app.path, path });
+  await folderApps.get().open(app, path);
   if (lastUsed !== null && samePath(lastUsed, app.path)) return;
   lastUsed = app.path;
   apps = [...apps];
   for (const listener of listeners) listener();
-  const store = await loaded.catch(() => null);
-  await store?.set(LAST_KEY, app.path).catch(() => undefined);
+  await settingsStore.get().write(LAST_KEY, app.path);
 }
 
 /** App del botón de la barra: la última usada, si no la primera encontrada. */
@@ -116,12 +118,11 @@ export function folderAppIcon(app: FolderApp): string | undefined {
 
 /** Diálogo para elegir un .exe; lo recuerda para la próxima vez. null = cancelado. */
 async function pickFolderApp(title: string, filter: string): Promise<FolderApp | null> {
-  const app = await invoke<FolderApp | null>("pick_folder_app", { title, filter });
+  const app = await folderApps.get().pick(title, filter);
   if (!app || apps.some((known) => samePath(known.path, app.path))) return app;
   custom = [...custom, app];
   publish();
-  const store = await loaded.catch(() => null);
-  await store?.set(KEY, custom).catch(() => undefined);
+  await settingsStore.get().write(KEY, custom);
   return app;
 }
 

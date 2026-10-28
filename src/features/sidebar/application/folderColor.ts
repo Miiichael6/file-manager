@@ -1,7 +1,6 @@
 import { useSyncExternalStore } from "react";
-import { getStore } from "@tauri-apps/plugin-store";
 
-import * as storage from "../../../shared/infrastructure/storage";
+import { settingsStore } from "../../../shared/application/ports";
 
 /*
  * MI-FORK: color de las carpetas (Más → Apariencia → Color de carpetas).
@@ -58,7 +57,6 @@ export const FOLDER_COLORS = Object.keys(FOLDER_PALETTES) as FolderColor[];
 
 const KEY = "miFolderColor";
 const MIRROR = "mi-folder-color";
-const STORE_FILE = "settings.json";
 
 const isFolderColor = (value: unknown): value is FolderColor =>
   typeof value === "string" && value in FOLDER_PALETTES;
@@ -101,16 +99,13 @@ function apply(value: FolderColor) {
   for (const listener of listeners) listener();
 }
 
-// storage.init() ya cargó settings.json; getStore devuelve esa misma instancia.
-const loaded = storage.init().then(() => getStore(STORE_FILE));
-
 apply(current);
-void loaded
-  .then((store) => store?.get<unknown>(KEY))
+void settingsStore
+  .get()
+  .read(KEY)
   .then((value) => {
     if (isFolderColor(value) && value !== current) apply(value);
-  })
-  .catch(() => undefined);
+  });
 
 export function useFolderColor(): FolderColor {
   return useSyncExternalStore(
@@ -124,6 +119,5 @@ export function useFolderColor(): FolderColor {
 
 export async function setFolderColor(value: FolderColor): Promise<void> {
   apply(value);
-  const store = await loaded.catch(() => null);
-  await store?.set(KEY, value).catch(() => undefined);
+  await settingsStore.get().write(KEY, value);
 }

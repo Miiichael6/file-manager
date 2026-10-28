@@ -1,7 +1,7 @@
 import { createContext, useContext } from "react";
-import { invoke } from "@tauri-apps/api/core";
-
 import type { TransparencyStrength } from "../../../shared/infrastructure/storage";
+import type { WindowBackdrop } from "../domain/ports";
+import { windowChrome } from "./ports";
 import { syncWindowBackground } from "./theme";
 
 /*
@@ -13,8 +13,7 @@ import { syncWindowBackground } from "./theme";
  * lištami a výpisem je vidět rozmazaná plocha a okna za aplikací (Acrylic).
  */
 
-/** Co okno kreslí pod obsahem: plné pozadí (vypnuto), nebo Acrylic (rozmazaná plocha). */
-export type WindowBackdrop = "off" | "acrylic";
+export type { WindowBackdrop };
 
 const REDUCED_QUERY = "(prefers-reduced-transparency: reduce)";
 
@@ -26,7 +25,7 @@ const REDUCED_QUERY = "(prefers-reduced-transparency: reduce)";
 export async function systemTransparency(): Promise<boolean> {
   if (window.matchMedia(REDUCED_QUERY).matches) return false;
   const [effects, acrylic] = await Promise.all([
-    invoke<boolean>("system_transparency").catch(() => true),
+    windowChrome.get().systemTransparency().catch(() => true),
     acrylicSupported(),
   ]);
   return effects && acrylic;
@@ -54,7 +53,7 @@ let acrylicSupport: Promise<boolean> | null = null;
  * se Acrylic při tažení okna sekal — tam se průhlednost nenabízí.
  */
 export function acrylicSupported(): Promise<boolean> {
-  acrylicSupport ??= invoke<boolean>("acrylic_supported").catch(() => false);
+  acrylicSupport ??= windowChrome.get().acrylicSupported().catch(() => false);
   return acrylicSupport;
 }
 
@@ -86,7 +85,7 @@ export function applyWindowBackdrop(next: WindowBackdrop, strength: Transparency
       syncWindowBackground();
     }
     if (next !== appliedBackdrop) {
-      await invoke("set_window_backdrop", { backdrop: next }).catch(() => undefined);
+      await windowChrome.get().setBackdrop(next).catch(() => undefined);
       appliedBackdrop = next;
     }
     if (next !== "off") {

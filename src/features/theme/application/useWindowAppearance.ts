@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { flushSync } from "react-dom";
-import { listen } from "@tauri-apps/api/event";
 
-import { invoke } from "../../../shared/infrastructure/fileops";
 import * as storage from "../../../shared/infrastructure/storage";
 import type { TransparencyStrength } from "../../../shared/infrastructure/storage";
 import { applyMotion, motionEnabled } from "../../../shared/lib/motion";
@@ -15,6 +13,7 @@ import {
   watchSystemTransparency,
   windowBackdrop,
 } from "./glass";
+import { windowChrome } from "./ports";
 
 type Options = {
   themePreference: ThemePreference;
@@ -100,12 +99,12 @@ export function useWindowAppearance({ themePreference, windowTransparency, trans
   // ve webview vůbec.
   useEffect(() => {
     const root = document.documentElement;
-    const unlisten = listen<boolean>("window-active", ({ payload: active }) =>
-      root.toggleAttribute("data-inactive", !active),
-    );
+    const chrome = windowChrome.get();
+    const unlisten = chrome.onActiveChange((active) => root.toggleAttribute("data-inactive", !active));
     // Výchozí stav (start, reload stránky) — událost chodí jen při změně.
     void unlisten.then(() =>
-      invoke<boolean>("window_is_active")
+      chrome
+        .isActive()
         .then((active) => root.toggleAttribute("data-inactive", !active))
         .catch(() => undefined),
     );
@@ -125,7 +124,7 @@ export function useWindowAppearance({ themePreference, windowTransparency, trans
       .catch(() => undefined)
       // Volba animací musí platit už pro rozsvícení okna.
       .then(() => applyMotion(storage.getSnapshot().motion))
-      .then(() => invoke("app_ready"))
+      .then(() => windowChrome.get().ready())
       .catch(() => undefined)
       .finally(() => {
         if (active) setReady(true);

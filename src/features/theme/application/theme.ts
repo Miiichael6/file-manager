@@ -1,6 +1,5 @@
-import { getCurrentWindow } from "@tauri-apps/api/window";
-
 import type { Theme } from "../../../shared/domain/types";
+import { windowChrome } from "./ports";
 
 /** Vzhled z menu Více: světlý, tmavý, nebo podle Windows (prefers-color-scheme). */
 export type ThemePreference = "light" | "dark" | "system";
@@ -60,7 +59,8 @@ export function applyTheme(theme: Theme): void {
 export function syncWindowBackground(): void {
   const color = getComputedStyle(document.documentElement).getPropertyValue("--bg-window").trim();
   if (!color) return;
-  void getCurrentWindow()
+  void windowChrome
+    .get()
     .setBackgroundColor(color === "transparent" ? "#00000000" : color)
     .catch(() => undefined);
 }
