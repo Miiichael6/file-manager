@@ -5,7 +5,7 @@ import type { MenuItem } from "../../../shared/ui/ContextMenu";
 import { errorDetail } from "../../../shared/infrastructure/fileops";
 import { errorText, useT } from "../../../shared/i18n/index";
 import type { FileEntry } from "../../../shared/domain/types";
-import { isStaged, isUnstaged } from "./git";
+import { isStaged, isUnstaged } from "../domain/git";
 import { gitPull, gitPush, gitStage, gitUnstage, useGitRepo } from "./gitActions";
 import { gitFileFor } from "./gitStore";
 import { gitMenuIcon } from "../ui/gitIcons";

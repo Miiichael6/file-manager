@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react";
 
-import { PRIORITY, absolutePath, keyOf, stateOf, type GitFile, type GitState, type GitStatus } from "./git";
+import { PRIORITY, absolutePath, keyOf, stateOf, type GitFile, type GitState, type GitStatus } from "../domain/git";
 
 /**
  * Sdílený stav git podle kořene repa — oba panely i všechny řádky se ptají na

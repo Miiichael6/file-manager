@@ -1,7 +1,7 @@
 import { GitBranch } from "lucide-react";
 
 import { useT } from "../../../../shared/i18n/index";
-import type { GitStatus } from "../../application/git";
+import type { GitStatus } from "../../domain/git";
 
 /**
  * Větev ve status baru: název, ↑ commity k odeslání, ↓ k přijetí a počet

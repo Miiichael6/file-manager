@@ -7,7 +7,7 @@ import { breadcrumbs, formatFreeSpace, formatItemCount } from "../../../../share
 import { useT } from "../../../../shared/i18n/index";
 import { isTypingTarget } from "../../../../shared/lib/dom";
 // MI-FORK: Git integrado.
-import type { GitStatus } from "../../../git/application/git";
+import type { GitStatus } from "../../../git/domain/git";
 import { GitBranchChip } from "../../../git/ui/GitBranchChip";
 
 /**

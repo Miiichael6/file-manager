@@ -1,5 +1,5 @@
 import { useT, type MessageKey } from "../../../../shared/i18n/index";
-import type { GitState } from "../../application/git";
+import type { GitState } from "../../domain/git";
 import { useGitState } from "../../application/gitStore";
 
 /** Písmeno (jako v editorech), barva z index.css a popisek pro tooltip. */

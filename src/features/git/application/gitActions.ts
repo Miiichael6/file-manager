@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 
-import { invoke } from "../../../shared/infrastructure/fileops";
-import type { GitStatus } from "./git";
+import type { GitStatus } from "../domain/git";
 import { gitRootFor, repoStatus, setRepoStatus, useGitVersion } from "./gitStore";
+import { gitRepository } from "./ports";
 
-/** Načítání stavu repa a akce nad ním (git.rs). Stav sám drží gitStore.ts. */
+/** Načítání stavu repa a akce nad ním (port GitRepository). Stav sám drží gitStore.ts. */
 
 /** Probíhající dotazy podle složky — dva panely ve stejném repu se nesčítají. */
 const inflight = new Map<string, Promise<GitStatus | null>>();
@@ -14,7 +14,9 @@ export function refreshGit(path: string): Promise<GitStatus | null> {
   const pending = inflight.get(path);
   if (pending) return pending;
 
-  const request = invoke<GitStatus | null>("git_status", { path })
+  const request = gitRepository
+    .get()
+    .status(path)
     .catch(() => null)
     .then((status) => {
       if (status !== null) setRepoStatus(status);
@@ -56,23 +58,25 @@ export function useGitRepo(path: string | null, token: unknown): GitStatus | nul
 }
 
 /** Operace nad repem; po ní se stav vždy načte znovu (i po chybě — pull mohl napůl projít). */
-async function run(command: string, root: string, args: Record<string, unknown> = {}): Promise<void> {
+async function run(root: string, operation: Promise<void>): Promise<void> {
   try {
-    await invoke(command, { root, ...args });
+    await operation;
   } finally {
     await refreshGit(root);
   }
 }
 
-export const gitStage = (root: string, paths: string[]) => run("git_stage", root, { paths });
-export const gitUnstage = (root: string, paths: string[]) => run("git_unstage", root, { paths });
-export const gitCommit = (root: string, message: string) => run("git_commit", root, { message });
-export const gitPush = (root: string) => run("git_push", root);
-export const gitPull = (root: string) => run("git_pull", root);
-export const gitFetch = (root: string) => run("git_fetch", root);
-export const gitCheckout = (root: string, branch: string) => run("git_checkout", root, { branch });
+const repo = () => gitRepository.get();
+
+export const gitStage = (root: string, paths: string[]) => run(root, repo().stage(root, paths));
+export const gitUnstage = (root: string, paths: string[]) => run(root, repo().unstage(root, paths));
+export const gitCommit = (root: string, message: string) => run(root, repo().commit(root, message));
+export const gitPush = (root: string) => run(root, repo().push(root));
+export const gitPull = (root: string) => run(root, repo().pull(root));
+export const gitFetch = (root: string) => run(root, repo().fetch(root));
+export const gitCheckout = (root: string, branch: string) => run(root, repo().checkout(root, branch));
 /** Místní větve, naposledy použité první. */
-export const gitBranches = (root: string) => invoke<string[]>("git_branches", { root });
+export const gitBranches = (root: string) => repo().branches(root);
 
 type DiffState = { text: string | null; truncated: boolean; error: unknown };
 
@@ -96,7 +100,8 @@ export function useGitDiff(
   useEffect(() => {
     if (root === null || path === null) return;
     let cancelled = false;
-    invoke<{ text: string; truncated: boolean }>("git_diff", { root, path, untracked, staged })
+    repo()
+      .diff(root, path, untracked, staged)
       .then(({ text, truncated }) => {
         if (!cancelled) setState({ text, truncated, error: null });
       })

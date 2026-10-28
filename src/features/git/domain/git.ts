@@ -2,8 +2,8 @@
  * Git ve výpisu: stav souborů (odznaky v řádcích), větev ve status baru a
  * akce stage/unstage/commit/push/pull. Backend volá git.exe (git.rs).
  *
- * Tady jsou typy a čisté funkce; sdílený stav drží gitStore.ts, volání
- * backendu gitActions.ts.
+ * Tady jsou typy a čisté funkce; sdílený stav drží application/gitStore.ts, volání
+ * backendu gitActions.ts (přes port GitRepository).
  */
 
 /** Jak git vidí položku; pořadí = priorita při shrnutí složky. */

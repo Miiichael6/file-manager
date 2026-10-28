@@ -4,7 +4,7 @@ import { Dialog } from "../../../../shared/ui/Dialog";
 import { GitDiffView } from "../GitDiffView";
 import { GitLetter } from "../GitBadge";
 import { errorText, useT } from "../../../../shared/i18n/index";
-import { absolutePath, isStaged, isUnstaged, stateOf, type GitFile, type GitStatus } from "../../application/git";
+import { absolutePath, isStaged, isUnstaged, stateOf, type GitFile, type GitStatus } from "../../domain/git";
 import { gitCommit, gitPull, gitPush, gitStage, gitUnstage } from "../../application/gitActions";
 import { GIT_ICONS } from "../gitIcons";
 

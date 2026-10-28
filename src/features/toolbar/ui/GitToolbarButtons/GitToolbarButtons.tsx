@@ -5,7 +5,7 @@ import { ContextMenu, type MenuItem } from "../../../../shared/ui/ContextMenu";
 import { commandMenuItem } from "../Toolbar";
 import type { Commands } from "../../../command-palette/domain/commands";
 import { useT } from "../../../../shared/i18n/index";
-import type { GitStatus } from "../../../git/application/git";
+import type { GitStatus } from "../../../git/domain/git";
 import { gitBranches, gitCheckout, gitFetch, gitStage } from "../../../git/application/gitActions";
 import { gitMenuIcon } from "../../../git/ui/gitIcons";
 import { motionMs } from "../../../../shared/lib/motion";
